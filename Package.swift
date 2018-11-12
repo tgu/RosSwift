@@ -28,7 +28,7 @@ let package = Package(
             path: "Sources/rosswift"),
         .target(
             name: "publisher",
-            dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),.branch
+            dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
         .target(
             name: "listener",
             dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
