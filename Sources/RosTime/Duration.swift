@@ -65,14 +65,17 @@ extension RosTime {
         return TimeInterval(nanoseconds)*1e-9
     }
 
+    public func sleep() -> Bool {
+        return true
+    }
 
 
 }
 
-public class Duration: DurationBase {
+public final class Duration: DurationBase {
 
     @discardableResult
-    public func sleep() -> Bool {
+    public override func sleep() -> Bool {
         if !Time.g_use_sim_time {
             return ros_wallsleep(sec: UInt32(sec),nsec: UInt32(nsec))
         }
@@ -101,10 +104,10 @@ public class Duration: DurationBase {
 }
 
 
-public class WallDuration: DurationBase {
+public final class WallDuration: DurationBase {
 
     @discardableResult
-    public func sleep() -> Bool {
+    public override func sleep() -> Bool {
         return ros_wallsleep(sec: UInt32(sec),nsec: UInt32(nsec))
     }
 
