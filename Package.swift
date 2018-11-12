@@ -17,7 +17,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.9.5"),
        .package(url: "https://github.com/tgu/XMLRPCSerialization.git", from: "1.0.1"),
-        .package(url: "https://github.com/tgu/BinaryCoder.git", .branch("roscoder")),
+        .package(url: "https://github.com/tgu/BinaryCoder.git", from: "1.0.1"),
         .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.7.3")
 
     ],
@@ -28,7 +28,7 @@ let package = Package(
             path: "Sources/rosswift"),
         .target(
             name: "publisher",
-            dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
+            dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),.branch
         .target(
             name: "listener",
             dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
