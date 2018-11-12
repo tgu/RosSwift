@@ -5,9 +5,9 @@
         "package": "BinaryCoder",
         "repositoryURL": "https://github.com/tgu/BinaryCoder.git",
         "state": {
-          "branch": "roscoder",
-          "revision": "641c7e611346025236b6be431d99bc1359d4512c",
-          "version": null
+          "branch": null,
+          "revision": "d72af863dd8d7a06f0ea0fc3981cd3e9e11c0ebe",
+          "version": "1.0.1"
         }
       },
       {

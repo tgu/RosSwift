@@ -22,31 +22,23 @@ let package = Package(
 
     ],
     targets: [
-        .target(
-            name: "RosSwift",
+        .target( name: "RosSwift",
             dependencies: ["XMLRPCSerialization","StdMsgs","RosTime","BinaryCoder","NIO","HeliumLogger"],
             path: "Sources/rosswift"),
-        .target(
-            name: "publisher",
+        .target( name: "publisher",
             dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
-        .target(
-            name: "listener",
+        .target( name: "listener",
             dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
-        .target(
-            name: "msgbuilder",
+        .target( name: "msgbuilder",
             dependencies: []),
-        .target(
-            name: "geometry_msgs",
+        .target( name: "geometry_msgs",
             dependencies: ["StdMsgs"],
             path: "Sources/msgs/geometry_msgs"),
-        .target(
-            name: "StdMsgs",
+        .target( name: "StdMsgs",
             dependencies: ["RosTime"]),
-        .target(
-            name: "RosTime",
+        .target( name: "RosTime",
             dependencies: ["BinaryCoder"]),
-        .testTarget(
-            name: "rosswiftTests",
+        .testTarget( name: "rosswiftTests",
             dependencies: ["RosSwift","XMLRPCSerialization","StdMsgs","BinaryCoder"]),
         ]
 )
