@@ -1,0 +1,61 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "BinaryCoder",
+        "repositoryURL": "https://github.com/tgu/BinaryCoder.git",
+        "state": {
+          "branch": "roscoder",
+          "revision": "641c7e611346025236b6be431d99bc1359d4512c",
+          "version": null
+        }
+      },
+      {
+        "package": "HeliumLogger",
+        "repositoryURL": "https://github.com/IBM-Swift/HeliumLogger.git",
+        "state": {
+          "branch": null,
+          "revision": "e38a5db514f384062262820acbdabdc883f64d7a",
+          "version": "1.7.3"
+        }
+      },
+      {
+        "package": "LoggerAPI",
+        "repositoryURL": "https://github.com/IBM-Swift/LoggerAPI.git",
+        "state": {
+          "branch": null,
+          "revision": "5041f2673aa75d6e973d9b6bd3956bc5068387c8",
+          "version": "1.7.3"
+        }
+      },
+      {
+        "package": "swift-nio",
+        "repositoryURL": "https://github.com/apple/swift-nio.git",
+        "state": {
+          "branch": null,
+          "revision": "035962e6b6e03c8721a91a9b96dc084289795cb4",
+          "version": "1.11.0"
+        }
+      },
+      {
+        "package": "swift-nio-zlib-support",
+        "repositoryURL": "https://github.com/apple/swift-nio-zlib-support.git",
+        "state": {
+          "branch": null,
+          "revision": "37760e9a52030bb9011972c5213c3350fa9d41fd",
+          "version": "1.0.0"
+        }
+      },
+      {
+        "package": "XMLRPCSerialization",
+        "repositoryURL": "https://github.com/tgu/XMLRPCSerialization.git",
+        "state": {
+          "branch": null,
+          "revision": "3dd495873a9521f10d68307adea6483ad701774c",
+          "version": "1.0.4"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
