@@ -101,7 +101,6 @@ func subscriberLeavingCallback(_ link: SingleSubscriberPublisher) -> Void {
 var options = AdvertiseOptions(topic: "/chatter",std_msgs.string.self)
 options.connect_cb = subscriberCallback
 options.disconnect_cb = subscriberLeavingCallback
-options.latch = true
 
 guard let chatter_pub = n.advertise(ops: options) else {
     exit(1)
@@ -123,6 +122,8 @@ do {
     print("no response: \(error)")
 }
 
+var rate = RosTime.Rate(frequency: 1.0)
+
 var j : Int32 = 0
 while Ros.ok {
     j += 1
@@ -130,7 +131,6 @@ while Ros.ok {
     let sm = geometry_msgs.Point(x: 1.0+Float64(j), y: Float64(j), z: sin(Float64(j)))
     natter_pub.publish(message: sm)
     chatter_pub.publish(message: std_msgs.string("Hello \(j)"))
-    usleep(500_000)
 
     let header = std_msgs.header(seq: UInt32(j), stamp: time, frameID: 2)
     let lin = geometry_msgs.Vector3(x: 1, y: Float64(j), z: sin(Float64(j)))
@@ -140,7 +140,7 @@ while Ros.ok {
 
     twist_pub.publish(message: twist)
 
-    usleep(500_000)
+    rate.sleep()
 }
 
 do {

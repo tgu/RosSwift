@@ -260,7 +260,7 @@ public struct RosTime {
             return Time(nanosec: lhs.toNSec() + UInt64(rhs.toNSec()))
         }
         public static func - (lhs: Time, rhs: Time) -> Duration {
-            return Duration(nanosec: Int64(lhs.toNSec() - UInt64(rhs.toNSec())))
+            return Duration(nanosec: Int64(lhs.toNSec()) - Int64(rhs.toNSec()))
         }
 
     }

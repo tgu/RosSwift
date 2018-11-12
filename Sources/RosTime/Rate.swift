@@ -10,24 +10,24 @@ import Foundation
 extension RosTime {
 
 
-struct Rate {
+public struct Rate {
     var start_ : Time
     let expected_cycle_time_ : Duration
     var actual_cycle_time_ : Duration
 
-    init(frequency: Double) {
+    public init(frequency: Double) {
         start_ = Time.now()
         expected_cycle_time_ = Duration(seconds: 1.0 / frequency)
         actual_cycle_time_ = Duration()
     }
 
-    init(duration: Duration) {
+    public init(duration: Duration) {
         start_ = Time.now()
         expected_cycle_time_ = duration
         actual_cycle_time_ = Duration()
     }
 
-    mutating func sleep() -> Bool {
+    public mutating func sleep() -> Bool {
         var expected_end = start_ + expected_cycle_time_
         let actual_end = Time.now()
         if actual_end < start_ {
@@ -46,11 +46,11 @@ struct Rate {
         return sleep_time.sleep()
     }
 
-    mutating func reset() {
+    public mutating func reset() {
         start_ = Time.now()
     }
 
-    func cycleTime() -> Duration {
+    public func cycleTime() -> Duration {
         return actual_cycle_time_
     }
 
