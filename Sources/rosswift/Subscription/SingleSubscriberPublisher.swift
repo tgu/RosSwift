@@ -10,8 +10,11 @@ import StdMsgs
 import BinaryCoder
  
 
-public class SingleSubscriberPublisher {
+public final class SingleSubscriberPublisher {
     var link: SubscriberLink
+    public var callerId : String {
+        return link.destination_caller_id
+    }
 
     init(link: SubscriberLink) {
         self.link = link

@@ -11,7 +11,7 @@ import NIOConcurrencyHelpers
 
 typealias VoidConstPtr = AnyObject?
 
-class PeerConnDisconnCallback: CallbackInterface {
+final class PeerConnDisconnCallback: CallbackInterface {
 
     var callback: SubscriberStatusCallback
     var sub_link : SubscriberLink!
@@ -49,7 +49,7 @@ class PeerConnDisconnCallback: CallbackInterface {
 
 }
 
-class Publication {
+final class Publication {
     let name: String
     let datatype: String
     let md5sum: String
@@ -102,7 +102,6 @@ class Publication {
                 subscriber_links_mutex_.sync {
                     subscriber_links.forEach {
                         let cb = PeerConnDisconnCallback(callback: connect, sub_link: $0, use_tracked_object: callback.has_tracked_object, tracked_object: callback.tracked_object)
-//                        queue.addCallback(callback: cb, owner_id: cb.hash)
                     }
                 }
             }
@@ -184,11 +183,8 @@ class Publication {
 
     func removeSubscriberLink(_ link: SubscriberLink) {
         if dropped.load() {
-            ROS_DEBUG("is dropped")
             return
         }
-
-        var subLink : SubscriberLink? = nil
 
         subscriber_links_mutex_.async {
             if link.isIntraprocess() {
@@ -196,13 +192,9 @@ class Publication {
             }
 
             if let it = self.subscriber_links.index(where: { $0 === link }) {
-                subLink = self.subscriber_links[it]
+                self.peerDisconnect(sub_link: link)
                 self.subscriber_links.remove(at: it)
             }
-        }
-
-        if let subLink = subLink {
-            self.peerDisconnect(sub_link: subLink)
         }
     }
 
@@ -238,9 +230,7 @@ class Publication {
         pubCallbacks.forEach {
             if let disconnect = $0.disconnect {
                 let cb = PeerConnDisconnCallback(callback: disconnect, sub_link: sub_link, use_tracked_object: $0.has_tracked_object, tracked_object: $0.tracked_object)
-                DispatchQueue(label: "peerConnect").async {
                     cb.call()
-                }
             }
 
         }
@@ -295,20 +285,6 @@ class Publication {
             _ = enqueueMessage(m: msg)
         }
     }
-
-//    func processPublishQueue() {
-//        var queue = [SerializedMessage]()
-//        publish_queue_mutex_.sync {
-//            if !dropped {
-//                swap(&queue,&publish_queue)
-//            }
-//        }
-//
-//        queue.forEach {
-//            let _ = enqueueMessage(m: $0)
-//        }
-//
-//    }
 
     func isLatching() -> Bool {
         return latch

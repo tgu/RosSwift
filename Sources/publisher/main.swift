@@ -89,12 +89,12 @@ guard let natter_pub = n.advertise(topic: "/natter", message: geometry_msgs.Poin
 }
 
 func subscriberCallback(_ link: SingleSubscriberPublisher) -> Void {
-    print("Subscriber \(link) has joined")
+    print("Subscriber [\(link.callerId)] has joined")
     link.publish(Int32(999))
 }
 
 func subscriberLeavingCallback(_ link: SingleSubscriberPublisher) -> Void {
-    print("Subscriber \(link) has left")
+    print("Subscriber [\(link.callerId)] has left")
 }
 
 
