@@ -14,7 +14,7 @@ func initInternalTimerManager() {
     ROS_ERROR("initInternalTimerManager not implemented")
 }
 
-class TimerManager {
+final class TimerManager {
 
     func remove(timer_handle: Int32) {
         ROS_ERROR("\(#function) not implemented")

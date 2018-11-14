@@ -10,7 +10,7 @@ import StdMsgs
 import NIOConcurrencyHelpers
 
 
-class IntraProcessPublisherLink: PublisherLink {
+final class IntraProcessPublisherLink: PublisherLink {
     var publisher_ : IntraProcessSubscriberLink?
     var dropped_ = Atomic<Bool>(value: false)
 

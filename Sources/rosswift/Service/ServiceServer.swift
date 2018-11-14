@@ -7,9 +7,9 @@
 
 import Foundation
 
-public class ServiceServer {
+public final class ServiceServer {
 
-    class Impl {
+    final class Impl {
         let service_ : String
         unowned var node_handle_ : Ros.NodeHandle
         var unadvertised_ = false

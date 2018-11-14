@@ -13,11 +13,11 @@ import NIOConcurrencyHelpers
 
 protocol TransportUDP {}
 
-class Subscription {
+final class Subscription {
     struct CallBackInfo {
         var helper : SubscriptionCallbackHelper?
         var has_tracked_object : Bool
-        var tracked_object : VoidConstPtr
+        var tracked_object : AnyObject?
     }
 
     struct LatchInfo {
@@ -80,7 +80,7 @@ class Subscription {
     }
 
 
-    func add(callback: SubscriptionCallbackHelper, md5sum: String, tracked_object: VoidConstPtr, allow_concurrent_callbacks: Bool) -> Bool {
+    func add(callback: SubscriptionCallbackHelper, md5sum: String, tracked_object: AnyObject?, allow_concurrent_callbacks: Bool) -> Bool {
 
         md5sum_mutex.sync {
             if md5sum_ == "*" && md5sum != "*" {
@@ -295,7 +295,7 @@ class Subscription {
             ROS_DEBUG("Connecting via tcpros to topic [\(self.name)] at host [\(pub_host):\(pub_port)]")
 
             
-            DispatchQueue(label: "waiting for connection").async {
+            DispatchQueue.global().async {
                 let connection = InboundConnection(parent: self, host: pub_host, port: pub_port)
                 let pub_link = TransportPublisherLink(parent: self, xmlrpcUri: uri, transportHints: self.transport_hints)
                 let _ = pub_link.initialize(connection: connection)

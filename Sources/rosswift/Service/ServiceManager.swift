@@ -124,7 +124,7 @@ import StdMsgs
 
         }
 
-        class ServiceHandler: ChannelInboundHandler {
+        final class ServiceHandler: ChannelInboundHandler {
             enum ServiceState {
                 case header
                 case message

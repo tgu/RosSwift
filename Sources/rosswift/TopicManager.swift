@@ -132,7 +132,7 @@ extension Ros {
         }
 
         func requestTopic(topic: String, protos: XmlRpcValue) -> XmlRpcValue {
-            ROS_DEBUG("requestTopic \(topic)")
+            ROS_DEBUG("requestTopic \(topic) with \(protos)")
             for proto_idx in 0..<protos.size() {
                 let proto = protos[proto_idx]
                 guard case .array = proto.value else {
@@ -621,10 +621,6 @@ extension Ros {
                 return subscriptions.count
             }
         }
-
-
-
-
 
     }
 

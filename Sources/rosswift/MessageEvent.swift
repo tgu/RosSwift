@@ -10,7 +10,7 @@ import StdMsgs
 import RosTime
 
 
-public class MessageEvent<M: Message> {
+public final class MessageEvent<M: Message> {
     typealias CreateFunction = () -> M
 
     let message_: M

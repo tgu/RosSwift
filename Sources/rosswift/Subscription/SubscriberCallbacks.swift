@@ -10,7 +10,7 @@ import Foundation
 public typealias SubscriberStatusCallback = (SingleSubscriberPublisher) -> Void
 
 
-class SubscriberCallbacks {
+final class SubscriberCallbacks {
     var connect: SubscriberStatusCallback? = nil
     var disconnect: SubscriberStatusCallback? = nil
     var has_tracked_object: Bool = false

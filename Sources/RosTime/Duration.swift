@@ -18,17 +18,17 @@ extension RosTime {
         return lhs.toNSec() == rhs.toNSec()
     }
 
-    public var nanoseconds : Int64
+    public final var nanoseconds : Int64
 
-    public var sec: Int32 {
+    public final var sec: Int32 {
         return Int32(nanoseconds / 1_000_000_000 )
     }
 
-    public var nsec: Int32 {
+    public final var nsec: Int32 {
         return Int32(nanoseconds % 1_000_000_000 )
     }
 
-    public var time: timespec {
+    public final var time: timespec {
         return timespec(tv_sec: Int(sec), tv_nsec: Int(nsec))
     }
 
@@ -53,15 +53,15 @@ extension RosTime {
         nanoseconds = nanosec
     }
 
-    public func isZero() -> Bool {
+    public final func isZero() -> Bool {
         return nanoseconds == 0
     }
 
-    public func toNSec() -> Int64 {
+    public final func toNSec() -> Int64 {
         return nanoseconds
     }
 
-    public func toSec() -> TimeInterval {
+    public final func toSec() -> TimeInterval {
         return TimeInterval(nanoseconds)*1e-9
     }
 

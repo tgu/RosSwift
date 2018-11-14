@@ -9,7 +9,7 @@ import Foundation
 
 extension ServiceClient {
 
-    internal class Impl {
+    internal final class Impl {
         var server_link_ : ServiceServerLink? = nil
         let name_ : String
         let persistent_ : Bool

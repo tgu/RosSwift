@@ -31,7 +31,7 @@ typealias DropFunc = (Notification) -> Void
 
 
 
-    class Connection: ConnectionProtocol {
+    final class Connection: ConnectionProtocol {
 
 
     static let dropNotification = Notification.Name(rawValue: "dropConnection")

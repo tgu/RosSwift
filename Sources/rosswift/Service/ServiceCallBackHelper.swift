@@ -31,7 +31,7 @@ protocol ServiceCallbackHelper {
 typealias ReqCreateFunction = () -> Message
 typealias ResCreateFunction = () -> Message
 
-class ServiceCallbackHelperT: ServiceCallbackHelper {
+final class ServiceCallbackHelperT: ServiceCallbackHelper {
 
     let callback_ : Callback
     let create_req_ : ReqCreateFunction

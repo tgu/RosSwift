@@ -9,7 +9,7 @@ import Foundation
 import StdMsgs
 import BinaryCoder
 
-public class Header {
+public final class Header {
     public var read_map_ = M_string()
 
     public func getValues() -> M_string {

@@ -7,7 +7,6 @@
 
 import Foundation
 import NIO
-import XMLRPCSerialization
 import BinaryCoder
 
 extension nio {
@@ -82,10 +81,10 @@ extension nio {
 
 
 
-    public class TransportTCP {
+    public final class TransportTCP {
 
 
-        class Handler: ChannelInboundHandler {
+        final class Handler: ChannelInboundHandler {
             public typealias InboundIn = M_string
             public typealias OutboundOut = ByteBuffer
 

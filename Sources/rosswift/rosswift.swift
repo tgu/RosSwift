@@ -422,10 +422,6 @@ public struct Ros {
 
     struct rosgraph_msgs {
         struct Clock: Message {
-//            func deserialize(from: inout StreamBuffer) {
-//                fatalError()
-//            }
-
             init() {
             }
 
@@ -441,10 +437,6 @@ public struct Ros {
                 """
 
             static let hasHeader = false
-
-//            func serialize() -> SerializedMessage {
-//                return SerializedMessage(msg: self, buffer: [UInt8]() )
-//            }
 
 
         }

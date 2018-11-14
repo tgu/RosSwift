@@ -10,7 +10,7 @@ import StdMsgs
 import NIOConcurrencyHelpers
 
 
-class IntraProcessSubscriberLink: SubscriberLink {
+final class IntraProcessSubscriberLink: SubscriberLink {
     weak var parent : Publication!
     var connection_id : UInt = 0
     var destination_caller_id  : String = ""

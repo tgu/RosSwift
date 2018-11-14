@@ -7,7 +7,6 @@
 
 import Foundation
 import NIO
-import XMLRPCSerialization
 
 extension SocketAddress {
     var host: String {
@@ -22,7 +21,7 @@ extension SocketAddress {
     }
 }
 
-class MessageHandler: ChannelInboundHandler {
+final class MessageHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
     typealias OutboundOut = ByteBuffer
     weak var server_ : XMLRPCServer!
@@ -86,18 +85,19 @@ class MessageHandler: ChannelInboundHandler {
             fatalError()
         }
 
-        guard let data = request.data(using: .utf8) else {
-            return
-        }
-        var obj : XMLRPCRequest? = nil
-        do {
-            obj = try XMLRPCSerialization.xmlrpcRequest(from: data)
-        } catch let error {
-            ROS_ERROR(error.localizedDescription)
-            fatalError()
-        }
-        let methodName = obj!.methodName
-        let params = XmlRpcValue(anyArray: obj!.params)
+//        guard let data = request.data(using: .utf8) else {
+//            return
+//        }
+//        var obj : XMLRPCRequest? = nil
+//        do {
+//            obj = try XMLRPCSerialization.xmlrpcRequest(from: data)
+//        } catch let error {
+//            ROS_ERROR(error.localizedDescription)
+//            fatalError()
+//        }
+        let obj = XMLRPCManager.parseRequest(xml: request)
+        let methodName = obj.method
+        let params = XmlRpcValue(anyArray: obj.params)
 
         let response = self.executeMethod(methodName: methodName, params: params)
         let xml = response.toXml()
@@ -125,7 +125,7 @@ class MessageHandler: ChannelInboundHandler {
 
 }
 
-class XMLRPCServer {
+final class XMLRPCServer {
     let handler : MessageHandler
     var channel : Channel? = nil
     var boot : ServerBootstrap? = nil

@@ -15,7 +15,7 @@ enum ConnectionError: Error {
     case connectionDropped
 }
 
-class InboundConnection: ConnectionProtocol {
+final class InboundConnection: ConnectionProtocol {
 
 //    var bootstrap : ClientBootstrap?
     var channel: Channel?
@@ -103,7 +103,7 @@ class InboundConnection: ConnectionProtocol {
         }
     }
 
-    class InboundHandler: ChannelInboundHandler {
+    final class InboundHandler: ChannelInboundHandler {
         public typealias InboundIn = ByteBuffer
 
         weak var parent : InboundConnection?

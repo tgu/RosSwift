@@ -9,7 +9,7 @@ import Foundation
 import StdMsgs
 import RosTime
 
-class TransportPublisherLink: PublisherLink {
+final class TransportPublisherLink: PublisherLink {
     private var connection_ : InboundConnection? = nil
     private var retry_timer_handle_ : Int32
     private var needs_retry_ : Bool

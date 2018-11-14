@@ -11,16 +11,16 @@ import Foundation
 class PublisherLink {
 
     unowned var parent: Subscription
-    var connectionId : Int
-    let publisherXmlrpcUri: String
-    var stats: Stats? = nil
-    let transportHints: TransportHints
-    var latched: Bool
-    var callerId : String = ""
-    var header : Header? = nil
-    var md5sum : String = ""
+    final var connectionId : Int
+    final let publisherXmlrpcUri: String
+    final var stats: Stats? = nil
+    final let transportHints: TransportHints
+    final var latched: Bool
+    final var callerId : String = ""
+    final var header : Header? = nil
+    final var md5sum : String = ""
 
-    class Stats {
+    struct Stats {
         var bytesReceived: UInt = 0
         var messagesReceived: UInt = 0
         var drops: UInt = 0
@@ -34,16 +34,12 @@ class PublisherLink {
         self.latched = false
     }
 
-    deinit {
-        
-    }
-
     func drop() {
         ROS_DEBUG("drop")
         fatalError()
     }
 
-    func setHeader(header: Header) -> Bool
+    final func setHeader(header: Header) -> Bool
     {
         guard let new_caller_id = header.getValue(key: "callerid") else {
             ROS_ERROR("header did not have required element: callerid")

@@ -9,17 +9,15 @@ import Foundation
 import StdMsgs
 import NIOConcurrencyHelpers
 
-typealias VoidConstPtr = AnyObject?
-
 final class PeerConnDisconnCallback: CallbackInterface {
 
     var callback: SubscriberStatusCallback
     var sub_link : SubscriberLink!
     var use_tracked_object : Bool
-    var tracked_object : VoidConstPtr
+    var tracked_object : AnyObject?
     
 
-    init(callback: @escaping SubscriberStatusCallback, sub_link: SubscriberLink, use_tracked_object: Bool, tracked_object: VoidConstPtr) {
+    init(callback: @escaping SubscriberStatusCallback, sub_link: SubscriberLink, use_tracked_object: Bool = false, tracked_object: AnyObject? = nil) {
         self.callback = callback
         self.sub_link = sub_link
         self.use_tracked_object = use_tracked_object
@@ -27,7 +25,7 @@ final class PeerConnDisconnCallback: CallbackInterface {
     }
 
     func call() -> CallResult {
-        var tracker : VoidConstPtr = nil
+        var tracker : AnyObject? = nil
         if use_tracked_object {
             tracker = tracked_object
 

@@ -14,7 +14,7 @@ let dropNotification = Notification.Name(rawValue: "dropConnection")
 
 
 extension Ros {
-    class TransportSubscriberLink: SubscriberLink {
+    final class TransportSubscriberLink: SubscriberLink {
 
     weak var parent : Publication!
     var connection_id : UInt = 0

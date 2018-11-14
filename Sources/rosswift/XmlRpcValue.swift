@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class XmlRpcValue {
+public final class XmlRpcValue {
 
     var value: Value
 
@@ -110,6 +110,13 @@ public class XmlRpcValue {
        return false
     }
 
+    var isStruct: Bool {
+        if case .struct(_) = value {
+            return true
+        }
+        return false
+    }
+
     var isString: Bool {
         if case .string(_) = value {
             return true
@@ -154,6 +161,37 @@ public class XmlRpcValue {
         }
         return ""
     }
+
+    var `struct`: ValueStruct? {
+        if case .struct(let s) = value {
+            return s
+        }
+        return nil
+    }
+
+    var int: Int? {
+        if case .int(let i) = value {
+            return i
+        }
+        return nil
+    }
+
+    var bool: Bool? {
+        if case .boolean(let b) = value {
+            return b
+        }
+        return nil
+    }
+
+
+    var date: Date? {
+        if case .datetime(let d) = value {
+            return d
+        }
+        return nil
+    }
+
+
 
     func clear() {
         invalidate()
@@ -316,6 +354,8 @@ public class XmlRpcValue {
             val = (b ? Float32(1.0) : Float32(0.0)) as! T
         case .boolean(let b) where T.self == Double.self:
             val = (b ? 1.0 : 0.0) as! T
+        case .int(let i) where T.self == Bool.self:
+            val = (i != 0) as! T
         case .int(let i as T):
             val = i
         case .int(let i) where T.self == Double.self:
@@ -452,6 +492,14 @@ extension XmlRpcValue: CustomStringConvertible {
 }
 
 enum Tags : String {
+    case METHODNAME_TAG = "<methodName>"
+    case METHODNAME_ETAG = "</methodName>"
+    case PARAMS_TAG = "<params>"
+    case PARAMS_ETAG = "</params>"
+    case PARAM_TAG = "<param>"
+    case PARAM_ETAG =  "</param>"
+    case FAULT_TAG = "<fault>"
+
     case VALUE_TAG     = "<value>"
     case VALUE_ETAG    = "</value>"
 

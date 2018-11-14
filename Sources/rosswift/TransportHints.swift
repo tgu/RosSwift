@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class TransportHints {
+public final class TransportHints {
     var transports_ = [String]()
     var options_ = [String:String]()
 

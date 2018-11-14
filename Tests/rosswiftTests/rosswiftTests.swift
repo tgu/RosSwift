@@ -1,6 +1,5 @@
 import XCTest
 @testable import RosSwift
-@testable import XMLRPCSerialization
 @testable import StdMsgs
 @testable import BinaryCoder
 
@@ -25,23 +24,12 @@ class rosswiftTests: XCTestCase {
     """
 
 
-        if let d = response.data(using: .utf8) {
-            do {
-                let r = try XMLRPCSerialization.xmlrpcResponse(from: d )
-                if case .response(let a) = r {
-                    XCTAssertEqual(a.count, 1)
-                    let p = a[0] as! [Any]
-                    XCTAssertEqual(p.count, 3)
-                    XCTAssertEqual(p[0] as! UInt, 1)
-                    XCTAssertEqual(p[1] as! String, "Registered [/talker] as publisher of [/chatter]")
-                    let c = p[2] as! [Any]
-                    XCTAssertEqual(c.count, 0)
-                } else {
-                    XCTFail()
-                }
-            } catch {
-                XCTFail(error.localizedDescription)
-            }
+        if let a = XMLRPCClient.parseResponse(xml: response) {
+            XCTAssertEqual(a.size(), 3)
+            XCTAssertEqual(a[0].int!, 1)
+            XCTAssertEqual(a[1].string, "Registered [/talker] as publisher of [/chatter]")
+        } else {
+            XCTFail()
         }
     }
 
@@ -61,24 +49,40 @@ class rosswiftTests: XCTestCase {
                 </methodResponse>
                 """
 
-        if let d = response.data(using: .utf8) {
-            do {
-                let r = try XMLRPCSerialization.xmlrpcResponse(from: d )
-                if case .response(let a) = r {
-                    XCTAssertEqual(a.count, 1)
-                    let p = a[0] as! [Any]
-                    XCTAssertEqual(p.count, 3)
-                    XCTAssertEqual(p[0] as! UInt, 1)
-                    XCTAssertEqual(p[1] as! String, "Registered [/talker] as provider of [/talker/debug/close_all_connections]")
-                    XCTAssertEqual(p[2] as! UInt, 1)
-                } else {
-                    XCTFail()
-                }
-            } catch {
-                XCTFail(error.localizedDescription)
-            }
+        if let a = XMLRPCClient.parseResponse(xml: response) {
+            XCTAssertEqual(a.size(), 3)
+            XCTAssertEqual(a[0].int!, 1)
+            XCTAssertEqual(a[1].string, "Registered [/talker] as provider of [/talker/debug/close_all_connections]")
+            XCTAssertEqual(a[2].int!, 1)
+        } else {
+            XCTFail()
         }
+    }
 
+    func testXmlStruct() {
+        let r = "<value><struct><member><name>adam</name><value><dateTime.iso8601>19831212T14:13:12</dateTime.iso8601></value></member><member><name>bertil</name><value><i4>2345</i4></value></member></struct></value>"
+        var seq = r.dropFirst(0)
+        let v = XmlRpcValue()
+        let res = v.fromXML(xml: &seq)
+        XCTAssert(res)
+        if let s = v.`struct` {
+            XCTAssertEqual(s["bertil"]!.int!,2345)
+            XCTAssertEqual(s["adam"]!.date!.description,"1983-12-12 14:13:12 +0000")
+        } else {
+            XCTFail()
+        }
+    }
+
+    func testResp1() {
+        let r = "<?xml version=\'1.0\'?>\n<methodResponse>\n<params>\n<param>\n<value><array><data>\n<value><int>1</int></value>\n<value><string>/tcp_keepalive</string></value>\n<value><boolean>0</boolean></value>\n</data></array></value>\n</param>\n</params>\n</methodResponse>\n"
+        if let response = XMLRPCClient.parseResponse(xml: r) {
+            XCTAssertEqual(response.size(), 3)
+            XCTAssertEqual(response[0].int!, 1)
+            XCTAssertEqual(response[1].string, "/tcp_keepalive")
+            XCTAssertEqual(response[2].bool!, false)
+        } else {
+            XCTFail()
+        }
     }
 
 
@@ -91,12 +95,16 @@ class rosswiftTests: XCTestCase {
             + "</value></data></array></value></data></array></value>"
             + "</param></params></methodResponse>"
 
-        if let d = response.data(using: .utf8) {
-            do {
-                let r = try XMLRPCSerialization.xmlrpcResponse(from: d )
-            } catch {
-                XCTFail(error.localizedDescription)
-            }
+        if let response = XMLRPCClient.parseResponse(xml: response) {
+            XCTAssertEqual(response.size(), 3)
+            XCTAssertEqual(response[0].int!, 1)
+            XCTAssertEqual(response[1].string, "")
+            XCTAssertEqual(response[2].size(), 3)
+            XCTAssertEqual(response[2][0].string, "TCPROS")
+            XCTAssertEqual(response[2][1].string, "B2036.local")
+            XCTAssertEqual(response[2][2].int!, 54794)
+        } else {
+            XCTFail()
         }
 
 
@@ -133,74 +141,13 @@ class rosswiftTests: XCTestCase {
             + "<array><data/></array></value></data></array></value>"
             + "</param></params></methodResponse>"
 
-        guard let data3 = xml3.data(using: .utf8) else {
-            XCTFail("xml3 failed")
-            return
-        }
 
-        let xp3 = XMLParser(data: data3)
-        do {
-            let obj = try XMLRPCSerialization.xmlrpcResponse(from: data3)
-            //            XCTAssertEqual(obj, "requestTopic")
-            //            XCTAssertEqual(obj.params[0] as! String, "/matlab_global_node_02713")
-            //            XCTAssertEqual(obj.params[1] as! String, "/chatter")
-            //            XCTAssertEqual(obj.params[2] as! [[String]], [["TCPROS"]])
+            let ob = XMLRPCManager.parseRequest(xml: xml)
+            XCTAssertEqual(ob.method, "requestTopic")
+            XCTAssertEqual(ob.params[0].string, "/matlab_global_node_02713")
+            XCTAssertEqual(ob.params[1].string, "/chatter")
+            XCTAssertEqual(ob.params[2][0].string, "TCPROS")
 
-        }
-
-        catch {
-            print(error)
-            XCTFail("xp3 failed")
-        }
-
-        guard let data2 = xml2.data(using: .utf8) else {
-            XCTFail("xml2 failed")
-            return
-        }
-
-
-        guard let data = xml.data(using: .utf8) else {
-            XCTFail("xml failed")
-            return
-        }
-
-        let xp = XMLParser(data: data)
-
-        do {
-
-            let obj = try XMLRPCSerialization.xmlrpcRequest(from: data)
-            XCTAssertEqual(obj.methodName, "requestTopic")
-            XCTAssertEqual(obj.params[0] as! String, "/matlab_global_node_02713")
-            XCTAssertEqual(obj.params[1] as! String, "/chatter")
-            XCTAssertEqual(obj.params[2] as! [[String]], [["TCPROS"]])
-
-            let val = XmlRpcValue(anyArray: obj.params)
-
-            let p = obj.params[2]
-            let proto = XmlRpcValue(any: p)
-            let p1 = proto[0]
-            if case .array = p1.value {} else {
-                XCTFail("requestTopic protocol list was not a list of lists")
-            }
-
-            if case .string = p1[0].value {} else {
-                XCTFail( "requestTopic received a protocol list in which a sublist did not start with a string")
-            }
-
-
-            XCTAssertEqual(val[0].string, "/matlab_global_node_02713")
-            XCTAssertEqual(val[1].string, "/chatter")
-            XCTAssertEqual(val.size(), 3)
-
-            let x = proto.toXml()
-            XCTAssertEqual(xmlproto, x)
-
-            let obj2 = try XMLRPCSerialization.xmlrpcResponse(from: data2)
-
-
-        } catch {
-            XCTFail()
-        }
 
 
     }

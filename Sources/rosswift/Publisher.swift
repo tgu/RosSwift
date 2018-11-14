@@ -16,9 +16,9 @@ public protocol Publisher: class {
 
 extension Ros {
 
-    public class SpecializedPublisher<M: Message>: Publisher {
+    public final class SpecializedPublisher<M: Message>: Publisher {
 
-        class Impl<M : Message> {
+        final class Impl<M : Message> {
             var topic: String
             var md5sum: String { return M.md5sum }
             var datatype: String { return M.datatype }

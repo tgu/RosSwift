@@ -10,7 +10,7 @@ import StdMsgs
 import RosTime
 
 extension Ros {
-public class Subscriber {
+public final class Subscriber {
     var topic_ : String
     var node_handle_ : Ros.NodeHandle?
     var helper_ : SubscriptionCallbackHelper?

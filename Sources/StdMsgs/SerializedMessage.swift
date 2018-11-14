@@ -11,7 +11,7 @@ import LoggerAPI
 
 public typealias TypeInfo = String
 
-public class SerializedMessage {
+public final class SerializedMessage {
     public var buf : [UInt8]
     public var message : Message?
     public var type_info : TypeInfo? = nil

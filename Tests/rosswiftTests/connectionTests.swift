@@ -7,7 +7,6 @@
 
 import XCTest
 @testable import RosSwift
-@testable import XMLRPCSerialization
 @testable import StdMsgs
 @testable import BinaryCoder
 @testable import RosTime

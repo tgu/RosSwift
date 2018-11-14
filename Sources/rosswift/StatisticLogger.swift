@@ -8,6 +8,6 @@
 import Foundation
 
 
-class StatisticLogger {
+final class StatisticLogger {
     
 }

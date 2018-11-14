@@ -31,22 +31,9 @@ public struct param {
         } catch {
             ROS_ERROR("Could not set parameter \(mapped_key) \(error)")
         }
-
-//        g_params_mutex.sync {
-//            var result = XmlRpcValue()
-//            var payload = XmlRpcValue()
-//            if Master.shared.execute(method: "setParam", request: params, response: &result, payload: &payload, wait_for_master: true) {
-//                if g_subscribed_params.contains(mapped_key) {
-//                    g_params[mapped_key] = v
-//                }
-//                invalidateParentParams(mapped_key)
-//            }
-//        }
     }
 
     static func has(key: String) -> Bool {
-//        var result = XmlRpcValue()
-//        var payload = XmlRpcValue()
         let params = XmlRpcValue(anyArray: [this_node.getName(),Names.resolve(name: key)])
 
 
@@ -76,8 +63,6 @@ public struct param {
             g_params.removeValue(forKey: mapped_key)
         }
 
-//        var result = XmlRpcValue()
-//        var payload = XmlRpcValue()
         let params = XmlRpcValue(anyArray: [this_node.getName(),mapped_key])
         do {
             let payload = try Master.shared.execute(method: "deleteParam", request: params).wait()
@@ -85,10 +70,6 @@ public struct param {
         } catch {
             ROS_ERROR("del(key: String) error: \(error)")
         }
-//        if !Master.shared.execute(method: "deleteParam", request: params, response: &result, payload: &payload, wait_for_master: false) {
-//            return false
-//        }
-
         return false
     }
 
@@ -119,8 +100,6 @@ public struct param {
                     }
                 } else {
                     if g_subscribed_params.insert(mapped_key).inserted {
-//                        var result = XmlRpcValue()
-//                        var payload = XmlRpcValue()
                         let params = XmlRpcValue(anyArray: [this_node.getName(),XMLRPCManager.instance.serverURI,mapped_key])
 
                         do {
@@ -131,14 +110,6 @@ public struct param {
                             g_subscribed_params.remove(mapped_key)
                             useCache = false
                         }
-
-//                        if !Master.shared.execute(method: "subscribeParam", request: params, response: &result, payload: &payload, wait_for_master: false) {
-//                            ROS_DEBUG("cached_parameters", "Subscribe to parameter [\(mapped_key)]: call to the master failed")
-//                            g_subscribed_params.remove(mapped_key)
-//                            useCache = false
-//                        } else {
-//                            ROS_DEBUG("cached_parameters", "Subscribed to parameter [\(mapped_key)]")
-//                        }
                     }
                 }
             }
@@ -148,7 +119,6 @@ public struct param {
             return ret
         }
 
-//        var result = XmlRpcValue()
         let params = XmlRpcValue(anyArray: [this_node.getName(),mapped_key])
         do {
             let v = try Master.shared.execute(method: "getParam", request: params).wait()
@@ -167,17 +137,6 @@ public struct param {
             ROS_ERROR("\(error)")
             ret = false
         }
-//        guard let v = Master.shared.execute(method: "getParam", request: params) else  {
-//            return false
-//        }
-//        ret = Master.shared.execute(method: "getParam", request: params, response: &result, payload: &value, wait_for_master: false)
-//        value = v[0]
-//        if useCache {
-//            g_params_mutex.sync {
-//                ROS_DEBUG("cached_parameters", "Caching parameter [\(mapped_key)] with value type [\(value.getType())]")
-//                g_params[mapped_key] = value
-//            }
-//        }
 
         return ret
     }
@@ -336,16 +295,6 @@ public struct param {
         return false
 
 
-//        if result.size() != 3 {
-//            ROS_DEBUG("\(#function) result has \(result.size()) values, should be 3 trying child")
-//            result = result[0]
-//            if result.size() != 3 {
-//                ROS_DEBUG("\(#function) chile has not three values one")
-//                return false
-//            }
-//        }
-//
-//        let parameters = result[2]
     }
 
 

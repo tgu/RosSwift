@@ -13,7 +13,7 @@ import BinaryCoder
 
 
 
-class ServiceServerLink: ChannelInboundHandler {
+final class ServiceServerLink: ChannelInboundHandler {
         var channel : Channel?
         var service_name_ : String
         var persistent_ : Bool

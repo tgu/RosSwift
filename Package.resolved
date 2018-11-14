@@ -45,15 +45,6 @@
           "revision": "37760e9a52030bb9011972c5213c3350fa9d41fd",
           "version": "1.0.0"
         }
-      },
-      {
-        "package": "XMLRPCSerialization",
-        "repositoryURL": "https://github.com/tgu/XMLRPCSerialization.git",
-        "state": {
-          "branch": null,
-          "revision": "3dd495873a9521f10d68307adea6483ad701774c",
-          "version": "1.0.4"
-        }
       }
     ]
   },

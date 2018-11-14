@@ -7,7 +7,7 @@
 
 import Foundation
 
-class XMLRPCCallWrapper: XmlRpcServerMethod {
+final class XMLRPCCallWrapper: XmlRpcServerMethod {
     let name : String
     let server : XMLRPCServer
     let function : XMLRPCFunc

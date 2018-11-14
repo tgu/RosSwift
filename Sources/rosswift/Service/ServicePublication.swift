@@ -23,7 +23,7 @@ protocol ServiceProtocol: class {
 
 }
 
-class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
+final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
 
 //    typealias CallFcn = (MReq, inout MRes) -> Bool
     typealias CallFcn = (MReq) -> MRes?
@@ -71,7 +71,7 @@ class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServicePro
         dropAllConnections()
     }
 
-    class ServiceCallback: CallbackInterface {
+    final class ServiceCallback: CallbackInterface {
 //        lazy var hash: UInt64 = {
 //            UInt64(arc4random())
 //        }()

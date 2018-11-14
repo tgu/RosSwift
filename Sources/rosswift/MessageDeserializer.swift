@@ -9,7 +9,7 @@ import Foundation
 import StdMsgs
 import BinaryCoder
 
-class MessageDeserializer {
+final class MessageDeserializer {
     var helper_ : SubscriptionCallbackHelper
     var serialized_message_ : SerializedMessage
     var connection_header_ : M_string

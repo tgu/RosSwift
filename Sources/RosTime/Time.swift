@@ -126,7 +126,7 @@ public struct RosTime {
     }
 
 
-    public class WallTime: TimeBase {
+    public final class WallTime: TimeBase {
 
         public static func now() -> WallTime {
             let t = rosWalltime()
@@ -146,13 +146,13 @@ public struct RosTime {
 
     public class TimeBase: Comparable, BinaryCodable {
 
-        public var nanoseconds : UInt64
+        public final var nanoseconds : UInt64
 
-        public var sec : UInt32 {
+        public final var sec : UInt32 {
             return UInt32(nanoseconds / 1_000_000_000)
         }
 
-        public var nsec : UInt32 {
+        public final var nsec : UInt32 {
             return UInt32(nanoseconds % 1_000_000_000)
         }
 
@@ -172,15 +172,15 @@ public struct RosTime {
             nanoseconds = nanosec
         }
 
-        public func isZero() -> Bool {
+        public final func isZero() -> Bool {
             return nanoseconds == 0
         }
 
-        public func toNSec() -> UInt64 {
+        public final func toNSec() -> UInt64 {
             return nanoseconds
         }
 
-        public func toSec() -> TimeInterval {
+        public final func toSec() -> TimeInterval {
             return TimeInterval(sec)*1e-9
         }
 

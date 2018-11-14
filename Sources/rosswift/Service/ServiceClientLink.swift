@@ -7,7 +7,7 @@
 
 import Foundation
 
-class ServiceClientLink {
+final class ServiceClientLink {
     var connection: nio.Connection? = nil
     var parent: ServiceProtocol? = nil
     var persistent = false

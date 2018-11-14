@@ -7,7 +7,6 @@
 
 import Foundation
 import NIO
-import XMLRPCSerialization
 
 let thread_group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
@@ -20,14 +19,8 @@ let XMLRPC_VERSION = "XMLRPC++ 0.7"
 
 struct XMLRPCClient {
     static let REQUEST_BEGIN = "<?xml version=\"1.0\"?>\r\n<methodCall>\r\n<methodName>"
-    static let REQUEST_END_METHODNAME = "</methodName>"
-    static let PARAMS_TAG = "<params>"
-    static let PARAMS_ETAG = "</params>"
-    static let PARAM_TAG = "<param>"
-    static let PARAM_ETAG =  "</param>"
     static let REQUEST_END = "</methodCall>\r\n"
     static let METHODRESPONSE_TAG = "<methodResponse>"
-    static let FAULT_TAG = "<fault>"
 
 }
 
@@ -35,17 +28,9 @@ struct XMLRPCClient {
     class Master {
         public static var shared = Master(group: thread_group)
 
-
-        enum Response {
-            case xmlrpc(XMLRPCResponse)
-            case error(String)
-        }
-
-//        var g_uri = "http://localhost:11311"
         var g_host = "127.0.0.1"
         var g_port: UInt16 = 11311
         var g_retry_timeout = 0.0
-
 
         public func initialize(remappings: M_string)
         {
@@ -123,56 +108,48 @@ struct XMLRPCClient {
         }
 
 
-        class XmlRpcHandler: ChannelInboundHandler {
+        final class XmlRpcHandler: ChannelInboundHandler {
             public typealias InboundIn = ByteBuffer
             public typealias OutboundOut = ByteBuffer
 
-            var response = XMLRPCResponse.fault(code: 1, string: "not initiated")
+            var response = XmlRpcValue()
             weak var owner : Master!
 
             init(owner: Master) {
                 self.owner = owner
             }
 
-
             func channelActive(ctx: ChannelHandlerContext) {
                 owner.registerHandler(for: ctx.channel, handler: self)
             }
 
-
             public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
                var buffer = self.unwrapInboundIn(data)
                 if let string = buffer.readString(length: buffer.readableBytes) {
-                    do {
+                    guard let range = string.lowercased().range(of: "content-length: ")  else {
+                        ROS_DEBUG("Header not read")
+                        return
+                    }
 
-                        guard let range = string.lowercased().range(of: "content-length: ")  else {
-                            ROS_DEBUG("Header not read")
-                            return
-                        }
+                    let content = String(string[range.upperBound..<string.endIndex])
+                    guard let index = content.index(of: "\r\n") else {
+                        ROS_DEBUG("Malformed header")
+                        return
+                    }
 
-                        let content = String(string[range.upperBound..<string.endIndex])
-                        guard let index = content.index(of: "\r\n") else {
-                            ROS_DEBUG("Malformed header")
-                            return
-                        }
+                    guard let _ = Int(content[content.startIndex..<index]) else {
+                        ROS_DEBUG("length error")
+                        return
+                    }
 
-                        guard let _ = Int(content[content.startIndex..<index]) else {
-                            ROS_DEBUG("length error")
-                            return
-                        }
+                    guard let ind2 = content.index(of: "<") else {
+                        ROS_DEBUG("Malformed header")
+                        return
+                    }
 
-                        guard let ind2 = content.index(of: "<") else {
-                            ROS_DEBUG("Malformed header")
-                            return
-                        }
-
-                        let _response = String(content[ind2..<content.endIndex])
-
-                        if let d = _response.data(using: .utf8) {
-                            response = try XMLRPCSerialization.xmlrpcResponse(from: d )
-                        }
-                    } catch {
-                        ROS_ERROR(error.localizedDescription)
+                    let _response = String(content[ind2..<content.endIndex])
+                    if let r = XMLRPCClient.parseResponse(xml: _response) {
+                        response = r
                     }
                     ctx.close(promise: nil)
                 }
@@ -281,26 +258,26 @@ struct XMLRPCClient {
 
         func generateRequest(methodName: String, params: XmlRpcValue, host: String, port: UInt16) -> String
         {
-            var body = XMLRPCClient.REQUEST_BEGIN + methodName + XMLRPCClient.REQUEST_END_METHODNAME
+            var body = XMLRPCClient.REQUEST_BEGIN + methodName + Tags.METHODNAME_ETAG.rawValue
 
             // If params is an array, each element is a separate parameter
             if params.valid() {
-                body += XMLRPCClient.PARAMS_TAG
+                body += Tags.PARAMS_TAG.rawValue
                 if case .array(let array) = params.value {
                     for a in array {
-                        body += XMLRPCClient.PARAM_TAG
+                        body += Tags.PARAM_TAG.rawValue
                         body += a.toXml()
-                        body += XMLRPCClient.PARAM_ETAG
+                        body += Tags.PARAM_ETAG.rawValue
                     }
                 }
                 else
                 {
-                    body += XMLRPCClient.PARAM_TAG
+                    body += Tags.PARAM_TAG.rawValue
                     body += params.toXml()
-                    body += XMLRPCClient.PARAM_ETAG
+                    body += Tags.PARAM_ETAG.rawValue
                 }
 
-                body += XMLRPCClient.PARAMS_ETAG
+                body += Tags.PARAMS_ETAG.rawValue
             }
             body += XMLRPCClient.REQUEST_END
 
@@ -309,23 +286,8 @@ struct XMLRPCClient {
             return _request
         }
 
-        private func validate(response: XMLRPCResponse, for method: String) -> XmlRpcValue {
-            switch response {
-            case .fault(let code, let string):
-                ROS_DEBUG("\(code) - \(string)")
-            case .response(let any):
-                let r = XmlRpcValue(any: any)
-                guard let payload = self.validateXmlrpcResponse(method: method, response: r) else {
-                    return XmlRpcValue()
-                }
-                return payload
-            }
-            return XmlRpcValue()
-        }
-
         func execute(method: String, request: XmlRpcValue) -> EventLoopFuture<XmlRpcValue> {
             return execute(method: method, request: request, host: host, port: g_port)
-
         }
 
         enum MasterError: Error {
@@ -353,13 +315,15 @@ struct XMLRPCClient {
                         return
                     }
 
-                    let result = self.validate(response: handler.response, for: method)
+                    //                    let result = self.validate(response: handler.response, for: method)
+                    let result = self.validateXmlrpcResponse(method: method, response: handler.response)
 
                     self.unregisterHandler(for: channel)
-                    if result.valid() {
-                        promise.succeed(result: result)
+
+                    if let r = result, r.valid() {
+                        promise.succeed(result: r)
                     } else {
-                        promise.fail(error: MasterError.invalidResponse(result.description))
+                        promise.fail(error: MasterError.invalidResponse(result?.description ?? "no description"))
                     }
                 }
                 }.whenFailure { (error) in

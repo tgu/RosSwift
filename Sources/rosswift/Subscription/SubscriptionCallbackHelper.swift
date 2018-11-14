@@ -33,7 +33,7 @@ public protocol SubscriptionCallbackHelper {
 }
 
 
-public class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (M) -> Void
 

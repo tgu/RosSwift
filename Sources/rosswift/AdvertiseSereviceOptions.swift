@@ -14,7 +14,7 @@ typealias VoidFunc = () -> Void
  - Todo: check service datatype
  */
 
-class AdvertiseServiceOptions<MReq: ServiceMessage, MRes: ServiceMessage> {
+final class AdvertiseServiceOptions<MReq: ServiceMessage, MRes: ServiceMessage> {
     var service : String
     var md5sum : String { return MReq.srv_md5sum }
     var datatype : String { return MReq.srv_datatype }

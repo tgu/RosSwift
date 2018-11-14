@@ -14,7 +14,7 @@ extension Ros {
 
     private static var nodeReferenceCount = Atomic<UInt>(value: 0)
 
-    public class NodeHandle {
+    public final class NodeHandle {
         public var ok : Bool { return Ros.ok && ok_ }
 
         private var namespace: String = "/"

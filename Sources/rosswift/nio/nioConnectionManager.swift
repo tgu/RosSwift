@@ -8,8 +8,6 @@
 import Foundation
 import NIO
 import NIOConcurrencyHelpers
-//import NIOHTTP1
-import XMLRPCSerialization
 import StdMsgs
 import BinaryCoder
 
@@ -17,7 +15,7 @@ struct nio {}
 
 
 extension Ros {
-class ConnectionHandler: ChannelInboundHandler {
+final class ConnectionHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
     typealias InboundOut = ByteBuffer
 
@@ -142,18 +140,12 @@ class ConnectionHandler: ChannelInboundHandler {
 
 }
 
-class ConnectionManager {
+final class ConnectionManager {
     static var instance = ConnectionManager()
-
-//    let handler = ConnectionHandler()
     var channel : Channel? = nil
     var boot : ServerBootstrap? = nil
 
     private init() {}
-
-    deinit {
-        ROS_DEBUG("ConnectionManager deinit")
-    }
 
     func getTCPPort() -> Int32 {
         return Int32(channel?.localAddress?.port ?? 0)
@@ -164,6 +156,7 @@ class ConnectionManager {
     }
 
     func shutdown() {
+        // Nothing to do here
     }
 
     // The connection ID counter, used to assign unique ID to each inbound or
@@ -176,24 +169,15 @@ class ConnectionManager {
     }
 
     func addConnection(connection: ConnectionProtocol) {
-//        connections_mutex_.sync {
-//            connections_.append(connection)
-//            NotificationCenter.default.addObserver(self, selector: #selector(onConnectionDropped(_:)), name: Connection.dropNotification, object: connection)
-//        }
     }
 
     
 
     func start() {
-//        NotificationCenter.default.addObserver(self, selector: #selector(removeDroppedConnections(_:)), name: PollManager.notification, object: pm)
-
         initialize(group: thread_group)
         do {
-            let addr = try SocketAddress.newAddressResolving(host: Ros.network.getHost(), port: 0)
-
-
             channel = try boot?.bind(host: Ros.network.getHost(), port: 0).wait()
-            ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host):\(getTCPPort())]")
+            ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host ?? "unknown host"):\(getTCPPort())]")
 
         } catch {
             ROS_ERROR("Could not bind to [\(getTCPPort())]: \(error)")
@@ -218,14 +202,6 @@ class ConnectionManager {
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
 
 
-    }
-
-    func bind(host: String, port: Int) {
-        do {
-            channel = try boot?.bind(host: Ros.network.getHost(), port: 0).wait()
-        } catch {
-            ROS_ERROR("Could not bind to [::1:\(port)]: \(error)")
-        }
     }
 
 }
