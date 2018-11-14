@@ -64,6 +64,10 @@ typealias DropFunc = (Notification) -> Void
         return "callerid=[\(callerID)] address=[\(remoteAddress)]"
     }
 
+    func getTransportInfo() -> String {
+        return "TCPROS connection on port \(channel.localAddress?.port ?? 0) to [\(remoteAddress)]";
+    }
+
     func sendHeaderError(_ error_msg: String)
     {
         var m = M_string()

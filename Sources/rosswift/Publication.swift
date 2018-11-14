@@ -201,8 +201,23 @@ final class Publication {
         return .init(str: "Publication::getStats")
     }
 
-    func getInfo(info: inout XmlRpcValue) {
-        ROS_DEBUG("Publication::getInfo")
+    func getInfo() -> [XmlRpcValue] {
+        var ret = [XmlRpcValue]()
+        subscriber_links_mutex_.sync {
+            subscriber_links.forEach({ (sub) in
+                let info : [Any] = [
+                    sub.connection_id,
+                    sub.destination_caller_id,
+                    "o",
+                    "TCPROS",
+                    name,
+                    true,
+                    sub.getTransportInfo()]
+                ret.append(XmlRpcValue(anyArray: info))
+            })
+        }
+
+        return ret
     }
 
     func dropAllConnections() {

@@ -51,6 +51,10 @@ extension Ros {
         }
     }
 
+    func getTransportInfo() -> String {
+        return connection?.getTransportInfo() ?? ""
+    }
+
     func handleHeader(header: Header) -> Bool
     {
         guard let connection = connection else {

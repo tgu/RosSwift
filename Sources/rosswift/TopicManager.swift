@@ -189,7 +189,20 @@ extension Ros {
         }
 
         func getBusInfo(info: inout XmlRpcValue) {
-            ROS_ERROR("getBusInfo not implemented")
+            var i = [XmlRpcValue]()
+            advertised_topics_mutex_.sync {
+                advertisedTopics.forEach({ (pub) in
+                    i.append(contentsOf: pub.getInfo() )
+                })
+            }
+
+            subs_mutex_.sync {
+                subscriptions.forEach({ (sub) in
+                    i.append(contentsOf: sub.getInfo() )
+                })
+            }
+
+            info.value = .array(i)
         }
 
         func getSubscriptions(subs: inout XmlRpcValue) {

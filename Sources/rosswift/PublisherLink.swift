@@ -72,4 +72,8 @@ class PublisherLink {
         return true
     }
 
+    func getTransportInfo() -> String {
+        return ""
+    }
+
 }

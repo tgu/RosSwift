@@ -56,4 +56,9 @@ final class TransportPublisherLink: PublisherLink {
         connection_ = nil
     }
 
+    override func getTransportInfo() -> String {
+        return connection_?.getTransportInfo() ?? ""
+    }
+
+
 }

@@ -17,7 +17,7 @@ protocol SubscriberLink: class {
     func drop()
     func isIntraprocess() -> Bool
     func enqueueMessage(m: SerializedMessage, ser: Bool, nocopy: Bool)
-
+    func getTransportInfo() -> String
 }
 
 extension SubscriberLink {

@@ -36,10 +36,6 @@ final class IntraProcessPublisherLink: PublisherLink {
         return "INTRAPROCESS"
     }
 
-    func getTransportInfo() -> String {
-        return getTransportType()
-    }
-
     override func drop() {
         if dropped_.compareAndExchange(expected: false, desired: true) {
             publisher_?.drop()

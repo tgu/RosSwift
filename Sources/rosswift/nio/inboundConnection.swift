@@ -52,6 +52,11 @@ final class InboundConnection: ConnectionProtocol {
         }
     }
 
+    func getTransportInfo() -> String {
+        return "TCPROS connection on port \(channel?.localAddress?.port ?? 0) to [\(remoteAddress)]";
+    }
+
+
     func writeHeader(key_vals: M_string) -> EventLoopFuture<Void> {
         let buffer = Header.write(key_vals: key_vals)
         do {

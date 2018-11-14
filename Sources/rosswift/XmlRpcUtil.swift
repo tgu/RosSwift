@@ -26,13 +26,10 @@ extension XMLRPCClient {
                 ROS_ERROR("Invalid response value. Response: \(data)")
             }
         } else if XmlRpcUtil.nextTagIs(tag: .FAULT_TAG, xml: &data) {
-
+            ROS_ERROR("Invalid response value. Response: \(data)")
         } else {
             ROS_ERROR("Invalid response - no param or fault tag. Response \(xml)")
         }
-
-
-        // Expect either <params><param>... or <fault>...
 
         return nil
     }
@@ -51,11 +48,9 @@ enum XmlRpcUtil {
         return false
     }
 
-
-
     static func getNextTag(xml: inout String.SubSequence) -> String {
-        guard let open = xml.firstIndex(of: "<"),
-            let close = xml.firstIndex(of: ">"), close > open else {
+        guard let open = xml.index(of: "<"),
+            let close = xml.index(of: ">"), close > open else {
                 return ""
         }
 

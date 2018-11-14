@@ -329,6 +329,23 @@ final class Subscription {
         }
     }
 
+    func getInfo() -> [XmlRpcValue] {
+        var ret = [XmlRpcValue]()
+            publisher_links.forEach({ (pub) in
+                let info : [Any] = [
+                    pub.connectionId,
+                    pub.publisherXmlrpcUri,
+                    "i",
+                    "TCPROS",
+                    name,
+                    true,
+                    "transport info"]
+                ret.append(XmlRpcValue(anyArray: info))
+            })
+
+        return ret
+    }
+
 
 }
 
