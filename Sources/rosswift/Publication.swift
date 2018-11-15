@@ -24,6 +24,7 @@ final class PeerConnDisconnCallback: CallbackInterface {
         self.tracked_object = tracked_object
     }
 
+    @discardableResult
     func call() -> CallResult {
         var tracker : AnyObject? = nil
         if use_tracked_object {
@@ -100,6 +101,7 @@ final class Publication {
                 subscriber_links_mutex_.sync {
                     subscriber_links.forEach {
                         let cb = PeerConnDisconnCallback(callback: connect, sub_link: $0, use_tracked_object: callback.has_tracked_object, tracked_object: callback.tracked_object)
+                        ROS_ERROR("addCallbacks logic not implemented")
                     }
                 }
             }

@@ -18,9 +18,8 @@ final class ServiceClientLink {
         parent?.removeServiceClientLink(self)
     }
 
-    func initialize(connection: nio.Connection) -> Bool {
+    func initialize(connection: nio.Connection) {
         self.connection = connection
-        return true
     }
 
     func handleHeader(header: Header) -> Bool {

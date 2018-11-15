@@ -33,12 +33,8 @@ extension ServiceClient {
                 if !persistent_ {
                     is_shutdown_ = true
                 }
-                if let sl = server_link_ {
-//                    sl.getConnection()?.drop(reason: .Destructing)
-                    server_link_ = nil
-                }
+                server_link_ = nil
             }
-
         }
 
         func isValid() -> Bool {

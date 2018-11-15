@@ -27,6 +27,7 @@ public struct Rate {
         actual_cycle_time_ = Duration()
     }
 
+    @discardableResult
     public mutating func sleep() -> Bool {
         var expected_end = start_ + expected_cycle_time_
         let actual_end = Time.now()
@@ -78,6 +79,7 @@ struct WallRate {
         actual_cycle_time_ = WallDuration()
     }
 
+    @discardableResult
     mutating func sleep() -> Bool {
         var expected_end = start_ + expected_cycle_time_
         let actual_end = WallTime.now()

@@ -231,6 +231,7 @@ public final class XmlRpcValue {
     }
 
 
+    @discardableResult
     func get<T: Numeric>(val: inout [T]) -> Bool {
         switch value {
         case .array(let a):
@@ -248,6 +249,7 @@ public final class XmlRpcValue {
         }
     }
 
+    @discardableResult
     func get<T: StringProtocol>(val: inout [T]) -> Bool {
         switch value {
         case .array(let a):
@@ -374,28 +376,28 @@ public final class XmlRpcValue {
             val = d
         case .base64(let b as T):
             val = b
-        case .array(let v as [XmlRpcValue]) where T.self == [String].self:
+        case .array(let v) where T.self == [String].self:
             guard let vec : [String] = getArray(v) else {
                 return false
             }
             val = vec as! T
-        case .array(let v as [XmlRpcValue]) where T.self == [Double].self:
+        case .array(let v) where T.self == [Double].self:
             guard let vec : [Double] = getArray(v) else {
                 return false
             }
             val = vec as! T
-        case .array(let v as [XmlRpcValue]) where T.self == [Float32].self:
+        case .array(let v) where T.self == [Float32].self:
             guard let vec : [Float32] = getArray(v) else {
                 return false
             }
             val = vec as! T
-        case .array(let v as [XmlRpcValue]) where T.self == [Int].self:
+        case .array(let v) where T.self == [Int].self:
             guard let vec : [Int] = getArray(v) else {
                 return false
             }
             val = vec as! T
 
-        case .array(let v as [XmlRpcValue]) where T.self == [Bool].self:
+        case .array(let v) where T.self == [Bool].self:
             guard let vec : [Bool] = getArray(v) else {
                 return false
             }
@@ -403,28 +405,28 @@ public final class XmlRpcValue {
 
         case .`struct`(let v as T):
             val = v
-        case .`struct`(let v as [String:XmlRpcValue]) where T.self == [String:String].self:
+        case .`struct`(let v) where T.self == [String:String].self:
             guard let map  = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v as [String:XmlRpcValue]) where T.self == [String:Double].self:
+        case .`struct`(let v) where T.self == [String:Double].self:
             guard let map : [String:Double] = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v as [String:XmlRpcValue]) where T.self == [String:Float32].self:
+        case .`struct`(let v) where T.self == [String:Float32].self:
             guard let map : [String:Float32] = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v as [String:XmlRpcValue]) where T.self == [String:Int].self:
+        case .`struct`(let v) where T.self == [String:Int].self:
             guard let map : [String:Int] = getMap(v) else {
                 return false
             }
             val = map as! T
 
-        case .`struct`(let v as [String:XmlRpcValue]) where T.self == [String:Bool].self:
+        case .`struct`(let v) where T.self == [String:Bool].self:
             guard let map  = getBoolMap(v) else {
                 return false
             }

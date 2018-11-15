@@ -144,11 +144,7 @@ final class ServiceServerLink: ChannelInboundHandler {
                 precondition(len <= buffer.readableBytes)
 
                 var readMap = [String:String]()
-
-                var remaining = len
-
                 let leave = buffer.readableBytes - Int(len)
-
                 while buffer.readableBytes > leave {
                     guard let topicLen : UInt32 = buffer.readInteger(endianness: .little) else {
                         ROS_DEBUG("Received an invalid TCPROS header.  invalid string")

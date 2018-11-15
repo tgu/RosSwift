@@ -173,8 +173,12 @@ import StdMsgs
                         fatalError()
                     }
                     precondition(len <= buffer.readableBytes)
+                    if ok != 0 {
+                        ROS_DEBUG("missing logic for non-ok return")
+                    }
                     if let rawMessage = buffer.readBytes(length: Int(len)) {
                         let m = SerializedMessage(buffer: rawMessage)
+                        ROS_DEBUG("Servce response \(m)")
                     }
                 }
             }

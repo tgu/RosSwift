@@ -73,9 +73,6 @@ final class MessageHandler: ChannelInboundHandler {
         guard let length = Int(content[content.startIndex..<index]) else {
             fatalError("length error")
         }
-
-        let contentLength = length
-
         guard let ind2 = content.index(of: "<") else {
             fatalError()
         }

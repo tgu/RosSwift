@@ -198,6 +198,7 @@ final class Subscription {
 
 
 
+    @discardableResult
     func handle(message: SerializedMessage, ser: Bool, nocopy: Bool, connection_header: M_string, link:  PublisherLink) -> Int {
         callbacks_mutex.sync {}
 

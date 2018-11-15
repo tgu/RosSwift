@@ -131,7 +131,7 @@ final class InboundConnection: ConnectionProtocol {
                 fatalError()
             }
             if len > buffer.readableBytes {
-                ROS_ERROR("Received length \(buffer.readableBytes) < \(len) [\(self.parent?.remoteAddress)]")
+                ROS_ERROR("Received length \(buffer.readableBytes) < \(len) [\(self.parent?.remoteAddress ?? "uknown host")]")
                 ctx.close()
             }
 

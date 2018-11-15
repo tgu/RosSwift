@@ -42,7 +42,7 @@ public struct param {
         // don't have that param."
 
         do {
-            let payload = try! Master.shared.execute(method: "hasParam", request: params).wait()
+            let payload = try Master.shared.execute(method: "hasParam", request: params).wait()
 
             var result = false
             if payload.get(val: &result) {
