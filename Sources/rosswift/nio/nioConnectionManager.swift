@@ -5,21 +5,19 @@
 //  Created by Thomas Gustafsson on 2018-03-22.
 //
 
+import BinaryCoder
 import Foundation
 import NIO
 import NIOConcurrencyHelpers
 import StdMsgs
-import BinaryCoder
 
-struct nio {}
+struct Nio {}
 
-
-extension Ros {
 final class ConnectionHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
     typealias InboundOut = ByteBuffer
 
-    private var subscriber: TransportSubscriberLink?
+    private var subscriber: Ros.TransportSubscriberLink?
     private var serviceclient: ServiceClientLink?
 
     var header = Header()
@@ -27,7 +25,7 @@ final class ConnectionHandler: ChannelInboundHandler {
     func channelInactive(ctx: ChannelHandlerContext) {
         subscriber?.drop()
         serviceclient?.drop()
-//        ROS_DEBUG("ConnectionHandler channelInactive for port \(ctx.channel.localAddress!.port!)")
+        //        ROS_DEBUG("ConnectionHandler channelInactive for port \(ctx.channel.localAddress!.port!)")
         ctx.fireChannelInactive()
     }
 
@@ -39,71 +37,71 @@ final class ConnectionHandler: ChannelInboundHandler {
     var state = State.header
 
     public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-//        ROS_DEBUG("message from \(ctx.channel.remoteAddress) => \(ctx.channel.localAddress)")
+        //        ROS_DEBUG("message from \(ctx.channel.remoteAddress) => \(ctx.channel.localAddress)")
         var buffer = self.unwrapInboundIn(data)
 
         switch state {
         case .header:
-            guard let len : UInt32 = buffer.readInteger(endianness: .little) else {
+            guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                 fatalError()
             }
             precondition(len <= buffer.readableBytes)
             let leave = buffer.readableBytes - Int(len)
-                var readMap = [String:String]()
+            var readMap = [String: String]()
 
-                while buffer.readableBytes > leave {
-                    guard let topicLen : UInt32 = buffer.readInteger(endianness: .little) else {
-                        ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
-                        return
-                    }
-
-                    guard let line = buffer.readString(length: Int(topicLen)) else {
-                        ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
-                        return
-                    }
-
-                    guard let eq = line.index(of: "=") else {
-                        ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
-                        return
-                    }
-                    let key = String(line.prefix(upTo: eq))
-                    let value = String(line.suffix(from: eq).dropFirst())
-                    readMap[key] = value
-                }
-
-                ROS_DEBUG(readMap.description)
-
-                if let error = readMap["error"] {
-                    ROS_ERROR("Received error message in header for connection to [\(ctx.remoteAddress?.description ?? "empty")]]: [\(error)]")
+            while buffer.readableBytes > leave {
+                guard let topicLen: UInt32 = buffer.readInteger(endianness: .little) else {
+                    ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
                     return
                 }
 
-                header.read_map_ = readMap
+                guard let line = buffer.readString(length: Int(topicLen)) else {
+                    ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
+                    return
+                }
 
-                // Connection Header Received
+                guard let eq = line.index(of: "=") else {
+                    ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
+                    return
+                }
+                let key = String(line.prefix(upTo: eq))
+                let value = String(line.suffix(from: eq).dropFirst())
+                readMap[key] = value
+            }
 
-                if let topic = readMap["topic"], let remote = ctx.remoteAddress {
-                    let conn = nio.Connection(transport: ctx.channel, header: header)
-                    ROS_DEBUG("Connection: Creating TransportSubscriberLink for topic [\(topic)] connected to [\(remote)]")
-                    let sub_link = TransportSubscriberLink(connection: conn)
-                    if sub_link.handleHeader(header: header) {
-                        subscriber = sub_link
-                    } else {
-                        sub_link.drop()
-                    }
-                } else if let val = header.getValue(key: "service") {
-                    ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: ctx.remoteAddress!.description))]")
-                    let conn = nio.Connection(transport: ctx.channel, header: header)
+            ROS_DEBUG(readMap.description)
 
-                    let link = ServiceClientLink()
-                    link.initialize(connection: conn)
-                    if link.handleHeader(header: header) {
-                        serviceclient = link
-                    }
-                    state = .serviceCall
+            if let error = readMap["error"] {
+                ROS_ERROR("Received error message in header for connection to [\(ctx.remoteAddress?.description ?? "empty")]]: [\(error)]")
+                return
+            }
+
+            header.headers = readMap
+
+            // Connection Header Received
+
+            if let topic = readMap["topic"], let remote = ctx.remoteAddress {
+                let conn = Nio.Connection(transport: ctx.channel, header: header)
+                ROS_DEBUG("Connection: Creating TransportSubscriberLink for topic [\(topic)] connected to [\(remote)]")
+                let subLink = Ros.TransportSubscriberLink(connection: conn)
+                if subLink.handleHeader(header: header) {
+                    subscriber = subLink
                 } else {
-                    ROS_ERROR("Got a connection for a type other than 'topic' or 'service' from [\(String(describing: ctx.remoteAddress?.description))].  Fail.")
-                    fatalError()
+                    subLink.drop()
+                }
+            } else if let val = header.getValue(key: "service") {
+                ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: ctx.remoteAddress!.description))]")
+                let conn = Nio.Connection(transport: ctx.channel, header: header)
+
+                let link = ServiceClientLink()
+                link.initialize(connection: conn)
+                if link.handleHeader(header: header) {
+                    serviceclient = link
+                }
+                state = .serviceCall
+            } else {
+                ROS_ERROR("Got a connection for a type other than 'topic' or 'service' from [\(String(describing: ctx.remoteAddress?.description))].  Fail.")
+                fatalError()
             }
 
         case .serviceCall:
@@ -113,7 +111,6 @@ final class ConnectionHandler: ChannelInboundHandler {
                     ctx.close(promise: nil)
                     return
                 }
-
 
                 if let response = link.parent?.processRequest(buf: rawMessage) {
                     let rawResponse = SerializedMessage(msg: response)
@@ -130,20 +127,20 @@ final class ConnectionHandler: ChannelInboundHandler {
             state = .header
         }
 
-
     }
 
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
         ROS_ERROR(error.localizedDescription)
     }
 
-
 }
+
+extension Ros {
 
 final class ConnectionManager {
     static var instance = ConnectionManager()
-    var channel : Channel? = nil
-    var boot : ServerBootstrap? = nil
+    var channel: Channel?
+    var boot: ServerBootstrap?
 
     private init() {}
 
@@ -161,22 +158,19 @@ final class ConnectionManager {
 
     // The connection ID counter, used to assign unique ID to each inbound or
     // outbound connection.  Access via getNewConnectionID()
-    private var connection_id_counter_ = Atomic<Int>(value: 0)
-
+    private var connectionIdCounter = Atomic<Int>(value: 0)
 
     func getNewConnectionID() -> Int {
-        return connection_id_counter_.add(1)
+        return connectionIdCounter.add(1)
     }
 
     func addConnection(connection: ConnectionProtocol) {
     }
 
-    
-
     func start() {
-        initialize(group: thread_group)
+        initialize(group: threadGroup)
         do {
-            channel = try boot?.bind(host: Ros.network.getHost(), port: 0).wait()
+            channel = try boot?.bind(host: Ros.Network.getHost(), port: 0).wait()
             ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host ?? "unknown host"):\(getTCPPort())]")
 
         } catch {
@@ -193,14 +187,13 @@ final class ConnectionManager {
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_KEEPALIVE), value: 1)
 
             // Set the handlers that are appled to the accepted Channels
-            .childChannelInitializer { $0.pipeline.addHandlers([nio.MessageDelimiterCodec(),ConnectionHandler()], first: true) }
+            .childChannelInitializer { $0.pipeline.addHandlers([Nio.MessageDelimiterCodec(), ConnectionHandler()], first: true) }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
             .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
-
 
     }
 

@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 /// A thread-safe array.
 public final class SynchronizedArray<Element> {
     fileprivate let queue = DispatchQueue(label: "SynchronizedArray", attributes: .concurrent)
@@ -61,8 +60,6 @@ public extension SynchronizedArray {
         return result
     }
 
-
-
     /// Returns the first element of the sequence that satisfies the given predicate or nil if no such element is found.
     ///
     /// - Parameter predicate: A closure that takes an element of the sequence as its argument and returns a Boolean value indicating whether the element is a match.
@@ -92,8 +89,6 @@ public extension SynchronizedArray {
         queue.sync { result = self.array.index(where: predicate) }
         return result
     }
-
-
 
     /// Returns the elements of the collection, sorted using the given predicate as the comparison between elements.
     ///
@@ -190,7 +185,9 @@ public extension SynchronizedArray {
     ///   - completion: The handler with the removed element.
     func remove(where predicate: @escaping (Element) -> Bool, completion: ((Element) -> Void)? = nil) {
         queue.async(flags: .barrier) {
-            guard let index = self.array.index(where: predicate) else { return }
+            guard let index = self.array.index(where: predicate) else {
+                return
+            }
             let element = self.array.remove(at: index)
             if completion != nil {
                 DispatchQueue.main.async {
@@ -234,7 +231,9 @@ public extension SynchronizedArray {
             return result
         }
         set {
-            guard let newValue = newValue else { return }
+            guard let newValue = newValue else {
+                return
+            }
 
             queue.async(flags: .barrier) {
                 self.array[index] = newValue
@@ -242,7 +241,6 @@ public extension SynchronizedArray {
         }
     }
 }
-
 
 // MARK: - Equatable
 public extension SynchronizedArray where Element: Equatable {
@@ -261,11 +259,11 @@ public extension SynchronizedArray where Element: Equatable {
 // MARK: - Infix operators
 public extension SynchronizedArray {
 
-    static func +=(left: inout SynchronizedArray, right: Element) {
+    static func += (left: inout SynchronizedArray, right: Element) {
         left.append(right)
     }
 
-    static func +=(left: inout SynchronizedArray, right: [Element]) {
+    static func += (left: inout SynchronizedArray, right: [Element]) {
         left.append(right)
     }
 }
@@ -276,7 +274,7 @@ public extension SynchronizedArray where Element: Equatable {
         #if swift(>=4.2)
         queue.sync { result = self.array.firstIndex(of: element) }
         #else
-        queue.sync { result = self.array.index(where: {$0 == element}) }
+        queue.sync { result = self.array.index(where: { $0 == element }) }
         #endif
         return result
     }

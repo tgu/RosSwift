@@ -42,7 +42,7 @@ class serviceTests: XCTestCase {
     func testCallService() {
 
         let node = Ros.NodeHandle()
-        guard let serv = node.advertiseService(service: "/service_adv", srv_func: srvCallback) else {
+        guard let serv = node.advertiseService(service: "/service_adv", srvFunc: srvCallback) else {
             XCTFail()
             return
         }
@@ -51,11 +51,11 @@ class serviceTests: XCTestCase {
         var res = TestStringString.Response()
         req.data = "case_FLIP"
 
-        XCTAssert(service.waitForService(service_name: "/service_adv"))
-        if service.call(service_name: "/service_adv", req: req, response: &res) {
+        XCTAssert(Service.waitForService(serviceName: "/service_adv"))
+        if Service.call(serviceName: "/service_adv", req: req, response: &res) {
             print(res)
         }
-        XCTAssert(service.call(service_name: "/service_adv", req: req, response: &res))
+        XCTAssert(Service.call(serviceName: "/service_adv", req: req, response: &res))
         XCTAssertEqual(res.data, "A")
 
         serv.shutdown()  // Just in case the ARC throws us away
@@ -68,8 +68,8 @@ class serviceTests: XCTestCase {
         var res = TestStringString.Response()
         req.data = "case_FLIP"
 
-        if service.waitForService(service_name: "/echo", timeout: 1000 )  {
-            let message = service.call(service_name: "/echo", req: req, response: &res)
+        if Service.waitForService(serviceName: "/echo", timeout: 1000 )  {
+            let message = Service.call(serviceName: "/echo", req: req, response: &res)
             XCTAssert(message)
             if message {
                 XCTAssertEqual(res.data,req.data)
@@ -85,8 +85,8 @@ class serviceTests: XCTestCase {
         let n = Ros.NodeHandle()
         var t = TestStringString()
 
-        let srv1 = n.advertiseService(service: "/test_srv", srv_func: serviceCallback)
-        XCTAssert(service.call(name: "/test_srv", service: &t))
+        let srv1 = n.advertiseService(service: "/test_srv", srvFunc: serviceCallback)
+        XCTAssert(Service.call(name: "/test_srv", service: &t))
         XCTAssertEqual(t.response.data, "test")
 
 
@@ -97,30 +97,30 @@ class serviceTests: XCTestCase {
         var t = TestStringString()
 
         do {
-            let srv1 = n.advertiseService(service: "/test_srv_23", srv_func: serviceCallback)
+            let srv1 = n.advertiseService(service: "/test_srv_23", srvFunc: serviceCallback)
             sleep(4)
-            XCTAssert(service.call(name: "/test_srv_23", service: &t))
+            XCTAssert(Service.call(name: "/test_srv_23", service: &t))
             do {
                 let srv2 = srv1
                 do {
                     let srv3 = srv2
                     XCTAssert(srv3 === srv2)
                     t.response.data = ""
-                    XCTAssert(service.call(name: "/test_srv_23", service: &t))
+                    XCTAssert(Service.call(name: "/test_srv_23", service: &t))
                     XCTAssertEqual(t.response.data, "test")
                 }
                 XCTAssert(srv2 === srv1);
                 t.response.data = ""
-                XCTAssert(service.call(name: "/test_srv_23", service: &t))
+                XCTAssert(Service.call(name: "/test_srv_23", service: &t))
                 XCTAssertEqual(t.response.data, "test")
             }
             t.response.data = ""
-            XCTAssert(service.call(name: "/test_srv_23", service: &t))
+            XCTAssert(Service.call(name: "/test_srv_23", service: &t))
             XCTAssertEqual(t.response.data, "test")
         }
-        XCTAssertFalse(service.call(name: "/test_srv_23", service: &t))
+        XCTAssertFalse(Service.call(name: "/test_srv_23", service: &t))
 
-        print("\(n.ok)")
+        print("\(n.isOK)")
 
     }
 
@@ -132,8 +132,8 @@ class serviceTests: XCTestCase {
     func testServiceAdvMultiple()  {
         let n = Ros.NodeHandle()
 
-        let srv = n.advertiseService(service: "/test_srv_19", srv_func: serviceCallback)
-        let srv2 = n.advertiseService(service: "/test_srv_19", srv_func: serviceCallback)
+        let srv = n.advertiseService(service: "/test_srv_19", srvFunc: serviceCallback)
+        let srv2 = n.advertiseService(service: "/test_srv_19", srvFunc: serviceCallback)
         XCTAssert(srv != nil)
         XCTAssertNil(srv2)
 
@@ -144,7 +144,7 @@ class serviceTests: XCTestCase {
     func testCallSrvMultipleTimes() {
 
         let node = Ros.NodeHandle()
-        guard let serv = node.advertiseService(service: "/service_adv2", srv_func: srvCallback) else {
+        guard let serv = node.advertiseService(service: "/service_adv2", srvFunc: srvCallback) else {
             XCTFail()
             return
         }
@@ -155,7 +155,7 @@ class serviceTests: XCTestCase {
 
 //        self.measure {
             for i in 0..<10 {
-                XCTAssert(service.call(service_name: "service_adv2", req: req, response: &res))
+                XCTAssert(Service.call(serviceName: "service_adv2", req: req, response: &res))
             }
 //        }
     }

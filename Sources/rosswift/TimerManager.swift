@@ -1,14 +1,12 @@
-
 import Foundation
 
-let g_timer_manager = InternalTimerManager()
+let gTimerManager = InternalTimerManager()
 
 func getInternalTimerManager() -> InternalTimerManager {
-    return g_timer_manager
+    return gTimerManager
 }
 
 typealias InternalTimerManager = TimerManager
-
 
 func initInternalTimerManager() {
     ROS_ERROR("initInternalTimerManager not implemented")
@@ -16,7 +14,7 @@ func initInternalTimerManager() {
 
 final class TimerManager {
 
-    func remove(timer_handle: Int32) {
+    func remove(timerHandle: Int32) {
         ROS_ERROR("\(#function) not implemented")
     }
 

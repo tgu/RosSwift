@@ -5,63 +5,62 @@
 //  Created by Thomas Gustafsson on 2018-10-10.
 //
 
-import Foundation
-import StdMsgs
-import NIO
 import BinaryCoder
- 
-
-
+import Foundation
+import NIO
+import StdMsgs
 
 final class ServiceServerLink: ChannelInboundHandler {
-        var channel : Channel?
-        var service_name_ : String
-        var persistent_ : Bool
-        var request_md5sum_ : String
-        var response_md5sum_ : String
+        var channel: Channel?
+        var serviceName: String
+        var persistent: Bool
+        var requestMd5sum: String
+        var responseMd5sum: String
 
-        var extra_outgoing_header_values_ : M_string?
-        var header_written_ : Bool
-        var header_read_ : Bool
+        var extraOutgoingHeaderValues: StringStringMap?
+        var headerWritten: Bool
+        var headerRead: Bool
 
-        var dropped_ : Bool
+        var isDropped: Bool
 
+        init(serviceName: String,
+             persistent: Bool,
+             requestMd5sum: String,
+             responseMd5sum: String,
+             headerValues: StringStringMap?) {
 
-        init(service_name: String, persistent: Bool, request_md5sum: String, response_md5sum: String, header_values: M_string?) {
-            service_name_ = service_name
-            persistent_ = persistent
-            request_md5sum_ = request_md5sum
-            response_md5sum_ = response_md5sum
-            extra_outgoing_header_values_ = header_values
-            header_written_ = false
-            header_read_ = false
-            dropped_ = false
+            self.serviceName = serviceName
+            self.persistent = persistent
+            self.requestMd5sum = requestMd5sum
+            self.responseMd5sum = responseMd5sum
+            extraOutgoingHeaderValues = headerValues
+            headerWritten = false
+            headerRead = false
+            isDropped = false
         }
 
-
         func initialize(channel: Channel) {
-//            ROS_DEBUG("initialize")
             self.channel = channel
 
-            var header = M_string()
-            header["service"] = service_name_
-            header["md5sum"] = request_md5sum_
-            header["callerid"] = Ros.this_node.getName()
-            header["persistent"] = persistent_ ? "1" : "0"
-            if let extra = extra_outgoing_header_values_ {
+            var header = StringStringMap()
+            header["service"] = serviceName
+            header["md5sum"] = requestMd5sum
+            header["callerid"] = Ros.ThisNode.getName()
+            header["persistent"] = persistent ? "1" : "0"
+            if let extra = extraOutgoingHeaderValues {
                 for item in extra {
                     header[item.key] = item.value
                 }
             }
 
-            let buffer = Header.write(key_vals: header)
+            let buffer = Header.write(keyVals: header)
             do {
-                let sb = try BinaryEncoder.encode(UInt32(buffer.count))
-                var buf = channel.allocator.buffer(capacity: buffer.count+4)
-                buf.write(bytes: sb+buffer)
+                let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))
+                var buf = channel.allocator.buffer(capacity: buffer.count + 4)
+                buf.write(bytes: sizeBuffer + buffer)
                 let data = IOData.byteBuffer(buf)
 
-                channel.writeAndFlush(data).whenFailure { (error) in
+                channel.writeAndFlush(data).whenFailure { error in
                     ROS_DEBUG("ServiceServerLink, write failed to \(channel.remoteAddress)\nerror: \(error))")
                 }
             } catch {
@@ -69,7 +68,6 @@ final class ServiceServerLink: ChannelInboundHandler {
             }
 
         }
-
 
     #if os(OSX)
 
@@ -79,9 +77,9 @@ final class ServiceServerLink: ChannelInboundHandler {
 //            guard let conn = connection_ else {
 //                return
 //            }
-//            ROS_DEBUG("Service client from [\(conn.getRemoteString())] for [\(service_name_)] dropped")
+//            ROS_DEBUG("Service client from [\(conn.getRemoteString())] for [\(serviceName_)] dropped")
 
-            dropped_ = true;
+            isDropped = true
 //            clearCalls()
 
             ServiceManager.instance.removeServiceServerLink(client: self)
@@ -90,14 +88,12 @@ final class ServiceServerLink: ChannelInboundHandler {
     #endif
 
         func isValid() -> Bool {
-            return !dropped_;
+            return !isDropped
         }
-
-
 
         func call(req: StdMsgs.SerializedMessage) -> EventLoopFuture<SerializedMessage> {
 
-            let promise : EventLoopPromise<SerializedMessage> = channel!.eventLoop.newPromise()
+            let promise: EventLoopPromise<SerializedMessage> = channel!.eventLoop.newPromise()
             guard let c = channel else {
                 promise.fail(error: ServiceError.invalidInput("ServiceServerLink::call has no connection"))
                 return promise.futureResult
@@ -107,7 +103,7 @@ final class ServiceServerLink: ChannelInboundHandler {
             buffer.write(bytes: req.buf)
 //            ROS_DEBUG("ServiceCall to [\(c.remoteAddress!.host):\(c.remoteAddress!.port!)]: \(req.message!)")
 
-            c.writeAndFlush(buffer).whenFailure { (error) in
+            c.writeAndFlush(buffer).whenFailure { error in
                 ROS_DEBUG("ServiceServerLink \(#line), write failed to \(c.remoteAddress)\nerror: \(error))")
             }
             c.closeFuture.whenComplete {
@@ -121,12 +117,11 @@ final class ServiceServerLink: ChannelInboundHandler {
             return promise.futureResult
         }
 
-
         enum ServiceState {
             case header
             case message
         }
-        var state : ServiceState = .header
+        var state: ServiceState = .header
         var response = SerializedMessage()
 
         typealias InboundIn = ByteBuffer
@@ -138,15 +133,15 @@ final class ServiceServerLink: ChannelInboundHandler {
             case .header:
 //                ROS_DEBUG("readable bytes = \(buffer.readableBytes)")
 //                ROS_DEBUG(buffer.getBytes(at: buffer.readerIndex, length: buffer.readableBytes))
-                guard let len : UInt32 = buffer.readInteger(endianness: .little) else {
+                guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                     fatalError()
                 }
                 precondition(len <= buffer.readableBytes)
 
-                var readMap = [String:String]()
+                var readMap = [String: String]()
                 let leave = buffer.readableBytes - Int(len)
                 while buffer.readableBytes > leave {
-                    guard let topicLen : UInt32 = buffer.readInteger(endianness: .little) else {
+                    guard let topicLen: UInt32 = buffer.readInteger(endianness: .little) else {
                         ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
                         fatalError()
                     }
@@ -157,12 +152,11 @@ final class ServiceServerLink: ChannelInboundHandler {
                         return
                     }
 
-                    guard let eq = line.index(of: "=") else {
-                        ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
-                        fatalError()
+                    guard let equalIndex = line.index(of: "=") else {
+                        fatalError("Received an invalid TCPROS header.  Each line must have an equals sign.")
                     }
-                    let key = String(line.prefix(upTo: eq))
-                    let value = String(line.suffix(from: eq).dropFirst())
+                    let key = String(line.prefix(upTo: equalIndex))
+                    let value = String(line.suffix(from: equalIndex).dropFirst())
                     readMap[key] = value
                 }
 //                ROS_DEBUG(readMap)
@@ -170,7 +164,7 @@ final class ServiceServerLink: ChannelInboundHandler {
             case .message:
 //                ROS_DEBUG("readable bytes = \(buffer.readableBytes)")
 //                ROS_DEBUG(buffer.getBytes(at: buffer.readerIndex, length: buffer.readableBytes))
-                guard let ok : UInt8 = buffer.readInteger(endianness: .little) else {
+                guard let ok: UInt8 = buffer.readInteger(endianness: .little) else {
                     fatalError()
                 }
                 ROS_DEBUG("OK = \(ok)")
@@ -187,7 +181,4 @@ final class ServiceServerLink: ChannelInboundHandler {
             }
         }
 
-
 }
-
-

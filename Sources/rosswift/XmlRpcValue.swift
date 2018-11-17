@@ -26,8 +26,7 @@ public final class XmlRpcValue {
 
     typealias BinaryData = [UInt8]
     typealias ValueArray = [XmlRpcValue]
-    typealias ValueStruct = [String : XmlRpcValue]
-
+    typealias ValueStruct = [String: XmlRpcValue]
 
     public init() {
         value = .invalid
@@ -63,9 +62,9 @@ public final class XmlRpcValue {
             value = .float(f)
         case let x as XmlRpcValue:
             value = x.value
-        case let x as [String:Any]:
+        case let x as [String: Any]:
             var s = ValueStruct()
-            x.forEach { (arg) in
+            x.forEach { arg in
                 let (key, v) = arg
                 s[key] = XmlRpcValue(any: v)
             }
@@ -103,7 +102,7 @@ public final class XmlRpcValue {
         }
     }
 
-    var isArray : Bool {
+    var isArray: Bool {
         if case .array(_) = value {
             return true
         }
@@ -183,15 +182,12 @@ public final class XmlRpcValue {
         return nil
     }
 
-
     var date: Date? {
         if case .datetime(let d) = value {
             return d
         }
         return nil
     }
-
-
 
     func clear() {
         invalidate()
@@ -211,32 +207,31 @@ public final class XmlRpcValue {
     func toXml() -> String {
         switch value {
         case .boolean(let b):
-            return Tags.bool(b)
+            return Tags.boolXml(b)
         case .int(let i):
-            return Tags.int(i)
+            return Tags.intXml(i)
         case .double(let d):
-            return Tags.double(d)
+            return Tags.doubleXml(d)
         case .float(let f):
-            return Tags.float32(f)
+            return Tags.float32xml(f)
         case .string(let s):
-            return Tags.string(s)
+            return Tags.stringXml(s)
         case .`struct`(let s):
             return s.xml
         case .array(let a):
-            let xml = a.reduce("", {$0 + $1.toXml()})
-            return Tags.array(xml)
+            let xml = a.reduce("", { $0 + $1.toXml() })
+            return Tags.arrayXml(xml)
         default:
             fatalError()
         }
     }
 
-
     @discardableResult
     func get<T: Numeric>(val: inout [T]) -> Bool {
         switch value {
         case .array(let a):
-            let vec = a.compactMap { (v) -> T? in
-                var d : T = 0
+            let vec = a.compactMap { v -> T? in
+                var d: T = 0
                 if v.get(val: &d) {
                     return d
                 }
@@ -253,8 +248,8 @@ public final class XmlRpcValue {
     func get<T: StringProtocol>(val: inout [T]) -> Bool {
         switch value {
         case .array(let a):
-            let vec = a.compactMap { (v) -> T? in
-                var d : T = ""
+            let vec = a.compactMap { v -> T? in
+                var d: T = ""
                 if v.get(val: &d) {
                     return d
                 }
@@ -269,7 +264,7 @@ public final class XmlRpcValue {
     }
 
     func getArray<T: Numeric>(_ vec: [XmlRpcValue]) -> [T]? {
-        let arr = vec.compactMap{ d -> T? in
+        let arr = vec.compactMap { d -> T? in
             var c: T = 0
             guard d.get(val: &c) else {
                 return nil
@@ -283,7 +278,7 @@ public final class XmlRpcValue {
     }
 
     func getArray(_ vec: [XmlRpcValue]) -> [Bool]? {
-        let arr = vec.compactMap{ d -> Bool? in
+        let arr = vec.compactMap { d -> Bool? in
             var c = 0.0
             guard d.get(val: &c) else {
                 return nil
@@ -297,8 +292,8 @@ public final class XmlRpcValue {
     }
 
     func getArray(_ vec: [XmlRpcValue]) -> [String]? {
-        let arr = vec.compactMap{ d -> String? in
-            return d.uncertainString 
+        let arr = vec.compactMap { d -> String? in
+            d.uncertainString
         }
         guard arr.count == vec.count else {
             return nil
@@ -306,8 +301,8 @@ public final class XmlRpcValue {
         return arr
     }
 
-    func getMap(_ m: [String:XmlRpcValue]) -> [String:String]? {
-        var nm = [String:String]()
+    func getMap(_ m: [String: XmlRpcValue]) -> [String: String]? {
+        var nm = [String: String]()
         for k in m {
             guard let s = k.value.uncertainString else {
                 return nil
@@ -317,32 +312,29 @@ public final class XmlRpcValue {
         return nm
     }
 
-    func getMap<T: Numeric>(_ m: [String:XmlRpcValue]) -> [String:T]? {
-        var nm = [String:T]()
+    func getMap<T: Numeric>(_ m: [String: XmlRpcValue]) -> [String: T]? {
+        var map = [String: T]()
         for k in m {
-            var d : T = 0
+            var d: T = 0
             guard k.value.get(val: &d) else {
                 return nil
             }
-            nm[k.key] = d
+            map[k.key] = d
         }
-        return nm
+        return map
     }
 
-    func getBoolMap(_ m: [String:XmlRpcValue]) -> [String:Bool]? {
-        var nm = [String:Bool]()
+    func getBoolMap(_ m: [String: XmlRpcValue]) -> [String: Bool]? {
+        var map = [String: Bool]()
         for k in m {
-            var d : Double = 0
+            var d: Double = 0
             guard k.value.get(val: &d) else {
                 return nil
             }
-            nm[k.key] = d != 0
+            map[k.key] = d != 0
         }
-        return nm
+        return map
     }
-
-
-
 
     func get<T>(val: inout T) -> Bool {
         switch value {
@@ -377,57 +369,57 @@ public final class XmlRpcValue {
         case .base64(let b as T):
             val = b
         case .array(let v) where T.self == [String].self:
-            guard let vec : [String] = getArray(v) else {
+            guard let vec: [String] = getArray(v) else {
                 return false
             }
             val = vec as! T
         case .array(let v) where T.self == [Double].self:
-            guard let vec : [Double] = getArray(v) else {
+            guard let vec: [Double] = getArray(v) else {
                 return false
             }
             val = vec as! T
         case .array(let v) where T.self == [Float32].self:
-            guard let vec : [Float32] = getArray(v) else {
+            guard let vec: [Float32] = getArray(v) else {
                 return false
             }
             val = vec as! T
         case .array(let v) where T.self == [Int].self:
-            guard let vec : [Int] = getArray(v) else {
+            guard let vec: [Int] = getArray(v) else {
                 return false
             }
             val = vec as! T
 
         case .array(let v) where T.self == [Bool].self:
-            guard let vec : [Bool] = getArray(v) else {
+            guard let vec: [Bool] = getArray(v) else {
                 return false
             }
             val = vec as! T
 
         case .`struct`(let v as T):
             val = v
-        case .`struct`(let v) where T.self == [String:String].self:
-            guard let map  = getMap(v) else {
+        case .`struct`(let v) where T.self == [String: String].self:
+            guard let map = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v) where T.self == [String:Double].self:
-            guard let map : [String:Double] = getMap(v) else {
+        case .`struct`(let v) where T.self == [String: Double].self:
+            guard let map: [String: Double] = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v) where T.self == [String:Float32].self:
-            guard let map : [String:Float32] = getMap(v) else {
+        case .`struct`(let v) where T.self == [String: Float32].self:
+            guard let map: [String: Float32] = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v) where T.self == [String:Int].self:
-            guard let map : [String:Int] = getMap(v) else {
+        case .`struct`(let v) where T.self == [String: Int].self:
+            guard let map: [String: Int] = getMap(v) else {
                 return false
             }
             val = map as! T
 
-        case .`struct`(let v) where T.self == [String:Bool].self:
-            guard let map  = getBoolMap(v) else {
+        case .`struct`(let v) where T.self == [String: Bool].self:
+            guard let map = getBoolMap(v) else {
                 return false
             }
             val = map as! T
@@ -465,7 +457,6 @@ extension XmlRpcValue: Equatable {
     }
 }
 
-
 extension XmlRpcValue: CustomStringConvertible {
     public var description: String {
         switch value {
@@ -493,84 +484,85 @@ extension XmlRpcValue: CustomStringConvertible {
     }
 }
 
-enum Tags : String {
-    case METHODNAME_TAG = "<methodName>"
-    case METHODNAME_ETAG = "</methodName>"
-    case PARAMS_TAG = "<params>"
-    case PARAMS_ETAG = "</params>"
-    case PARAM_TAG = "<param>"
-    case PARAM_ETAG =  "</param>"
-    case FAULT_TAG = "<fault>"
+enum Tags: String {
+    case methodname =       "<methodName>"
+    case endMethodname =    "</methodName>"
+    case params =           "<params>"
+    case endParams =        "</params>"
+    case param =            "<param>"
+    case endParam =         "</param>"
+    case fault =            "<fault>"
 
-    case VALUE_TAG     = "<value>"
-    case VALUE_ETAG    = "</value>"
+    case value =            "<value>"
+    case endValue =         "</value>"
 
-    case BOOLEAN_TAG   = "<boolean>"
-    case BOOLEAN_ETAG  = "</boolean>"
-    case DOUBLE_TAG    = "<double>"
-    case DOUBLE_ETAG   = "</double>"
-    case INT_TAG       = "<int>"
-    case I4_TAG        = "<i4>"
-    case I4_ETAG       = "</i4>"
-    case STRING_TAG    = "<string>"
-    case STRING_ETAG    = "</string>"
-    case DATETIME_TAG  = "<dateTime.iso8601>"
-    case DATETIME_ETAG = "</dateTime.iso8601>"
-    case BASE64_TAG    = "<base64>"
-    case BASE64_ETAG   = "</base64>"
+    case boolean =          "<boolean>"
+    case endBoolean  =      "</boolean>"
+    case double =           "<double>"
+    case endDouble =        "</double>"
+    case int =              "<int>"
+    case endInt =           "</int>"
+    case i4Tag =            "<i4>"
+    case i4ETag =           "</i4>"
+    case string =           "<string>"
+    case endString =        "</string>"
+    case datetime =         "<dateTime.iso8601>"
+    case endDatetime =      "</dateTime.iso8601>"
+    case base64 =           "<base64>"
+    case endBase64 =        "</base64>"
 
-    case ARRAY_TAG     = "<array>"
-    case DATA_TAG      = "<data>"
-    case DATA_ETAG     = "</data>"
-    case ARRAY_ETAG    = "</array>"
+    case array =            "<array>"
+    case data =             "<data>"
+    case endData =          "</data>"
+    case endArray =         "</array>"
 
-    case STRUCT_TAG    = "<struct>"
-    case MEMBER_TAG    = "<member>"
-    case NAME_TAG      = "<name>"
-    case NAME_ETAG     = "</name>"
-    case MEMBER_ETAG   = "</member>"
-    case STRUCT_ETAG   = "</struct>"
+    case structTag =        "<struct>"
+    case member =           "<member>"
+    case name =             "<name>"
+    case endName =          "</name>"
+    case endMember =        "</member>"
+    case endStruct =        "</struct>"
 
-    static func member(_ name: String, value: String) -> String {
-        return "\(MEMBER_TAG.rawValue)\(NAME_TAG.rawValue)\(name)\(NAME_ETAG.rawValue)\(value)\(MEMBER_ETAG.rawValue)"
+    static func memberXml(_ memeberName: String, value: String) -> String {
+        return "\(member.rawValue)\(name.rawValue)\(memeberName)\(endName.rawValue)\(value)\(endMember.rawValue)"
     }
 
-    static func bool(_ value: Bool) -> String {
-        return "\(VALUE_TAG.rawValue)\(BOOLEAN_TAG.rawValue)\(value ? "1" : "0")\(BOOLEAN_ETAG.rawValue)\(VALUE_ETAG.rawValue)"
+    static func boolXml(_ val: Bool) -> String {
+        return "\(value.rawValue)\(boolean.rawValue)\(val ? "1" : "0")\(endBoolean.rawValue)\(endValue.rawValue)"
     }
 
-    static func int(_ value: Int) -> String {
-        return "\(VALUE_TAG.rawValue)\(I4_TAG.rawValue)\(value)\(I4_ETAG.rawValue)\(VALUE_ETAG.rawValue)"
+    static func intXml(_ val: Int) -> String {
+        return "\(value.rawValue)\(i4Tag.rawValue)\(val)\(i4ETag.rawValue)\(endValue.rawValue)"
     }
 
-    static func double(_ value: Double) -> String {
-        return "\(VALUE_TAG.rawValue)\(DOUBLE_TAG.rawValue)\(value)\(DOUBLE_ETAG.rawValue)\(VALUE_ETAG.rawValue)"
+    static func doubleXml(_ val: Double) -> String {
+        return "\(value.rawValue)\(double.rawValue)\(val)\(endDouble.rawValue)\(endValue.rawValue)"
     }
 
-    static func float32(_ value: Float32) -> String {
-        return "\(VALUE_TAG.rawValue)\(DOUBLE_TAG.rawValue)\(value)\(DOUBLE_ETAG.rawValue)\(VALUE_ETAG.rawValue)"
+    static func float32xml(_ val: Float32) -> String {
+        return "\(value.rawValue)\(double.rawValue)\(val)\(endDouble.rawValue)\(endValue.rawValue)"
     }
 
-    static func string(_ value: String) -> String {
-        return "\(VALUE_TAG.rawValue)\(STRING_TAG.rawValue)\(value)\(STRING_ETAG.rawValue)\(VALUE_ETAG.rawValue)"
+    static func stringXml(_ val: String) -> String {
+        return "\(value.rawValue)\(string.rawValue)\(val)\(endString.rawValue)\(endValue.rawValue)"
     }
 
-    static func `struct`(_ value: String) -> String {
-        return "\(VALUE_TAG.rawValue)\(STRUCT_TAG.rawValue)\(value)\(STRUCT_ETAG.rawValue)\(VALUE_ETAG.rawValue)"
+    static func structXml(_ val: String) -> String {
+        return "\(value.rawValue)\(structTag.rawValue)\(val)\(endStruct.rawValue)\(endValue.rawValue)"
     }
 
-    static func array(_ value: String) -> String {
-        return "\(VALUE_TAG.rawValue)\(ARRAY_TAG.rawValue)\(DATA_TAG.rawValue)\(value)\(DATA_ETAG.rawValue)\(ARRAY_ETAG.rawValue)\(VALUE_ETAG.rawValue)"
+    static func arrayXml(_ val: String) -> String {
+        return "\(value.rawValue)\(array.rawValue)\(data.rawValue)\(val)\(endData.rawValue)\(endArray.rawValue)\(endValue.rawValue)"
     }
 
 }
 
 extension Dictionary where Value: XmlRpcValue {
     var xml: String {
-        let a = self.map { (arg) -> String in
+        let a = self.map { arg -> String in
             let (key, value) = arg
-            return Tags.member((key as! String), value: value.toXml())
+            return Tags.memberXml((key as! String), value: value.toXml())
         }.joined()
-        return Tags.`struct`(a)
+        return Tags.structXml(a)
     }
 }

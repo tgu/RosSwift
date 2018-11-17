@@ -9,7 +9,7 @@ import Foundation
 import NIO
 import BinaryCoder
 
-extension nio {
+extension Nio {
 
     final class MessageDelimiterCodec: ByteToMessageDecoder {
         public typealias InboundIn = ByteBuffer
@@ -18,9 +18,9 @@ extension nio {
         public var cumulationBuffer: ByteBuffer?
 
         public func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-            if let count : UInt32 = buffer.getInteger(at: buffer.readerIndex, endianness: .little) {
+            if let count: UInt32 = buffer.getInteger(at: buffer.readerIndex, endianness: .little) {
                 if buffer.readableBytes >= count + 4 {
-                    ctx.fireChannelRead(self.wrapInboundOut(buffer.readSlice(length: Int(count+4))!))
+                    ctx.fireChannelRead(self.wrapInboundOut(buffer.readSlice(length: Int(count + 4))!))
                     return .continue
                 }
             }
@@ -36,20 +36,20 @@ extension nio {
 
     final class HeaderMessageCodec: ByteToMessageDecoder {
         public typealias InboundIn = ByteBuffer
-        public typealias InboundOut = M_string
+        public typealias InboundOut = StringStringMap
 
         public var cumulationBuffer: ByteBuffer?
 
         public func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-            guard let len : UInt32 = buffer.readInteger(endianness: .little) else {
+            guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                 fatalError()
             }
             precondition(len <= buffer.readableBytes)
 
-            var readMap = [String:String]()
+            var readMap = [String: String]()
 
             while buffer.readableBytes > 0 {
-                guard let topicLen : UInt32 = buffer.readInteger(endianness: .little) else {
+                guard let topicLen: UInt32 = buffer.readInteger(endianness: .little) else {
                     ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
                     return .continue
                 }
@@ -79,18 +79,15 @@ extension nio {
 
     }
 
-
-
     public final class TransportTCP {
 
-
         final class Handler: ChannelInboundHandler {
-            public typealias InboundIn = M_string
+            public typealias InboundIn = StringStringMap
             public typealias OutboundOut = ByteBuffer
 
-            let callback : (M_string) -> Void
+            let callback: (StringStringMap) -> Void
 
-            init(callback: @escaping (M_string) -> Void) {
+            init(callback: @escaping (StringStringMap) -> Void) {
                 self.callback = callback
             }
 
@@ -100,11 +97,11 @@ extension nio {
             }
         }
 
-        let bootstrap : ClientBootstrap
+        let bootstrap: ClientBootstrap
 //        var channel : Channel?
 
         public init(pipeline: [ChannelHandler]) {
-            self.bootstrap = ClientBootstrap(group: thread_group.next())
+            self.bootstrap = ClientBootstrap(group: threadGroup.next())
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { $0.pipeline.addHandlers(pipeline, first: true) }
         }
@@ -112,7 +109,6 @@ extension nio {
         public func connect(host: String, port: Int) -> EventLoopFuture<Channel> {
             return bootstrap.connect(host: host, port: port)
         }
-
 
     }
 }

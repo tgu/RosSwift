@@ -6,7 +6,7 @@
 //
 import StdMsgs
 
-public struct AdvertiseOptions<M : Message> {
+public struct AdvertiseOptions<M: Message> {
 
     /// the topic to publish on
 
@@ -19,10 +19,9 @@ public struct AdvertiseOptions<M : Message> {
 
     */
     public var latch: Bool
-    public var connect_cb: SubscriberStatusCallback? = nil
-    public var disconnect_cb: SubscriberStatusCallback? = nil
-    weak var tracked_object: AnyObject?
-    
+    public var connectCallBack: SubscriberStatusCallback?
+    public var disconnectCallBack: SubscriberStatusCallback?
+    weak var trackedObject: AnyObject?
 
     public init(topic: String, latch: Bool = false, _ messageType: M.Type) {
         self.topic = topic

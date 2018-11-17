@@ -8,8 +8,8 @@
 import Foundation
 
 final class ServiceClientLink {
-    var connection: nio.Connection? = nil
-    var parent: ServiceProtocol? = nil
+    var connection: Nio.Connection?
+    var parent: ServiceProtocol?
     var persistent = false
 
     func drop() {
@@ -18,12 +18,12 @@ final class ServiceClientLink {
         parent?.removeServiceClientLink(self)
     }
 
-    func initialize(connection: nio.Connection) {
+    func initialize(connection: Nio.Connection) {
         self.connection = connection
     }
 
     func handleHeader(header: Header) -> Bool {
-        guard let md5sum = header.getValue(key: "md5sum"), let service = header.getValue(key: "service"), let client_callerid = header.getValue(key: "callerid") else {
+        guard let md5sum = header.getValue(key: "md5sum"), let service = header.getValue(key: "service"), let clientCallerId = header.getValue(key: "callerid") else {
             let msg = "bogus tcpros header. did not have the required elements: md5sum, service, callerid"
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
@@ -33,17 +33,17 @@ final class ServiceClientLink {
             persistent = persist == "1" || persist == "true"
         }
 
-        ROS_DEBUG("Service client [\(client_callerid)] wants service [\(service)] with md5sum [\(md5sum)]")
+        ROS_DEBUG("Service client [\(clientCallerId)] wants service [\(service)] with md5sum [\(md5sum)]")
 
-        guard let ss = ServiceManager.instance.lookupServicePublication(service: service) else {
+        guard let servicePublication = ServiceManager.instance.lookupServicePublication(service: service) else {
             let msg = "received a tcpros connection for a nonexistent service [\(service)]."
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
             return false
         }
 
-        if ss.md5sum != md5sum && md5sum != "*" && ss.md5sum != "*" {
-            let msg = "client wants service \(service) to have md5sum \(md5sum) but it has \(ss.md5sum). Dropping connection."
+        if servicePublication.md5sum != md5sum && md5sum != "*" && servicePublication.md5sum != "*" {
+            let msg = "client wants service \(service) to have md5sum \(md5sum) but it has \(servicePublication.md5sum). Dropping connection."
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
             return false
@@ -54,26 +54,26 @@ final class ServiceClientLink {
         // have happened while we were waiting for the subscriber to
         // provide the md5sum.
 
-        if ss.isDropped() {
+        if servicePublication.isDropped {
             let msg = "received a tcpros connection for a nonexistent service \(service)"
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
             return false
         }
 
-        self.parent = ss
-        let m : M_string = ["request_type": ss.request_data_type,
-                            "response_type": ss.response_data_type,
-                            "type": ss.data_type,
-                            "md5sum": ss.md5sum,
-                            "callerid": Ros.this_node.getName()]
+        self.parent = servicePublication
+        let m: StringStringMap = ["request_type": servicePublication.requestDataType,
+                            "response_type": servicePublication.responseDataType,
+                            "type": servicePublication.dataType,
+                            "md5sum": servicePublication.md5sum,
+                            "callerid": Ros.ThisNode.getName()]
 
 //        ROS_DEBUG("\(#file):\(#line)  write from \(self.connection?.channel.localAddress) => \(self.connection?.channel.remoteAddress)")
 //        ROS_DEBUG(m)
 
-        connection?.writeHeader(key_vals: m).map {
+        connection?.writeHeader(keyVals: m).map {
             ROS_DEBUG("data written")
-        }.whenFailure { (error) in
+        }.whenFailure { error in
             ROS_DEBUG("Could not wite header: \(m)\n\n error: \(error)")
         }
 
@@ -81,12 +81,10 @@ final class ServiceClientLink {
 //            ROS_DEBUG("Could not wite data: \(m)\n\n error: \(error)")
 //        })
         //connection?.writeHeader(key_vals: m)
-        ss.addServiceClientLink(link: self)
+        servicePublication.addServiceClientLink(link: self)
 
         return true
 
     }
-
-
 
 }

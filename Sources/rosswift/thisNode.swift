@@ -9,8 +9,8 @@ import Foundation
 import RosTime
 
 extension Ros {
-    final class this_node {
-        static let instance = this_node()
+    final class ThisNode {
+        static let instance = ThisNode()
         var name = "empty"
         public var namespace = "/"
 
@@ -33,27 +33,25 @@ extension Ros {
             TopicManager.instance.getSubscribed(topics: &topics)
         }
 
-
-        class func initialize(name: String, remappings: M_string, options: InitOption)
-        {
+        class func initialize(name: String, remappings: StringStringMap, options: InitOption) {
             instance.initialize(name: name, remappings: remappings, options: options)
         }
 
-        private func initialize(name in_name: String, remappings: M_string, options: InitOption) {
-            if let ns_env = ProcessInfo.processInfo.environment["ROS_NAMESPACE"] {
-                namespace = ns_env
+        private func initialize(name inName: String, remappings: StringStringMap, options: InitOption) {
+            if let namespaceEnvironment = ProcessInfo.processInfo.environment["ROS_NAMESPACE"] {
+                namespace = namespaceEnvironment
             }
 
             guard !name.isEmpty else {
                 fatalError("The node name must not be empty")
             }
 
-            name = in_name
+            name = inName
 
-            var disable_anon = false
+            var disableAnon = false
             if let it = remappings["__name"] {
                 self.name = it
-                disable_anon = true
+                disableAnon = true
             }
 
             if let it = remappings["__ns"] {
@@ -67,11 +65,11 @@ extension Ros {
 
             var error = ""
             if !Names.validate(name: namespace, error: &error) {
-                let ss = "Namespace [\(namespace)] is invalid: \(error)"
-                fatalError(ss)
+                fatalError("Namespace [\(namespace)] is invalid: \(error)")
             }
 
-            // names must be initialized here, because it requires the namespace to already be known so that it can properly resolve names.
+            // names must be initialized here, because it requires the namespace
+            // to already be known so that it can properly resolve names.
             // It must be done before we resolve g_name, because otherwise the name will not get remapped.
             Names.initialize(remappings: remappings)
 
@@ -85,11 +83,11 @@ extension Ros {
 
             name = Names.resolve(ns: namespace, name: name)
 
-            if options.contains(.AnonymousName) && !disable_anon {
+            if options.contains(.anonymousName) && !disableAnon {
                 name.append("_\(RosTime.WallTime.now().toNSec())")
             }
 
-            Ros.console.setFixedFilterToken(key: "node", val: name)
+            Ros.Console.setFixedFilterToken(key: "node", val: name)
         }
 
     }

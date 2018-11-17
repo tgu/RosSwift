@@ -10,18 +10,18 @@ import Foundation
 extension ServiceClient {
 
     internal final class Impl {
-        var server_link_ : ServiceServerLink? = nil
-        let name_ : String
-        let persistent_ : Bool
-        let header_value_ : M_string?
-        let service_md5sum_ : String
-        var is_shutdown_ : Bool = false
+        var serverLink: ServiceServerLink?
+        let name: String
+        let persistent: Bool
+        let headerValue: StringStringMap?
+        let serviceMd5sum: String
+        var isShutdown: Bool = false
 
-        init(name: String, md5sum: String, persistent: Bool, header: M_string?) {
-            name_ = name
-            persistent_ = persistent
-            header_value_ = header
-            service_md5sum_ = md5sum
+        init(name: String, md5sum: String, persistent: Bool, header: StringStringMap?) {
+            self.name = name
+            self.persistent = persistent
+            headerValue = header
+            serviceMd5sum = md5sum
         }
 
         deinit {
@@ -29,27 +29,26 @@ extension ServiceClient {
         }
 
         func shutdown() {
-            if !is_shutdown_ {
-                if !persistent_ {
-                    is_shutdown_ = true
+            if !isShutdown {
+                if !persistent {
+                    isShutdown = true
                 }
-                server_link_ = nil
+                serverLink = nil
             }
         }
 
         func isValid() -> Bool {
-            if !persistent_ {
+            if !persistent {
                 return true
             }
-            if is_shutdown_ {
+            if isShutdown {
                 return false
             }
-            if let sl = server_link_ {
-                return sl.isValid()
+            if let link = serverLink {
+                return link.isValid()
             }
             return false
         }
     }
-
 
 }

@@ -6,35 +6,39 @@
 //
 
 import Foundation
-import StdMsgs
 import RosTime
-
+import StdMsgs
 
 public final class MessageEvent<M: Message> {
     typealias CreateFunction = () -> M
 
-    let message_: M
-    let connection_header_ : M_string
-    let receipt_time_ : RosTime.Time
-    let nonconst_need_copy_ : Bool
-    let create_ : CreateFunction
+    let message: M
+    let connectionHeader: StringStringMap
+    let receiptTime: RosTime.Time
+    let nonconstNeedCopy: Bool
+    let create: CreateFunction
 
-    init(message: M, connection_header: M_string, receipt_time: RosTime.Time, nonconst_need_copy: Bool, create: @escaping CreateFunction)
-    {
-        self.message_ = message;
-        self.connection_header_ = connection_header;
-        self.receipt_time_ = receipt_time;
-        self.nonconst_need_copy_ = nonconst_need_copy;
-        self.create_ = create;
+    init(message: M,
+         header: StringStringMap,
+         receiptTime: RosTime.Time,
+         nonconstNeedCopy: Bool,
+         create: @escaping CreateFunction) {
+
+        self.message = message
+        self.connectionHeader = header
+        self.receiptTime = receiptTime
+        self.nonconstNeedCopy = nonconstNeedCopy
+        self.create = create
     }
-
 
     convenience init(event: MessageEvent<M>, create: @escaping CreateFunction) {
-        self.init(message: event.message_, connection_header: event.connection_header_, receipt_time: event.receipt_time_, nonconst_need_copy: event.nonconst_need_copy_, create: create)
+        self.init(message: event.message,
+                  header: event.connectionHeader,
+                  receiptTime: event.receiptTime,
+                  nonconstNeedCopy: event.nonconstNeedCopy,
+                  create: create)
     }
 
-
-    
     deinit {
         ROS_DEBUG("deinit()")
     }

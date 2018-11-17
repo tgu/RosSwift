@@ -7,11 +7,10 @@
 
 import Foundation
 
-
 extension XMLRPCClient {
 
     static func parseResponse(xml: String) -> XmlRpcValue? {
-        guard let tagIndex = xml.range(of: METHODRESPONSE_TAG) else {
+        guard let tagIndex = xml.range(of: methodresponseTag) else {
             ROS_ERROR("Invalid response - no methodResponse. Response:\n\(xml)")
             return nil
         }
@@ -19,13 +18,13 @@ extension XMLRPCClient {
         let result = XmlRpcValue()
 
         var data = xml.suffix(from: tagIndex.upperBound)
-        if XmlRpcUtil.nextTagIs(tag: .PARAMS_TAG, xml: &data) && XmlRpcUtil.nextTagIs(tag: .PARAM_TAG, xml: &data) {
+        if XmlRpcUtil.nextTagIs(tag: .params, xml: &data) && XmlRpcUtil.nextTagIs(tag: .param, xml: &data) {
             if result.fromXML(xml: &data) {
                 return result
             } else {
                 ROS_ERROR("Invalid response value. Response: \(data)")
             }
-        } else if XmlRpcUtil.nextTagIs(tag: .FAULT_TAG, xml: &data) {
+        } else if XmlRpcUtil.nextTagIs(tag: .fault, xml: &data) {
             ROS_ERROR("Invalid response value. Response: \(data)")
         } else {
             ROS_ERROR("Invalid response - no param or fault tag. Response \(xml)")
@@ -82,7 +81,6 @@ enum XmlRpcUtil {
     }
 }
 
-
 extension XmlRpcValue {
 
     func fromXML(xml: inout String.SubSequence) -> Bool {
@@ -90,10 +88,9 @@ extension XmlRpcValue {
 
         var xmlSeq = xml
 
-        if !XmlRpcUtil.nextTagIs(tag: .VALUE_TAG, xml: &xmlSeq) {
+        if !XmlRpcUtil.nextTagIs(tag: .value, xml: &xmlSeq) {
             return false
         }
-
 
         let tagString = XmlRpcUtil.getNextTag(xml: &xmlSeq)
         guard let tag = Tags(rawValue: tagString) else {
@@ -105,7 +102,7 @@ extension XmlRpcValue {
         var result = false
 
         switch tag {
-        case .BOOLEAN_TAG:
+        case .boolean:
             if let b = Bool(valueString) {
                 value = .boolean(b)
                 result = true
@@ -113,31 +110,31 @@ extension XmlRpcValue {
                 value = .boolean(i != 0)
                 result = true
             }
-        case .I4_TAG, .INT_TAG:
+        case .i4Tag, .int:
             if let i = Int(valueString) {
                 value = .int(i)
                 result = true
             }
-        case .DOUBLE_TAG:
+        case .double:
             if let d = Double(valueString) {
                 value = .double(d)
                 result = true
             }
 
         // Watch for empty/blank strings with no <string>tag
-        case .STRING_TAG:
+        case .string:
             value = .string(valueString)
             result = true
-        case .DATETIME_TAG:
+        case .datetime:
             result = timeFrom(xml: valueString)
-        case .BASE64_TAG:
+        case .base64:
             result = false
-        case .ARRAY_TAG:
+        case .array:
             result = arrayFrom(xml: &xmlSeq)
-        case .STRUCT_TAG:
+        case .structTag:
             result = structFrom(xml: &xmlSeq)
-        case .VALUE_ETAG:
-            let str = XmlRpcUtil.parseTag(from: .VALUE_TAG, to: .VALUE_ETAG, xml: &xml)
+        case .endValue:
+            let str = XmlRpcUtil.parseTag(from: .value, to: .endValue, xml: &xml)
             value = .string(str)
             return true
         default:
@@ -145,7 +142,7 @@ extension XmlRpcValue {
         }
 
         if result {
-            _ = XmlRpcUtil.findTag(tag: .VALUE_ETAG, xml: &xmlSeq)
+            _ = XmlRpcUtil.findTag(tag: .endValue, xml: &xmlSeq)
             xml = xmlSeq
         }
 
@@ -153,7 +150,7 @@ extension XmlRpcValue {
     }
 
     func arrayFrom(xml: inout String.SubSequence) -> Bool {
-        if !XmlRpcUtil.nextTagIs(tag: .DATA_TAG, xml: &xml) {
+        if !XmlRpcUtil.nextTagIs(tag: .data, xml: &xml) {
             return false
         }
 
@@ -164,15 +161,15 @@ extension XmlRpcValue {
             swap(&newValue, &v)
             array.append(newValue)
         }
-        _ = XmlRpcUtil.nextTagIs(tag: .DATA_ETAG, xml: &xml)
+        _ = XmlRpcUtil.nextTagIs(tag: .endData, xml: &xml)
         value = .array(array)
         return true
     }
 
     func structFrom(xml: inout String.SubSequence) -> Bool {
         var val = ValueStruct()
-        while XmlRpcUtil.nextTagIs(tag: .MEMBER_TAG, xml: &xml) {
-            let name = XmlRpcUtil.parseTag(from: .NAME_TAG, to: .NAME_ETAG, xml: &xml)
+        while XmlRpcUtil.nextTagIs(tag: .member, xml: &xml) {
+            let name = XmlRpcUtil.parseTag(from: .name, to: .endName, xml: &xml)
             let v = XmlRpcValue()
             _ = v.fromXML(xml: &xml)
             if !v.valid() {
@@ -180,7 +177,7 @@ extension XmlRpcValue {
                 return false
             }
             val[name] = v
-            _ = XmlRpcUtil.nextTagIs(tag: .MEMBER_ETAG, xml: &xml)
+            _ = XmlRpcUtil.nextTagIs(tag: .endMember, xml: &xml)
         }
         value = .struct(val)
         return true

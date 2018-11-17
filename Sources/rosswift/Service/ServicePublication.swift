@@ -9,13 +9,12 @@ import Foundation
 import StdMsgs
 
 protocol ServiceProtocol: class {
-    var name : String { get }
-    var dropped_ : Bool { get }
-    var md5sum : String { get }
-    func isDropped() -> Bool
-    var request_data_type : String { get }
-    var response_data_type : String { get }
-    var data_type : String { get }
+    var name: String { get }
+    var isDropped: Bool { get }
+    var md5sum: String { get }
+    var requestDataType: String { get }
+    var responseDataType: String { get }
+    var dataType: String { get }
     func drop()
     func addServiceClientLink(link: ServiceClientLink)
     func removeServiceClientLink(_ link: ServiceClientLink)
@@ -31,42 +30,36 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
 //        UInt64(arc4random())
 //    }()
     var call: CallFcn
-    var name : String
-    var md5sum : String { return MReq.srv_md5sum }
-    var data_type : String { return MReq.srv_datatype }
-    var request_data_type : String { return MReq.datatype }
-    var response_data_type : String { return MRes.datatype }
-    var helper_ : ServiceCallbackHelper?
-    var dropped_ = false
-    var has_tracked_object : Bool { return tracked_object_ != nil }
-    var tracked_object_ : VoidFunc?
+    var name: String
+    var md5sum: String { return MReq.srvMd5sum }
+    var dataType: String { return MReq.srvDatatype }
+    var requestDataType: String { return MReq.datatype }
+    var responseDataType: String { return MRes.datatype }
+    var helper: ServiceCallbackHelper?
+    var isDropped = false
+    var hasTrackedObject: Bool { return trackedObject != nil }
+    var trackedObject: AnyObject?
 
+    var clientLinks = [ServiceClientLink]()
+    let clientLinksQueue = DispatchQueue(label: "clientLinksQueue")
 
-    var client_links_ = [ServiceClientLink]()
-    let client_links_mutex_ = DispatchQueue(label: "client_links_mutex_")
-
-
-    init(name: String, helper:  ServiceCallbackHelper?, tracked_object: VoidFunc?, callback: @escaping CallFcn) {
+    init(name: String, helper: ServiceCallbackHelper?, trackedObject: AnyObject?, callback: @escaping CallFcn) {
         self.call = callback
         self.name = name
-        self.helper_ = helper
-        self.tracked_object_ = tracked_object
+        self.helper = helper
+        self.trackedObject = trackedObject
     }
 
     deinit {
         drop()
     }
 
-    func isDropped() -> Bool {
-        return dropped_
-    }
-
     func drop() {
         ROS_DEBUG("drop")
         // grab a lock here, to ensure that no subscription callback will
         // be invoked after we return
-        client_links_mutex_.sync {
-            dropped_ = true
+        clientLinksQueue.sync {
+            isDropped = true
         }
         dropAllConnections()
     }
@@ -86,24 +79,26 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
             return true
         }
 
-        var helper_ : ServiceCallbackHelper?
-        var buffer_ : [UInt8]
-        var num_bytes_ : UInt32
-        var link_ : ServiceClientLink
-        var has_tracked_object_ : Bool
-        var tracked_object_ : VoidFunc?
+        var helper: ServiceCallbackHelper?
+        var buffer: [UInt8]
+        var link: ServiceClientLink
+        var hasTrackedObject: Bool
+        var trackedObject: AnyObject?
 
-        init(helper: ServiceCallbackHelper?, buf: [UInt8], num_bytes: UInt32, link: ServiceClientLink, has_tracked_object: Bool, tracked_object: VoidFunc?) {
-            helper_ = helper
-            buffer_ = buf
-            num_bytes_ = num_bytes
-            link_ = link
-            has_tracked_object_ = has_tracked_object
-            tracked_object_ = tracked_object
+        init(helper: ServiceCallbackHelper?,
+             buf: [UInt8],
+             link: ServiceClientLink,
+             hasTrackedObject: Bool,
+             trackedObject: AnyObject?) {
+
+            self.helper = helper
+            self.buffer = buf
+            self.link = link
+            self.hasTrackedObject = hasTrackedObject
+            self.trackedObject = trackedObject
         }
 
     }
-
 
     func processRequest(buf: [UInt8]) -> ServiceMessage? {
 
@@ -111,8 +106,8 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
 //        var response = MRes()
         let m = SerializedMessage(buffer: buf)
         do {
-            let request : MReq = try deserializeMessage(m: m)
-            if let response : MRes = call(request) {                     // TODO: handle false return
+            let request: MReq = try deserializeMessage(m: m)
+            if let response: MRes = call(request) {                     // TODO: handle false return
                 return response
             }
         } catch {
@@ -126,37 +121,36 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
 //        callback_queue_?.addCallback(callback: cb, owner_id: hash)
     }
 
-    func addServiceClientLink(link: ServiceClientLink)  {
-        client_links_mutex_.sync {
-            client_links_.append(link);
+    func addServiceClientLink(link: ServiceClientLink) {
+        clientLinksQueue.sync {
+            clientLinks.append(link)
         }
     }
 
     func removeServiceClientLink(_ link: ServiceClientLink) {
-        client_links_mutex_.sync {
+        clientLinksQueue.sync {
             #if swift(>=4.2)
-            if let it = client_links_.firstIndex(where: { $0 === link }) {
-                client_links_.remove(at: it)
+            if let it = clientLinks.firstIndex(where: { $0 === link }) {
+                clientLinks.remove(at: it)
             }
             #else
-            if let index = client_links_.index(where: {$0 === link}) {
-                client_links_.remove(at: index)
+            if let index = clientLinks.index(where: {$0 === link}) {
+                clientLinks.remove(at: index)
             }
             #endif
         }
     }
 
     func dropAllConnections() {
-    // Swap our client_links_ list with a local one so we can only lock for a short period of time, because a
-    // side effect of our calling drop() on connections can be re-locking the client_links_ mutex
-    var local_links = [ServiceClientLink]()
+    // Swap our clientLinks list with a local one so we can only lock for a short period of time, because a
+    // side effect of our calling drop() on connections can be re-locking the clientLinks mutex
+    var localLinks = [ServiceClientLink]()
 
-        client_links_mutex_.sync {
-            swap(&local_links,&client_links_)
+        clientLinksQueue.sync {
+            swap(&localLinks, &clientLinks)
         }
 
 //        local_links.forEach { $0.connection?.drop(reason: .Destructing)}
     }
-
 
 }

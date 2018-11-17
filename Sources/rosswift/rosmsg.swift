@@ -8,7 +8,7 @@
 import Foundation
 
 func rosmsg(_ cmd: [String]) -> String {
-    func shell(_ command: String, _ args: [String], _ environment: [String:String] = [:]) -> String {
+    func shell(_ command: String, _ args: [String], _ environment: [String: String] = [:]) -> String {
         let task = Process()
         task.launchPath = command
         task.arguments = args
@@ -26,7 +26,8 @@ func rosmsg(_ cmd: [String]) -> String {
         return stringRead
     }
 
-    let env = ["PYTHONPATH":"/opt/ros/melodic/lib/python2.7/site-packages","ROS_PACKAGE_PATH":"/opt/ros/melodic/share"]
+    let env = ["PYTHONPATH": "/opt/ros/melodic/lib/python2.7/site-packages",
+               "ROS_PACKAGE_PATH": "/opt/ros/melodic/share"]
 
-    return shell("/opt/ros/melodic/bin/rosmsg",cmd,env)
+    return shell("/opt/ros/melodic/bin/rosmsg", cmd, env)
 }

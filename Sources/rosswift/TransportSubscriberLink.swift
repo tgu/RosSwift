@@ -6,42 +6,42 @@
 //
 
 import Foundation
-import StdMsgs
 import NIO
+import StdMsgs
 
 let dropNotification = Notification.Name(rawValue: "dropConnection")
-
-
 
 extension Ros {
     final class TransportSubscriberLink: SubscriberLink {
 
-    weak var parent : Publication!
-    var connection_id : UInt = 0
-    var destination_caller_id  : String = ""
-    var topic : String = ""
+    weak var parent: Publication!
+    var connectionId: UInt = 0
+    var destinationCallerId: String = ""
+    var topic: String = ""
 
-    var header_written = false
-    var connection : nio.Connection?
+    var headerWritten = false
+    var connection: Nio.Connection?
     var running = true
 
     func isIntraprocess() -> Bool {
         return false
     }
 
-    
-    init(connection: nio.Connection)  {
+    init(connection: Nio.Connection) {
         self.connection = connection
 
         #if os(OSX)
-        NotificationCenter.default.addObserver(self, selector: #selector(onConnectionDropped(_:)), name: dropNotification, object: connection)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(onConnectionDropped(_:)),
+                                               name: dropNotification,
+                                               object: connection)
         #endif
-    
+
     }
 
     func drop() {
         if let conn = connection {
-            if conn.sending_header_error {
+            if conn.isSendingHeaderError {
                 NotificationCenter.default.removeObserver(self)
             } else {
                 parent?.removeSubscriberLink(self)
@@ -55,8 +55,7 @@ extension Ros {
         return connection?.getTransportInfo() ?? ""
     }
 
-    func handleHeader(header: Header) -> Bool
-    {
+    func handleHeader(header: Header) -> Bool {
         guard let connection = connection else {
             ROS_ERROR("no connection")
             return false
@@ -69,48 +68,51 @@ extension Ros {
         }
 
         // This will get validated by validateHeader below
-        let client_callerid = header.getValue(key: "callerid") ?? ""
-        guard let pt = TopicManager.instance.lookupPublication(topic: topic) else {
-            let msg = "received a connection for a nonexistent topic [\(topic)] from [\(connection.remoteAddress)] [\(client_callerid)]."
+        let clientCallerId = header.getValue(key: "callerid") ?? ""
+        guard let pub = TopicManager.instance.lookupPublication(topic: topic) else {
+            let msg = "received a connection for a nonexistent topic [\(topic)] " +
+                      "from [\(connection.remoteAddress)] [\(clientCallerId)]."
             ROS_ERROR(msg)
             connection.sendHeaderError(msg)
             return false
         }
 
-        var error_msg = ""
-        if !pt.validateHeader(header: header, error_msg: &error_msg) {
-            ROS_ERROR(error_msg)
-            connection.sendHeaderError(error_msg)
+        var errorMsg = ""
+        if !pub.validateHeader(header: header, errorMsg: &errorMsg) {
+            ROS_ERROR(errorMsg)
+            connection.sendHeaderError(errorMsg)
             return false
         }
 
-        destination_caller_id = client_callerid
-        connection_id = UInt(Ros.ConnectionManager.instance.getNewConnectionID())
-        self.topic = pt.name
-        parent = pt
+        destinationCallerId = clientCallerId
+        connectionId = UInt(Ros.ConnectionManager.instance.getNewConnectionID())
+        self.topic = pub.name
+        parent = pub
 
         // Send back a success, with info
-        var m = M_string()
-        m["type"] = pt.datatype
-        m["md5sum"] = pt.md5sum
-        m["message_definition"] = pt.message_definition
-        m["callerid"] = Ros.this_node.getName()
-        m["latching"] = pt.isLatching() ? "1" : "0"
+        var m = StringStringMap()
+        m["type"] = pub.datatype
+        m["md5sum"] = pub.md5sum
+        m["message_definition"] = pub.messageDefinition
+        m["callerid"] = Ros.ThisNode.getName()
+        m["latching"] = pub.isLatching() ? "1" : "0"
         m["topic"] = topic
 
-        pt.addSubscriberLink(self)
+        pub.addSubscriberLink(self)
 
-        connection.writeHeader(key_vals: m).whenComplete {
-            self.header_written = true
+        connection.writeHeader(keyVals: m).whenComplete {
+            self.headerWritten = true
         }
 
         return true
     }
 
         #if os(OSX)
-    @objc func onConnectionDropped(_ note: Notification) {
+    @objc
+    func onConnectionDropped(_ note: Notification) {
         running = false
-        ROS_INFO("Connection to subscriber [\(self.connection?.remoteString ?? "#####")] to topic [\(self.topic)] dropped")
+        ROS_INFO("Connection to subscriber [\(self.connection?.remoteString ?? "#####")]" +
+                 " to topic [\(self.topic)] dropped")
         parent?.removeSubscriberLink(self)
     }
 
@@ -121,7 +123,7 @@ extension Ros {
             return
         }
 
-        connection?.write(buffer: m.buf).whenFailure({ (error) in
+        connection?.write(buffer: m.buf).whenFailure({ error in
             ROS_ERROR("writing \(m), \(error)")
         })
 
@@ -129,7 +131,4 @@ extension Ros {
 
     }
 
-
-
 }
-

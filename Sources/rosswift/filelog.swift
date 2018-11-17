@@ -7,10 +7,8 @@
 
 import Foundation
 
-
 public struct FileLog {
-    public init(remappings: M_string)
-    {
+    public init(remappings: StringStringMap) {
         // Log filename can be specified on the command line through __log
         // If it's been set, don't create our own name
         var logFileName = remappings["__log"] ?? ""
@@ -23,16 +21,19 @@ public struct FileLog {
                 } else {
                     if let home = ProcessInfo.processInfo.environment["HOME"] {
                         logFileName = home + "/.ros/log/"
-                        try! FileManager.default.createDirectory(atPath: logFileName, withIntermediateDirectories: true)
+                        do {
+                            try FileManager.default.createDirectory(atPath: logFileName, withIntermediateDirectories: true)
+                        } catch {
+                            ROS_ERROR("Could not create log directory \(logFileName), reason: \(error)")
+                        }
                     }
                 }
             }
 
             // sanitize the node name and tack it to the filename
             logFileName.components(separatedBy: CharacterSet.alphanumerics.inverted).joined(separator: "_")
-            logFileName = logFileName + Ros.this_node.getName() + "_\(getpid()).log"
+            logFileName += Ros.ThisNode.getName() + "_\(getpid()).log"
         }
-
 
 //            log_file_name = fs::system_complete(log_file_name).string();
 //            g_log_directory = fs::path(log_file_name).parent_path().string();

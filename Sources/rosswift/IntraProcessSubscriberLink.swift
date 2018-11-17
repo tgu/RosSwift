@@ -6,18 +6,17 @@
 //
 
 import Foundation
-import StdMsgs
 import NIOConcurrencyHelpers
-
+import StdMsgs
 
 final class IntraProcessSubscriberLink: SubscriberLink {
-    weak var parent : Publication!
-    var connection_id : UInt = 0
-    var destination_caller_id  : String = ""
-    let topic : String
+    weak var parent: Publication!
+    var connectionId: UInt = 0
+    var destinationCallerId: String = ""
+    let topic: String
 
-    weak var subscriber_ : IntraProcessPublisherLink?
-    var dropped_ = Atomic<Bool>(value: false)
+    weak var subscriber: IntraProcessPublisherLink?
+    var isDropped = Atomic<Bool>(value: false)
 
     init(parent: Publication) {
         self.parent = parent
@@ -25,9 +24,9 @@ final class IntraProcessSubscriberLink: SubscriberLink {
     }
 
     func setSubscriber(subscriber: IntraProcessPublisherLink) {
-        subscriber_ = subscriber
-        connection_id = UInt(Ros.ConnectionManager.instance.getNewConnectionID())
-        destination_caller_id = Ros.this_node.getName()
+        self.subscriber = subscriber
+        connectionId = UInt(Ros.ConnectionManager.instance.getNewConnectionID())
+        destinationCallerId = Ros.ThisNode.getName()
     }
 
     func isLatching() -> Bool {
@@ -35,17 +34,17 @@ final class IntraProcessSubscriberLink: SubscriberLink {
     }
 
     func enqueueMessage(m: SerializedMessage, ser: Bool, nocopy: Bool) {
-        if dropped_.load() {
+        if isDropped.load() {
             return
         }
 
-        subscriber_?.handleMessage(m: m, ser: ser, nocopy: nocopy)
+        subscriber?.handleMessage(m: m, ser: ser, nocopy: nocopy)
     }
 
     func drop() {
-        if dropped_.compareAndExchange(expected: false, desired: true){
-            subscriber_?.drop()
-            subscriber_ = nil
+        if isDropped.compareAndExchange(expected: false, desired: true) {
+            subscriber?.drop()
+            subscriber = nil
 
             ROS_DEBUG("Connection to local subscriber on topic [\(topic)] dropped")
             parent.removeSubscriberLink(self)
@@ -65,11 +64,11 @@ final class IntraProcessSubscriberLink: SubscriberLink {
     }
 
     func getPublishTypes(ser: inout Bool, nocopy: inout Bool, ti: TypeInfo) {
-        if dropped_.load() {
+        if isDropped.load() {
             return
         }
 
-        subscriber_?.getPublishTypes(ser: &ser, nocopy: &nocopy, ti: ti)
+        subscriber?.getPublishTypes(ser: &ser, nocopy: &nocopy, ti: ti)
     }
-    
+
 }

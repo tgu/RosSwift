@@ -11,30 +11,29 @@ import RosTime
 
 extension Ros {
 public final class Subscriber {
-    var topic_ : String
-    var node_handle_ : Ros.NodeHandle?
-    var helper_ : SubscriptionCallbackHelper?
-    var unsubscribed_ : Bool
+    var topic: String
+    var node: Ros.NodeHandle?
+    var helper: SubscriptionCallbackHelper?
+    var isUnsubscribed: Bool
 
     struct LatchInfo {
         let message: SerializedMessage
         let link: PublisherLink
-        let connection_header : M_string
-        let receipt_time : RosTime.Time
+        let connectionHeader: StringStringMap
+        let receiptTime: RosTime.Time
     }
 
-    var latched_messages_ = [ObjectIdentifier : LatchInfo]()
+    var latchedMessages = [ObjectIdentifier: LatchInfo]()
 
-
-    public init(topic: String, node_handle: Ros.NodeHandle, helper: SubscriptionCallbackHelper?) {
-        self.topic_ = topic
-        self.node_handle_ = node_handle
-        self.helper_ = helper
-        self.unsubscribed_ = false
+    public init(topic: String, node: Ros.NodeHandle, helper: SubscriptionCallbackHelper?) {
+        self.topic = topic
+        self.node = node
+        self.helper = helper
+        self.isUnsubscribed = false
     }
 
     deinit {
-        ROS_DEBUG("Subscriber on '\(self.topic_)' deregistering callbacks.")
+        ROS_DEBUG("Subscriber on '\(self.topic)' deregistering callbacks.")
         unsubscribe()
     }
 
@@ -43,22 +42,22 @@ public final class Subscriber {
     }
 
     func unsubscribe() {
-        if !unsubscribed_ {
-            unsubscribed_ = true
-            TopicManager.instance.unsubscribe(topic: topic_, helper: helper_!)
-            node_handle_ = nil
-            helper_ = nil
-            topic_ = ""
+        if !isUnsubscribed {
+            isUnsubscribed = true
+            TopicManager.instance.unsubscribe(topic: topic, helper: helper!)
+            node = nil
+            helper = nil
+            topic = ""
         }
     }
 
     func getTopic() -> String {
-        return topic_
+        return topic
     }
 
     func getNumPublishers() -> Int {
-        if !unsubscribed_ {
-            return TopicManager.instance.getNumPublishers(topic: topic_)
+        if !isUnsubscribed {
+            return TopicManager.instance.getNumPublishers(topic: topic)
         }
         return 0
     }

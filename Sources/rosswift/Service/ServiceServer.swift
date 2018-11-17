@@ -10,13 +10,13 @@ import Foundation
 public final class ServiceServer {
 
     final class Impl {
-        let service_ : String
-        unowned var node_handle_ : Ros.NodeHandle
-        var unadvertised_ = false
+        let service: String
+        unowned var node: Ros.NodeHandle
+        var isUnadvertised = false
 
-        init(service: String, node_handle: Ros.NodeHandle) {
-            self.service_ = service
-            self.node_handle_ = node_handle
+        init(service: String, node: Ros.NodeHandle) {
+            self.service = service
+            self.node = node
         }
 
         deinit {
@@ -24,35 +24,33 @@ public final class ServiceServer {
         }
 
         func unadvertise() {
-            if !unadvertised_ {
-                unadvertised_ = true
-                ServiceManager.instance.unadvertiseService(serv_name: service_)
+            if !isUnadvertised {
+                isUnadvertised = true
+                ServiceManager.instance.unadvertiseService(name: service)
             }
         }
 
         func isValid() -> Bool {
-            return !unadvertised_
+            return !isUnadvertised
         }
     }
 
-    var impl_ : Impl?
+    var implementation: Impl?
 
-    init(service: String, node_handle: Ros.NodeHandle) {
-        impl_ = Impl(service: service, node_handle: node_handle)
+    init(service: String, node: Ros.NodeHandle) {
+        implementation = Impl(service: service, node: node)
     }
 
     func shutdown() {
-        impl_?.unadvertise()
+        implementation?.unadvertise()
     }
 
     func getService() -> String {
-        return impl_?.service_ ?? ""
+        return implementation?.service ?? ""
     }
 
     func isValid() -> Bool {
-        return impl_?.isValid() ?? false
+        return implementation?.isValid() ?? false
     }
-
-
 
 }

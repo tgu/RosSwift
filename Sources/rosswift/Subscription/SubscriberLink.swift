@@ -9,10 +9,10 @@ import Foundation
 import StdMsgs
 
 protocol SubscriberLink: class {
-    var parent : Publication! { get }
-    var connection_id : UInt { get }
-    var destination_caller_id  : String { get }
-    var topic : String { get }
+    var parent: Publication! { get }
+    var connectionId: UInt { get }
+    var destinationCallerId: String { get }
+    var topic: String { get }
 
     func drop()
     func isIntraprocess() -> Bool
@@ -30,7 +30,7 @@ extension SubscriberLink {
     }
 
     func getMessageDefinition() -> String {
-        return parent.message_definition
+        return parent.messageDefinition
     }
 
     func getPublishTypes(ser: inout Bool, nocopy: inout Bool, ti: TypeInfo) {

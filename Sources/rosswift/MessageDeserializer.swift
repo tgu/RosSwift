@@ -5,50 +5,49 @@
 //  Created by Thomas Gustafsson on 2018-03-16.
 //
 
+import BinaryCoder
 import Foundation
 import StdMsgs
-import BinaryCoder
 
 final class MessageDeserializer {
-    var helper_ : SubscriptionCallbackHelper
-    var serialized_message_ : SerializedMessage
-    var connection_header_ : M_string
-    let mutex_ = DispatchQueue(label: "mutex_")
-    var msg_ : Message?
+    var helper: SubscriptionCallbackHelper
+    var serializedMessage: SerializedMessage
+    var connectionHeader: StringStringMap
+    let deserializeQueue = DispatchQueue(label: "deserializeQueue")
+    var message: Message?
 
-    init(helper: SubscriptionCallbackHelper, m: SerializedMessage, header: M_string) {
-        self.helper_ = helper
-        self.serialized_message_ = m
-        self.connection_header_ = header
+    init(helper: SubscriptionCallbackHelper, m: SerializedMessage, header: StringStringMap) {
+        self.helper = helper
+        self.serializedMessage = m
+        self.connectionHeader = header
     }
 
     func deserialize() -> Message? {
-        mutex_.sync {
-            if msg_ != nil {
+        deserializeQueue.sync {
+            if message != nil {
                 return
             }
 
-            if let msg = serialized_message_.message {
-                msg_ = msg
+            if let msg = serializedMessage.message {
+                message = msg
                 return
             }
 
-            if serialized_message_.buf.count == 0 && serialized_message_.num_bytes > 0 {
+            if serializedMessage.buf.isEmpty && serializedMessage.num_bytes > 0 {
                 // If the buffer has been reset it means we tried to deserialize and failed
                 return
             }
 
 //            let params = SubscriptionCallbackHelperDeserializeParams(buffer: serialized_message_.buf, length: UInt32(serialized_message_.buf.count), connection_header: connection_header_)
 
-            msg_ = helper_.deserialize(data: serialized_message_.buf)
-            serialized_message_.buf.removeAll()
+            message = helper.deserialize(data: serializedMessage.buf)
+            serializedMessage.buf.removeAll()
         }
 
-        return msg_
+        return message
     }
 
 }
-
 
 func deserializeMessage<M: Message>(m: SerializedMessage)  throws -> M {
     let b = [UInt8](m.buf.dropFirst(4))

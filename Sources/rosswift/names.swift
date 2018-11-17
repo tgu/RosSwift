@@ -10,14 +10,14 @@ import Foundation
 extension Ros {
 
     struct Names {
-        private static var globalRemappings = M_string()
-        private static var globalUnresolvedRemappings = M_string()
+        private static var globalRemappings = StringStringMap()
+        private static var globalUnresolvedRemappings = StringStringMap()
 
-        static func getRemappings() -> M_string {
+        static func getRemappings() -> StringStringMap {
             return Names.globalRemappings
         }
 
-        static func getUnresolvedRemappings() -> M_string {
+        static func getUnresolvedRemappings() -> StringStringMap {
             return Names.globalUnresolvedRemappings
         }
 
@@ -31,17 +31,20 @@ extension Ros {
                 return true
             }
 
-
             // First element is special, can be only ~ / or alpha
             let c = name.unicodeScalars.first!
             if !CharacterSet.letters.contains(c) && c != "/" && c != "~" {
-                error =  "Character [\(name.first!)] is not valid as the first character in Graph Resource Name [\(name)].  Valid characters are a-z, A-Z, / and in some cases ~."
+                error = "Character [\(name.first!)] is not valid as the first" +
+                        "character in Graph Resource Name [\(name)]. " +
+                        "Valid characters are a-z, A-Z, / and in some cases ~."
                 return false
             }
 
-            for (i,c) in name.enumerated() {
+            for (i, c) in name.enumerated() {
                 if !isValidCharInName(c) {
-                    error = "Character [\(c)] at element [\(i)] is not valid in Graph Resource Name [\(name)].  Valid characters are a-z, A-Z, 0-9, / and _."
+                    error = "Character [\(c)] at element [\(i)] is not valid " +
+                            "in Graph Resource Name [\(name)]. " +
+                            "Valid characters are a-z, A-Z, 0-9, / and _."
 
                     return false
                 }
@@ -62,19 +65,19 @@ extension Ros {
             return clean(left + "/" + right)
         }
 
-        static func remap(_ name: String) -> String {
-            let resolved = resolve(name: name, _remap: false)
+        static func remapName(_ name: String) -> String {
+            let resolved = resolve(name: name, remap: false)
             if let it = Names.globalRemappings[resolved] {
                 return it
             }
             return name
         }
 
-        static func resolve(name: String, _remap: Bool = true) -> String {
-            return resolve(ns: this_node.getNamespace(), name: name, _remap: _remap)
+        static func resolve(name: String, remap: Bool = true) -> String {
+            return resolve(ns: ThisNode.getNamespace(), name: name, remap: remap)
         }
 
-        static func resolve(ns: String, name: String, _remap: Bool = true) -> String {
+        static func resolve(ns: String, name: String, remap: Bool = true) -> String {
             var error = ""
             if !validate(name: name, error: &error) {
                 fatalError(error)
@@ -95,7 +98,7 @@ extension Ros {
             var copy = name
 
             if copy.first! == "~" {
-                copy = append(this_node.getName(), String(copy.dropFirst()))
+                copy = append(ThisNode.getName(), String(copy.dropFirst()))
             }
 
             if copy.first! != "/" {
@@ -104,19 +107,19 @@ extension Ros {
 
             copy = clean(copy)
 
-            if _remap {
-                copy = remap(copy)
+            if remap {
+                copy = remapName(copy)
             }
 
             return copy
         }
 
-        static func initialize(remappings: M_string) {
+        static func initialize(remappings: StringStringMap) {
             for it in remappings {
-                if !it.key.isEmpty && it.key.first! != "_" && it.key != this_node.getName() {
-                    let resolved_key = resolve(name: it.key,_remap: false)
-                    let resolved_name = resolve(name: it.value,_remap: false)
-                    Names.globalRemappings[resolved_key] = resolved_name
+                if !it.key.isEmpty && it.key.first! != "_" && it.key != ThisNode.getName() {
+                    let resolvedKey = resolve(name: it.key, remap: false)
+                    let resolvedName = resolve(name: it.value, remap: false)
+                    Names.globalRemappings[resolvedKey] = resolvedName
                     Names.globalUnresolvedRemappings[it.key] = it.value
                 }
             }
@@ -136,26 +139,24 @@ extension Ros {
                 return "/"
             }
 
-
-            var  stripped_name = name
+            var  strippedName = name
 
             // rstrip trailing slash
             if name.last == "/" {
-                stripped_name = String(name.dropLast())
+                strippedName = String(name.dropLast())
             }
 
             #if swift(>=4.2)
-            if let last_pos = stripped_name.lastIndex(of: "/") {
-                if last_pos == stripped_name.startIndex {
+            if let lastPos = strippedName.lastIndex(of: "/") {
+                if lastPos == strippedName.startIndex {
                     return "/"
                 }
-                return String(stripped_name.prefix(upTo: last_pos))
+                return String(strippedName.prefix(upTo: lastPos))
             }
             #endif
-            
+
             return ""
         }
     }
-
 
 }

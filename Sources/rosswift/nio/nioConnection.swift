@@ -5,55 +5,48 @@
 //  Created by Thomas Gustafsson on 2018-03-06.
 //
 
-
 import Foundation
 import StdMsgs
 import BinaryCoder
 import NIO
 
 enum DropReason {
-    case TransportDisconnect
-    case HeaderError
-    case Destructing
+    case transportDisconnect
+    case headerError
+    case destructing
 }
 
 protocol ConnectionProtocol {
 
 }
 
-
-extension nio {
+extension Nio {
 
 typealias ReadFinishedFunc = (Connection, [UInt8], Int, Bool) -> Void
 typealias WriteFinishedFunc = (Connection) -> Void
 typealias DropFunc = (Notification) -> Void
 
-
-
-
     final class Connection: ConnectionProtocol {
-
 
     static let dropNotification = Notification.Name(rawValue: "dropConnection")
 
-
-    var channel : Channel
-    var header_ : Header
-    var sending_header_error = false
+    var channel: Channel
+    var header: Header
+    var isSendingHeaderError = false
 
     init(transport: Channel, header: Header) {
         self.channel = transport
-        self.header_ = header
+        self.header = header
     }
 
-    var remoteAddress : String {
+    var remoteAddress: String {
         let host = channel.remoteAddress?.host ?? "unknown"
         let port = channel.remoteAddress?.port ?? 0
         return "\(host):\(port)"
     }
 
     var callerID: String {
-        if let callerid = header_.getValue(key: "callerid") {
+        if let callerid = header.getValue(key: "callerid") {
             return callerid
         }
 
@@ -65,25 +58,24 @@ typealias DropFunc = (Notification) -> Void
     }
 
     func getTransportInfo() -> String {
-        return "TCPROS connection on port \(channel.localAddress?.port ?? 0) to [\(remoteAddress)]";
+        return "TCPROS connection on port \(channel.localAddress?.port ?? 0) to [\(remoteAddress)]"
     }
 
-    func sendHeaderError(_ error_msg: String)
-    {
-        var m = M_string()
-        m["error"] = error_msg
+    func sendHeaderError(_ msg: String) {
+        var m = StringStringMap()
+        m["error"] = msg
 
-        writeHeader(key_vals: m).whenComplete {
+        writeHeader(keyVals: m).whenComplete {
             ROS_DEBUG("writeHeader finished")
         }
-        sending_header_error = true
+        isSendingHeaderError = true
     }
 
-    func writeHeader(key_vals: M_string) -> EventLoopFuture<Void> {
-        let buffer = Header.write(key_vals: key_vals)
+    func writeHeader(keyVals: StringStringMap) -> EventLoopFuture<Void> {
+        let buffer = Header.write(keyVals: keyVals)
         do {
-            let sb = try BinaryEncoder.encode(UInt32(buffer.count))
-            return write(buffer: sb+buffer)
+            let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))
+            return write(buffer: sizeBuffer + buffer)
         } catch {
             fatalError(error.localizedDescription)
         }
@@ -97,6 +89,5 @@ typealias DropFunc = (Notification) -> Void
     }
 
 }
-
 
 }

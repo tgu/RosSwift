@@ -13,12 +13,12 @@ import StdMsgs
     final class ServiceManager {
         static let instance = ServiceManager()
 
-        var shutting_down = Atomic<Bool>(value: false)
-        var service_publications_ = SynchronizedArray<ServiceProtocol>()
-        var service_server_links_ = SynchronizedArray<ServiceServerLink>()
+        var isShuttingDown = Atomic<Bool>(value: false)
+        var servicePublications = SynchronizedArray<ServiceProtocol>()
+        var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 
-        var connection_manager_ : Ros.ConnectionManager { return Ros.ConnectionManager.instance }
-        var xmlrpc_manager_ : XMLRPCManager { return XMLRPCManager.instance }
+        var connectionManager: Ros.ConnectionManager { return Ros.ConnectionManager.instance }
+        var xmlrpcManager: XMLRPCManager { return XMLRPCManager.instance }
 
         private init() {
         }
@@ -28,27 +28,27 @@ import StdMsgs
         }
 
         func start() {
-            shutting_down.store(false)
+            isShuttingDown.store(false)
             ROS_DEBUG("servicemanager start")
         }
 
         func shutdown() {
-            guard shutting_down.compareAndExchange(expected: false, desired: true) else {
+            guard isShuttingDown.compareAndExchange(expected: false, desired: true) else {
                 return
             }
 
             ROS_DEBUG("ServiceManager::shutdown(): unregistering our advertised services")
 
-            let localpub = service_publications_.all()
-            service_publications_.removeAll()
+            let localpub = servicePublications.all()
+            servicePublications.removeAll()
 
             localpub.forEach {
                 ROS_DEBUG("shutdown service \($0.name)")
                 self.unregisterService(service: $0.name)
                 $0.drop()
             }
-            
-            service_server_links_.removeAll { (links) in
+
+            serviceServerLinks.removeAll { links in
                 links.forEach {
                     $0.channel?.close()
                 }
@@ -56,20 +56,20 @@ import StdMsgs
         }
 
         func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(_ ops: AdvertiseServiceOptions<MReq, MRes>) -> Bool {
-            if shutting_down.load() {
+            if isShuttingDown.load() {
                 return false
             }
 
-            if isServiceAdvertised(serv_name: ops.service) {
+            if isServiceAdvertised(name: ops.service) {
                 ROS_ERROR("Tried to advertise a service that is already advertised in this node [\(ops.service)]")
                 return false
             }
 
-            let pub = ServicePublication(name: ops.service, helper: ops.helper, tracked_object: ops.tracked_object, callback: ops.callback)
-            service_publications_.append(pub)
+            let pub = ServicePublication(name: ops.service, helper: ops.helper, trackedObject: ops.trackedObject, callback: ops.callback)
+            servicePublications.append(pub)
 
-            let uri = "rosrpc://\(Ros.network.getHost()):\(connection_manager_.getTCPPort())"
-            let params = XmlRpcValue(anyArray: [Ros.this_node.getName(),ops.service,uri,xmlrpc_manager_.serverURI])
+            let uri = "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"
+            let params = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), ops.service, uri, xmlrpcManager.serverURI])
             do {
                 try Master.shared.execute(method: "registerService", request: params).wait()
             } catch {
@@ -80,26 +80,29 @@ import StdMsgs
 
         }
 
-        func unadvertiseService(serv_name: String) -> Bool {
-            if shutting_down.load() {
+        func unadvertiseService(name: String) -> Bool {
+            if isShuttingDown.load() {
                 return false
             }
 
-            guard let p = service_publications_.index(where: {$0.name == serv_name}) else {
+            guard let pub = servicePublications.index(where: { $0.name == name }) else {
                 return false
             }
 
-            service_publications_.remove(at: p, completion: { (sp) in
-                self.unregisterService(service: sp.name)
-                ROS_DEBUG( "shutting down service [\(sp.name)]")
-                sp.drop()
+            servicePublications.remove(at: pub, completion: { servicePub in
+                self.unregisterService(service: servicePub.name)
+                ROS_DEBUG( "shutting down service [\(servicePub.name)]")
+                servicePub.drop()
             })
 
             return true
         }
 
         private func unregisterService(service: String) {
-            let args = XmlRpcValue(anyArray: [Ros.this_node.getName(),service,"rosrpc://\(Ros.network.getHost()):\(connection_manager_.getTCPPort())"])
+            let args = XmlRpcValue(anyArray:
+                [Ros.ThisNode.getName(),
+                service,
+                "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"])
             do {
                 let response = try Master.shared.execute(method: "unregisterService", request: args).wait()
                 ROS_DEBUG("response: \(response)")
@@ -108,17 +111,17 @@ import StdMsgs
             }
         }
 
-        func isServiceAdvertised(serv_name: String) -> Bool {
-            return service_publications_.first(where: { $0.name == serv_name && !$0.dropped_ })  != nil
+        func isServiceAdvertised(name: String) -> Bool {
+            return servicePublications.first(where: { $0.name == name && !$0.isDropped })  != nil
         }
 
         func lookupServicePublication(service: String) -> ServiceProtocol? {
-            return service_publications_.first(where: {$0.name == service})
+            return servicePublications.first(where: { $0.name == service })
         }
 
-        var response = M_string()
+        var response = StringStringMap()
 
-        func callback(m: M_string) {
+        func callback(m: StringStringMap) {
             ROS_DEBUG("callback: \(m)")
             self.response = m
 
@@ -129,7 +132,7 @@ import StdMsgs
                 case header
                 case message
             }
-            var state : ServiceState = .header
+            var state: ServiceState = .header
 
             typealias InboundIn = ByteBuffer
 
@@ -137,15 +140,15 @@ import StdMsgs
                 var buffer = self.unwrapInboundIn(data)
                 switch state {
                 case .header:
-                    guard let len : UInt32 = buffer.readInteger(endianness: .little) else {
+                    guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                         fatalError()
                     }
                     precondition(len <= buffer.readableBytes)
 
-                    var readMap = [String:String]()
+                    var readMap = [String: String]()
 
                     while buffer.readableBytes > 0 {
-                        guard let topicLen : UInt32 = buffer.readInteger(endianness: .little) else {
+                        guard let topicLen: UInt32 = buffer.readInteger(endianness: .little) else {
                             ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
                             fatalError()
                         }
@@ -155,21 +158,21 @@ import StdMsgs
                             fatalError()
                         }
 
-                        guard let eq = line.index(of: "=") else {
+                        guard let equalIndex = line.index(of: "=") else {
                             ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
                             fatalError()
                         }
-                        let key = String(line.prefix(upTo: eq))
-                        let value = String(line.suffix(from: eq).dropFirst())
+                        let key = String(line.prefix(upTo: equalIndex))
+                        let value = String(line.suffix(from: equalIndex).dropFirst())
                         readMap[key] = value
                     }
                     ROS_DEBUG(readMap.debugDescription)
                     state = .message
                 case .message:
-                    guard let ok : UInt8 = buffer.readInteger(endianness: .little) else {
+                    guard let ok: UInt8 = buffer.readInteger(endianness: .little) else {
                         fatalError()
                     }
-                    guard let len : UInt32 = buffer.readInteger(endianness: .little) else {
+                    guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                         fatalError()
                     }
                     precondition(len <= buffer.readableBytes)
@@ -183,28 +186,32 @@ import StdMsgs
                 }
             }
 
-
         }
 
-        func createServiceServerLink(service: String, persistent: Bool,
-                                     request_md5sum: String, response_md5sum: String,
-                                     header_values: M_string?) -> ServiceServerLink?
-        {
+        func createServiceServerLink(service: String,
+                                     persistent: Bool,
+                                     requestMd5sum: String,
+                                     responseMd5sum: String,
+                                     headerValues: StringStringMap?) -> ServiceServerLink? {
 
-            if shutting_down.load() {
+            if isShuttingDown.load() {
                 return nil
             }
 
-            var serv_port : UInt16 = 0
-            var serv_host = ""
-            guard lookupService(name: service,serv_host: &serv_host,serv_port: &serv_port) else {
+            var servPort: UInt16 = 0
+            var servHost = ""
+            guard lookupService(name: service, servHost: &servHost, servPort: &servPort) else {
                 return nil
             }
 
-            let trans = nio.TransportTCP(pipeline: [])
+            let trans = Nio.TransportTCP(pipeline: [])
 
-            let c = trans.connect(host: serv_host, port: Int(serv_port)).map { (channel) -> ServiceServerLink in
-                let client = ServiceServerLink(service_name: service, persistent: persistent, request_md5sum: request_md5sum, response_md5sum: response_md5sum, header_values: header_values)
+            let c = trans.connect(host: servHost, port: Int(servPort)).map { channel -> ServiceServerLink in
+                let client = ServiceServerLink(serviceName: service,
+                                               persistent: persistent,
+                                               requestMd5sum: requestMd5sum,
+                                               responseMd5sum: responseMd5sum,
+                                               headerValues: headerValues)
                 channel.pipeline.add(handler: client)
                 client.initialize(channel: channel)
                 return client
@@ -219,14 +226,14 @@ import StdMsgs
 
         }
 
-        func removeServiceServerLink(client: ServiceServerLink)  {
-            if !shutting_down.load() {
-                service_server_links_.remove(where: { $0 === client })
+        func removeServiceServerLink(client: ServiceServerLink) {
+            if !isShuttingDown.load() {
+                serviceServerLinks.remove(where: { $0 === client })
             }
         }
 
-        func lookupService(name: String, serv_host: inout String, serv_port: inout UInt16) -> Bool {
-            let args = XmlRpcValue(anyArray: [Ros.this_node.getName(),name])
+        func lookupService(name: String, servHost: inout String, servPort: inout UInt16) -> Bool {
+            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), name])
             do {
                 let payload = try Master.shared.execute(method: "lookupService", request: args).wait()
                 guard payload.valid() else {
@@ -234,28 +241,24 @@ import StdMsgs
                     return false
                 }
 
-                let serv_uri = payload.string
-                if serv_uri.isEmpty {
+                let servURI = payload.string
+                if servURI.isEmpty {
                     ROS_DEBUG("lookupService: Empty server URI returned from master")
                     return false
                 }
 
-                if !Ros.network.splitURI(uri: serv_uri, host: &serv_host, port: &serv_port) {
-                    ROS_DEBUG("lookupService: Bad service uri [\(serv_uri)]")
+                if !Ros.Network.splitURI(uri: servURI, host: &servHost, port: &servPort) {
+                    ROS_DEBUG("lookupService: Bad service uri [\(servURI)]")
 
                     return false
                 }
 
                 return true
 
-            }
-
-            catch {
+            } catch {
                 ROS_ERROR("lookupService: \(error)")
             }
 
-            
             return false
         }
     }
-    

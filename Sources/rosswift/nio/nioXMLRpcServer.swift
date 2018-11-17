@@ -24,22 +24,21 @@ extension SocketAddress {
 final class MessageHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
     typealias OutboundOut = ByteBuffer
-    weak var server_ : XMLRPCServer!
+    weak var server: XMLRPCServer!
 
     func generateResponse(resultXML: String) -> String {
         let rs = "<?xml version=\"1.0\"?>\r\n<methodResponse><params><param>"
         let re = "</param></params></methodResponse>\r\n"
         let body = rs + resultXML + re
         let header = generateHeader(body: body)
-        let _response = header + body
-        ROS_DEBUG("generateResponse: -----\n\(_response)\n-----\n")
-        return _response
+        let response = header + body
+        ROS_DEBUG("generateResponse: -----\n\(response)\n-----\n")
+        return response
     }
-
 
     func generateHeader(body: String) -> String {
         let header = "HTTP/1.1 200 OK\r\nServer: "
-            + XMLRPC_VERSION
+            + xmlrpcVersion
             + "\r\n"
             + "Content-Type: text/xml\r\n"
             + "Content-length: "
@@ -103,13 +102,13 @@ final class MessageHandler: ChannelInboundHandler {
         let written = outbuffer.write(string: responseXML)
         assert(written == responseXML.utf8.count)
 
-        ctx.writeAndFlush(self.wrapOutboundOut(outbuffer)).whenFailure { (error) in
+        ctx.writeAndFlush(self.wrapOutboundOut(outbuffer)).whenFailure { error in
             ROS_ERROR("write failed to \(ctx.remoteAddress)\nerror: \(error))")
         }
     }
 
     func executeMethod(methodName: String, params: XmlRpcValue) -> XmlRpcValue {
-        if let method = server_.findMethod(name: methodName) {
+        if let method = server.findMethod(name: methodName) {
             do {
                 return try method.execute(params: params)
             } catch {
@@ -119,13 +118,12 @@ final class MessageHandler: ChannelInboundHandler {
         return XmlRpcValue(str: "")
     }
 
-
 }
 
 final class XMLRPCServer {
-    let handler : MessageHandler
-    var channel : Channel? = nil
-    var boot : ServerBootstrap? = nil
+    let handler: MessageHandler
+    var channel: Channel?
+    var boot: ServerBootstrap?
     var methods = [String: XmlRpcServerMethod]()
 
     init(group: EventLoopGroup) {
@@ -147,16 +145,15 @@ final class XMLRPCServer {
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
 
-        handler.server_ = self
-
+        handler.server = self
 
     }
 
     func bindAndListen(port: Int) {
         do {
-            channel = try boot?.bind(host: Ros.network.getHost(), port: 0).wait()
+            channel = try boot?.bind(host: Ros.Network.getHost(), port: 0).wait()
         } catch {
-            ROS_ERROR("bind failed to [\(Ros.network.getHost())], \(error)")
+            ROS_ERROR("bind failed to [\(Ros.Network.getHost())], \(error)")
         }
     }
 
@@ -179,8 +176,4 @@ final class XMLRPCServer {
         return methods[name]
     }
 
-    
 }
-
-
-

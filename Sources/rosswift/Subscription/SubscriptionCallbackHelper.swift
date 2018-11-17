@@ -15,15 +15,12 @@ import BinaryCoder
 //    var connection_header : M_string
 //}
 
-public struct SubscriptionCallbackHelperCallParams<M: Message>
-{
-    var event : MessageEvent<M>
+public struct SubscriptionCallbackHelperCallParams<M: Message> {
+    var event: MessageEvent<M>
 }
 
-
-
 public protocol SubscriptionCallbackHelper {
-    var id : ObjectIdentifier { get }
+    var id: ObjectIdentifier { get }
     func deserialize(data: [UInt8]) -> Message?
 //    func call(params: SubscriptionCallbackHelperCallParams)
     func call(msg: Message)
@@ -32,13 +29,12 @@ public protocol SubscriptionCallbackHelper {
     func hasHeader() -> Bool
 }
 
-
 public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (M) -> Void
 
-    var callback : Callback
-    public var id : ObjectIdentifier {
+    var callback: Callback
+    public var id: ObjectIdentifier {
         return ObjectIdentifier(self)
     }
 
@@ -46,7 +42,6 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
         self.callback = callback
 
     }
-
 
     public func deserialize(data: [UInt8]) -> Message? {
         return try? BinaryDecoder.decode(M.self, data: data)
@@ -67,7 +62,5 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
     public func hasHeader() -> Bool {
         return M.hasHeader
     }
-
-
 
 }

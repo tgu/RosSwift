@@ -8,37 +8,37 @@
 import Foundation
 
 public final class TransportHints {
-    var transports_ = [String]()
-    var options_ = [String:String]()
+    var transports = [String]()
+    var options = [String: String]()
 
     public init() {
-        
+
     }
 
     func reliable() -> TransportHints {
-        let _ = tcp()
+        _ = tcp()
         return self
     }
 
     func tcp() -> TransportHints {
-        transports_.append("TCP")
+        transports.append("TCP")
         return self
     }
 
     func tcpNoDelay(nodelay: Bool = true) -> TransportHints {
-        options_["tcp_nodelay"] = nodelay ? "true" : "false"
+        options["tcp_nodelay"] = nodelay ? "true" : "false"
         return self
     }
 
     func getTCPNoDelay() -> Bool {
-        if let delay = options_["tcp_nodelay"] {
+        if let delay = options["tcp_nodelay"] {
             return delay == "true"
         }
         return false
     }
 
     func maxDatagramSize() -> UInt32 {
-        if let mds = options_["max_datagram_size"], let md = UInt32(mds) {
+        if let mds = options["max_datagram_size"], let md = UInt32(mds) {
             return md
         }
 
@@ -46,20 +46,20 @@ public final class TransportHints {
     }
 
     func unreliable() -> TransportHints {
-        let _ = udp()
+        _ = udp()
         return self
     }
 
     func udp() -> TransportHints {
-        transports_.append("UDP")
+        transports.append("UDP")
         return self
     }
 
     func getTransports() -> [String] {
-        return transports_
+        return transports
     }
 
-    func getOptions() -> [String:String] {
-        return options_
+    func getOptions() -> [String: String] {
+        return options
     }
 }

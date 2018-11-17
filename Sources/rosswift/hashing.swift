@@ -19,7 +19,7 @@ extension Data {
     /// - Returns: A hash string using the specified hashing algorithm, or nil.
     public func hashWithRSA2048Asn1Header(_ type: HashType, output: HashOutputType = .hex) -> String? {
 
-        let rsa2048Asn1Header:[UInt8] = [
+        let rsa2048Asn1Header: [UInt8] = [
             0x30, 0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86,
             0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00, 0x03, 0x82, 0x01, 0x0f, 0x00
         ]
@@ -104,7 +104,9 @@ public extension String {
     public func hashed(_ type: HashType, output: HashOutputType = .hex) -> String? {
 
         // convert string to utf8 encoded data
-        guard let message = data(using: .utf8) else { return nil }
+        guard let message = data(using: .utf8) else {
+            return nil
+        }
         return message.hashed(type, output: output)
     }
 }

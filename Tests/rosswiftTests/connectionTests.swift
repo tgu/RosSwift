@@ -191,19 +191,19 @@ class connectionTests: XCTestCase {
                 XCTAssert(pub1 !== pub2)
 
                 var topics1 = [String]()
-                Ros.this_node.getAdvertisedTopics(topics: &topics1)
+                Ros.ThisNode.getAdvertisedTopics(topics: &topics1)
                 let t1 = topics1.first(where: { $0 == "/test" })
                 XCTAssertNotNil(t1)
             }
 
             var topics2 = [String]()
-            Ros.this_node.getAdvertisedTopics(topics: &topics2)
+            Ros.ThisNode.getAdvertisedTopics(topics: &topics2)
             let t2 = topics2.first(where: { $0 == "/test" })
             XCTAssertNotNil(t2)
        }
         print("leaving scope")
         var topics3 = [String]()
-        Ros.this_node.getAdvertisedTopics(topics: &topics3)
+        Ros.ThisNode.getAdvertisedTopics(topics: &topics3)
         let t3 = topics3.first(where: { $0 == "/test" })
         XCTAssertNil(t3)
     }

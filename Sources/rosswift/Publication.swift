@@ -12,30 +12,29 @@ import NIOConcurrencyHelpers
 final class PeerConnDisconnCallback: CallbackInterface {
 
     var callback: SubscriberStatusCallback
-    var sub_link : SubscriberLink!
-    var use_tracked_object : Bool
-    var tracked_object : AnyObject?
-    
+    var subLink: SubscriberLink!
+    var useTrackedObject: Bool
+    var trackedObject: AnyObject?
 
-    init(callback: @escaping SubscriberStatusCallback, sub_link: SubscriberLink, use_tracked_object: Bool = false, tracked_object: AnyObject? = nil) {
+    init(callback: @escaping SubscriberStatusCallback, subLink: SubscriberLink, useTrackedObject: Bool = false, trackedObject: AnyObject? = nil) {
         self.callback = callback
-        self.sub_link = sub_link
-        self.use_tracked_object = use_tracked_object
-        self.tracked_object = tracked_object
+        self.subLink = subLink
+        self.useTrackedObject = useTrackedObject
+        self.trackedObject = trackedObject
     }
 
     @discardableResult
     func call() -> CallResult {
-        var tracker : AnyObject? = nil
-        if use_tracked_object {
-            tracker = tracked_object
+        var tracker: AnyObject?
+        if useTrackedObject {
+            tracker = trackedObject
 
             if tracker == nil {
                 return .invalid
             }
         }
 
-        let pub = SingleSubscriberPublisher(link: sub_link)
+        let pub = SingleSubscriberPublisher(link: subLink)
         callback(pub)
 
         return .success
@@ -45,41 +44,38 @@ final class PeerConnDisconnCallback: CallbackInterface {
         return true
     }
 
-
 }
 
 final class Publication {
     let name: String
     let datatype: String
     let md5sum: String
-    let message_definition: String
+    let messageDefinition: String
     var sequenceNr = Atomic<UInt32>(value: 0)
-    var intraprocess_subscriber_count_ = 0
+    var intraprocessSubscriberCount = 0
     var pubCallbacks = [SubscriberCallbacks]()
-    var subscriber_links = [SubscriberLink]()
-    let latch : Bool
-    let has_header : Bool
-    var dropped = Atomic<Bool>(value: false)
-    var intraprocess_subscriber_count : Int
-    var publish_queue = [SerializedMessage]()
-    var last_message : SerializedMessage?
+    var subscriberLinks = [SubscriberLink]()
+    let latch: Bool
+    let hasHeader: Bool
+    var isDropped = Atomic<Bool>(value: false)
+    var lastMessage: SerializedMessage?
 
-    let callbacks_mutex_ = DispatchQueue(label: "callbacks_mutex_")
-    let publish_queue_mutex_ = DispatchQueue(label: "publish_queue_mutex_")
-    let subscriber_links_mutex_ = DispatchQueue(label: "subscriber_links_mutex_")
+    let callbacksQueue = DispatchQueue(label: "callbacksQueue")
+    let subscriberLinksQueue = DispatchQueue(label: "subscriberLinksQueue")
 
-    init(name: String, datatype: String, md5sum: String,
-         message_definition: String,
+    init(name: String,
+         datatype: String,
+         md5sum: String,
+         messageDefinition: String,
          latch: Bool,
-         has_header: Bool) {
+         hasHeader: Bool) {
 
         self.name = name
         self.datatype = datatype
         self.md5sum = md5sum
-        self.message_definition = message_definition
+        self.messageDefinition = messageDefinition
         self.latch = latch
-        self.has_header = has_header
-        self.intraprocess_subscriber_count = 0
+        self.hasHeader = hasHeader
     }
 
     deinit {
@@ -90,17 +86,17 @@ final class Publication {
     func isLatched() -> Bool {
         return latch
     }
-    
+
     func addCallbacks(callback: SubscriberCallbacks) {
-        callbacks_mutex_.sync {
+        callbacksQueue.sync {
 
             pubCallbacks.append(callback)
 
             // Add connect callbacks for all current subscriptions if this publisher wants them
             if let connect = callback.connect {
-                subscriber_links_mutex_.sync {
-                    subscriber_links.forEach {
-                        let cb = PeerConnDisconnCallback(callback: connect, sub_link: $0, use_tracked_object: callback.has_tracked_object, tracked_object: callback.tracked_object)
+                subscriberLinksQueue.sync {
+                    subscriberLinks.forEach {
+                        let cb = PeerConnDisconnCallback(callback: connect, subLink: $0, useTrackedObject: callback.hasTrackedObject, trackedObject: callback.trackedObject)
                         ROS_ERROR("addCallbacks logic not implemented")
                     }
                 }
@@ -111,66 +107,63 @@ final class Publication {
 
     func removeCallbacks(callback: SubscriberCallbacks) {
         #if swift(>=4.2)
-        callbacks_mutex_.sync {
-            pubCallbacks.removeAll(where: {callback === $0})
+        callbacksQueue.sync {
+            pubCallbacks.removeAll(where: { callback === $0 })
         }
         #else
-        callbacks_mutex_.sync {
-            if let index = pubCallbacks.index(where: {callback === $0}) {
+        callbacksQueue.sync {
+            if let index = pubCallbacks.index(where: { callback === $0 }) {
                 pubCallbacks.remove(at: index)
             }
         }
         #endif
     }
 
-
     func drop() {
-        if dropped.compareAndExchange(expected: false, desired: true) {
+        if isDropped.compareAndExchange(expected: false, desired: true) {
             dropAllConnections()
         }
     }
 
     func enqueueMessage(m: SerializedMessage) -> Bool {
-        if dropped.load() {
+        if isDropped.load() {
             return false
         }
 
         precondition(!m.buf.isEmpty)
 
-        subscriber_links_mutex_.sync {
-            let _ = incrementSequence()
+        subscriberLinksQueue.sync {
+            _ = incrementSequence()
 
-            if has_header {
+            if hasHeader {
                 ROS_ERROR("header not handled")
             }
-            subscriber_links.forEach {
+            subscriberLinks.forEach {
                 $0.enqueueMessage(m: m, ser: true, nocopy: false)
             }
 
-
             if latch {
-                last_message = m
+                lastMessage = m
             }
         }
-        return true;
+        return true
 
     }
 
-
     func addSubscriberLink(_ link: SubscriberLink) {
-        if dropped.load() {
+        if isDropped.load() {
             return
         }
 
-        subscriber_links_mutex_.sync {
+        subscriberLinksQueue.sync {
 
-            subscriber_links.append(link)
+            subscriberLinks.append(link)
 
             if link.isIntraprocess() {
-                intraprocess_subscriber_count += 1
+                intraprocessSubscriberCount += 1
             }
 
-            if latch, let lm = last_message, lm.buf.isEmpty  {
+            if latch, let lm = lastMessage, lm.buf.isEmpty {
                 link.enqueueMessage(m: lm, ser: true, nocopy: true)
             }
 
@@ -182,18 +175,18 @@ final class Publication {
     }
 
     func removeSubscriberLink(_ link: SubscriberLink) {
-        if dropped.load() {
+        if isDropped.load() {
             return
         }
 
-        subscriber_links_mutex_.async {
+        subscriberLinksQueue.async {
             if link.isIntraprocess() {
-                self.intraprocess_subscriber_count_ -= 1
+                self.intraprocessSubscriberCount -= 1
             }
 
-            if let it = self.subscriber_links.index(where: { $0 === link }) {
-                self.peerDisconnect(sub_link: link)
-                self.subscriber_links.remove(at: it)
+            if let it = self.subscriberLinks.index(where: { $0 === link }) {
+                self.peerDisconnect(subLink: link)
+                self.subscriberLinks.remove(at: it)
             }
         }
     }
@@ -205,11 +198,11 @@ final class Publication {
 
     func getInfo() -> [XmlRpcValue] {
         var ret = [XmlRpcValue]()
-        subscriber_links_mutex_.sync {
-            subscriber_links.forEach({ (sub) in
-                let info : [Any] = [
-                    sub.connection_id,
-                    sub.destination_caller_id,
+        subscriberLinksQueue.sync {
+            subscriberLinks.forEach({ sub in
+                let info: [Any] = [
+                    sub.connectionId,
+                    sub.destinationCallerId,
                     "o",
                     "TCPROS",
                     name,
@@ -223,17 +216,17 @@ final class Publication {
     }
 
     func dropAllConnections() {
-        var local_publishers = [SubscriberLink]()
-        subscriber_links_mutex_.sync {
-            swap(&local_publishers, &subscriber_links)
+        var localPublishers = [SubscriberLink]()
+        subscriberLinksQueue.sync {
+            swap(&localPublishers, &subscriberLinks)
         }
-        local_publishers.forEach { $0.drop() }
+        localPublishers.forEach { $0.drop() }
     }
 
     func peerConnect(link: SubscriberLink) {
-        pubCallbacks.forEach { (cbs) in
+        pubCallbacks.forEach { cbs in
             if let conn = cbs.connect {
-                let cb = PeerConnDisconnCallback(callback: conn, sub_link: link, use_tracked_object: cbs.has_tracked_object, tracked_object: cbs.tracked_object)
+                let cb = PeerConnDisconnCallback(callback: conn, subLink: link, useTrackedObject: cbs.hasTrackedObject, trackedObject: cbs.trackedObject)
                 DispatchQueue(label: "peerConnect").async {
                     cb.call()
                 }
@@ -241,10 +234,10 @@ final class Publication {
         }
     }
 
-    func peerDisconnect(sub_link: SubscriberLink) {
+    func peerDisconnect(subLink: SubscriberLink) {
         pubCallbacks.forEach {
             if let disconnect = $0.disconnect {
-                let cb = PeerConnDisconnCallback(callback: disconnect, sub_link: sub_link, use_tracked_object: $0.has_tracked_object, tracked_object: $0.tracked_object)
+                let cb = PeerConnDisconnCallback(callback: disconnect, subLink: subLink, useTrackedObject: $0.hasTrackedObject, trackedObject: $0.trackedObject)
                     cb.call()
             }
 
@@ -260,12 +253,12 @@ final class Publication {
     }
 
     func getNumSubscribers() -> Int {
-        return subscriber_links_mutex_.sync(execute: {return subscriber_links.count})
+        return subscriberLinksQueue.sync(execute: { subscriberLinks.count })
     }
 
     func getPublishTypes(serialize: inout Bool, nocopy: inout Bool, ti: TypeInfo) {
-        subscriber_links_mutex_.sync {
-            subscriber_links.forEach({ (sub) in
+        subscriberLinksQueue.sync {
+            subscriberLinks.forEach({ sub in
                 var s = false
                 var n = false
                 sub.getPublishTypes(ser: &s, nocopy: &n, ti: ti)
@@ -280,13 +273,13 @@ final class Publication {
     }
 
     func hasSubscribers() -> Bool {
-        return subscriber_links_mutex_.sync(execute: {return !subscriber_links.isEmpty})
+        return subscriberLinksQueue.sync { !subscriberLinks.isEmpty }
     }
 
     func publish(msg: SerializedMessage) {
         if msg.message != nil {
-            subscriber_links_mutex_.sync {
-                subscriber_links.forEach {
+            subscriberLinksQueue.sync {
+                subscriberLinks.forEach {
                     if $0.isIntraprocess() {
                         $0.enqueueMessage(m: msg, ser: false, nocopy: true)
                     }
@@ -296,7 +289,7 @@ final class Publication {
             msg.message = nil
         }
 
-        if msg.buf.count > 0 {
+        if !msg.buf.isEmpty {
             _ = enqueueMessage(m: msg)
         }
     }
@@ -305,41 +298,36 @@ final class Publication {
         return latch
     }
 
-    func validateHeader(header: Header, error_msg: inout String) -> Bool {
+    func validateHeader(header: Header, errorMsg: inout String) -> Bool {
         guard let md5sum = header.getValue(key: "md5sum"),
             let topic = header.getValue(key: "topic"),
             let callerid = header.getValue(key: "callerid") else {
-                let  error_msg = "Header from subscriber did not have the required elements: md5sum, topic, callerid"
-                ROS_DEBUG(error_msg)
+                ROS_DEBUG("Header from subscriber did not have the required elements: md5sum, topic, callerid")
                 return false
         }
         // Check whether the topic has been deleted from
         // advertised_topics through a call to unadvertise(), which could
         // have happened while we were waiting for the subscriber to
         // provide the md5sum.
-        if dropped.load() {
-            error_msg = "received a tcpros connection for a nonexistent topic [\(topic)] from [\(callerid)"
-            ROS_DEBUG(error_msg)
+        if isDropped.load() {
+            errorMsg = "received a tcpros connection for a nonexistent topic [\(topic)] from [\(callerid)"
+            ROS_DEBUG(errorMsg)
             return false
         }
 
         if self.md5sum != md5sum && md5sum != "*" && self.md5sum != "*" {
             let datatype = header.getValue(key: "type") ?? "no datatype"
 
-            error_msg = "Client [\(callerid)] wants topic \(topic)" +
+            errorMsg = "Client [\(callerid)] wants topic \(topic)" +
                         " to have datatype/md5sum [\(datatype)/\(md5sum)]" +
                         ", but our version has [\(self.datatype)/\(self.md5sum)" +
                         "]. Dropping connection."
 
-            ROS_DEBUG(error_msg)
+            ROS_DEBUG(errorMsg)
             return false
         }
 
         return true
     }
 
-
-
-
 }
-

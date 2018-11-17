@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 extension Ros {
 
     final class ROSOutAppender: LogAppender {

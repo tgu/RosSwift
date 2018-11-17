@@ -6,59 +6,55 @@
 //
 
 import Foundation
-import StdMsgs
 import RosTime
+import StdMsgs
 
 final class TransportPublisherLink: PublisherLink {
-    private var connection_ : InboundConnection? = nil
-    private var retry_timer_handle_ : Int32
-    private var needs_retry_ : Bool
-    private var retry_period_ = RosTime.WallDuration()
-    private var next_retry_ = RosTime.SteadyTime()
-    private var dropping_ : Bool
+    private var connection: InboundConnection?
+    private var retryTimerHandle: Int32
+    private var needsRetry: Bool
+    private var retryPeriod = RosTime.WallDuration()
+    private var nextRetry = RosTime.SteadyTime()
+    private var isDropping: Bool
 
     override init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
-        retry_timer_handle_ = -1
-        needs_retry_ = false
-        dropping_ = false
+        retryTimerHandle = -1
+        needsRetry = false
+        isDropping = false
         super.init(parent: parent, xmlrpcUri: xmlrpcUri, transportHints: transportHints)
     }
 
     deinit {
-        if retry_timer_handle_ != -1 {
-            getInternalTimerManager().remove(timer_handle: retry_timer_handle_)
+        if retryTimerHandle != -1 {
+            getInternalTimerManager().remove(timerHandle: retryTimerHandle)
         }
-        connection_?.drop(reason: .Destructing)
+        connection?.drop(reason: .destructing)
     }
 
-
-
     func initialize(connection: InboundConnection) {
-        connection_ = connection
+        self.connection = connection
         connection.initialize(owner: self)
 
-        let header : M_string = ["topic": parent.name,
-                                     "md5sum": parent.md5sum_,
-                                     "callerid": Ros.this_node.getName(),
+        let header: StringStringMap = ["topic": parent.name,
+                                     "md5sum": parent.md5sum,
+                                     "callerid": Ros.ThisNode.getName(),
                                      "type": parent.datatype,
                                      "tcp_nodelay": transportHints.getTCPNoDelay() ? "1" : "0"]
 
-
-        connection.writeHeader(key_vals: header).whenComplete {
+        connection.writeHeader(keyVals: header).whenComplete {
             ROS_DEBUG("TransportPublisherLink: header is written")
         }
     }
 
     override func drop() {
-        dropping_ = true
+        isDropping = true
         parent.remove(publisherLink: self)
-        connection_?.drop(reason: .Destructing)
-        connection_ = nil
+        connection?.drop(reason: .destructing)
+        connection = nil
     }
 
     override func getTransportInfo() -> String {
-        return connection_?.getTransportInfo() ?? ""
+        return connection?.getTransportInfo() ?? ""
     }
-
 
 }

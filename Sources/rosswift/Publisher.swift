@@ -5,20 +5,17 @@
 //  Created by Thomas Gustafsson on 2018-03-03.
 //
 
+import BinaryCoder
 import Foundation
 import StdMsgs
-import BinaryCoder
-
 
 public protocol Publisher: class {
     func publish(message: Message)
 }
 
-extension Ros {
-
     public final class SpecializedPublisher<M: Message>: Publisher {
 
-        final class Impl<M : Message> {
+        final class Impl<M: Message> {
             var topic: String
             var md5sum: String { return M.md5sum }
             var datatype: String { return M.datatype }
@@ -26,9 +23,9 @@ extension Ros {
             var callbacks: SubscriberCallbacks?
             var unadvertised: Bool
 
-            init<M: Message>(topic: String, message: M.Type, node_handle: NodeHandle, callbacks: SubscriberCallbacks) {
+            init<M: Message>(topic: String, message: M.Type, node: Ros.NodeHandle, callbacks: SubscriberCallbacks) {
                 self.topic = topic
-                self.nodeHandle = node_handle
+                self.nodeHandle = node
                 self.callbacks = callbacks
                 self.unadvertised = false
             }
@@ -45,25 +42,25 @@ extension Ros {
                 ROS_DEBUG("Publisher on '\(topic)' deregistering callbacks.")
                 if !unadvertised {
                     unadvertised = true
-                    let _ = TopicManager.instance.unadvertisePublisher(topic: topic, callbacks: callbacks)
+                    _ = Ros.TopicManager.instance.unadvertisePublisher(topic: topic, callbacks: callbacks)
                     nodeHandle = nil
                 }
             }
 
         }
 
-        var impl_ : Impl<M>?
+        var impl: Impl<M>?
 
-        var topicManager: TopicManager {
-            return TopicManager.instance
+        var topicManager: Ros.TopicManager {
+            return Ros.TopicManager.instance
         }
 
-        init(topic: String, message: M.Type, node_handle: NodeHandle, callbacks: SubscriberCallbacks) {
-            impl_ = Impl(topic: topic, message: message, node_handle: node_handle, callbacks: callbacks)
+        init(topic: String, message: M.Type, node: Ros.NodeHandle, callbacks: SubscriberCallbacks) {
+            impl = Impl(topic: topic, message: message, node: node, callbacks: callbacks)
         }
 
         public func publish(message: Message) {
-            guard let impl = impl_ else {
+            guard let impl = impl else {
                 ROS_ERROR("Call to publish() on an invalid Publisher")
                 return
             }
@@ -83,26 +80,25 @@ extension Ros {
 
             let msg = SerializedMessage(msg: message)
 
-            topicManager.publish(topic: impl.topic, ser_msg: msg)
+            topicManager.publish(topic: impl.topic, serMsg: msg)
 
         }
 
-
         func incrementSequence() {
-            if let impl = impl_, impl.isValid {
+            if let impl = impl, impl.isValid {
                 topicManager.incrementSequence(topic: impl.topic)
             }
         }
 
         func shutdown() {
-            if let impl = impl_ {
+            if let impl = impl {
                 impl.unadvertise()
-                impl_ = nil
+                self.impl = nil
             }
         }
 
-        func getNumSubscribers() -> Int  {
-            if let impl = impl_, impl.isValid {
+        func getNumSubscribers() -> Int {
+            if let impl = impl, impl.isValid {
                 return topicManager.getNumSubscribers(topic: impl.topic)
             }
 
@@ -110,7 +106,7 @@ extension Ros {
         }
 
         func isLatched() -> Bool {
-            if let impl = impl_, impl.isValid {
+            if let impl = impl, impl.isValid {
                 if let pub = topicManager.lookupPublication(topic: impl.topic) {
                     return pub.isLatched()
                 }
@@ -118,4 +114,3 @@ extension Ros {
             fatalError("Call to isLatched() on an invalid Publisher")
         }
     }
-}

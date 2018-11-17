@@ -10,34 +10,34 @@ import NIO
 
 extension Ros {
 
-    struct network {
-        static var g_host = ""
-        static var g_tcpros_server_port: UInt16 = 0
+    struct Network {
+        static var gHost = ""
+        static var gTcprosServerPort: UInt16 = 0
 
         static func getHost() -> String {
-            return g_host
+            return gHost
         }
 
-        static func initialize(remappings: M_string) {
+        static func initialize(remappings: StringStringMap) {
             if let it = remappings["__hostname"] {
-                g_host = it
+                gHost = it
             } else if let it = remappings["__ip"] {
-                g_host = it
+                gHost = it
             }
             if let it = remappings["__tcpros_server_port"] {
-                guard let tcpros_server_port = UInt16(it) else {
+                guard let tcprosServerPort = UInt16(it) else {
                     fatalError("__tcpros_server_port [\(it)] was not specified as a number within the 0-65535 range")
                 }
-                g_tcpros_server_port = tcpros_server_port
+                gTcprosServerPort = tcprosServerPort
             }
 
-            if g_host.isEmpty {
-                g_host = determineHost()
+            if gHost.isEmpty {
+                gHost = determineHost()
             }
         }
 
         static func splitURI(uri: String, host: inout String, port: inout UInt16) -> Bool {
-            var uri = uri  
+            var uri = uri
             if uri.hasPrefix("http://") {
                 uri = String(uri.dropFirst(7))
             } else if uri.hasPrefix("rosrpc://") {
@@ -48,27 +48,25 @@ extension Ros {
             guard parts.count == 2 else {
                 return false
             }
-            var port_str = parts[1]
+            var portString = parts[1]
 
-            var segs = port_str.components(separatedBy: "/")
-            port_str = segs[0]
+            var segs = portString.components(separatedBy: "/")
+            portString = segs[0]
 
-            guard let port_nr = UInt16(port_str) else {
+            guard let portNr = UInt16(portString) else {
                 return false
             }
 
-            port = port_nr
+            port = portNr
             host = parts[0]
             return true
         }
 
-
         static func getTCPROSPort() -> UInt16 {
-            return g_tcpros_server_port
+            return gTcprosServerPort
         }
 
         static func determineHost() -> String {
-
 
             if let hostname = ProcessInfo.processInfo.environment["ROS_HOSTNAME"] {
                 ROS_DEBUG("determineIP: using value of ROS_HOSTNAME:\(hostname)")
@@ -93,12 +91,15 @@ extension Ros {
                 return trimmedHost
             }
 
-
-            for i in try! System.enumerateInterfaces() {
-                let host = i.address.host
-                if host != "127.0.0.1" && i.address.protocolFamily == PF_INET {
-                    return host
+            do {
+                for i in try System.enumerateInterfaces() {
+                    let host = i.address.host
+                    if host != "127.0.0.1" && i.address.protocolFamily == PF_INET {
+                        return host
+                    }
                 }
+            } catch {
+                ROS_ERROR(error.localizedDescription)
             }
 
             return "127.0.0.1"

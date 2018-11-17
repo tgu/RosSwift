@@ -8,18 +8,16 @@
 import Foundation
 import StdMsgs
 
-
-struct ServiceSpecCallParams
-{
-    var request : Message
-    var response : Message
-    var connection_header : M_string
+struct ServiceSpecCallParams {
+    var request: Message
+    var response: Message
+    var connectionHeader: StringStringMap
 }
 
 struct ServiceCallbackHelperCallParams {
-    let request : SerializedMessage
-    let response : SerializedMessage
-    let connection_header : M_string
+    let request: SerializedMessage
+    let response: SerializedMessage
+    let connectionHeader: StringStringMap
 }
 
 protocol ServiceCallbackHelper {
@@ -33,29 +31,27 @@ typealias ResCreateFunction = () -> Message
 
 final class ServiceCallbackHelperT: ServiceCallbackHelper {
 
-    let callback_ : Callback
-    let create_req_ : ReqCreateFunction
-    let create_res_ : ResCreateFunction
+    let callback: Callback
+    let createRequest: ReqCreateFunction
+    let createResponse: ResCreateFunction
 
-    init(callback: @escaping Callback, create_req: @escaping ReqCreateFunction, create_res: @escaping ResCreateFunction ) {
+    init(callback: @escaping Callback,
+         createRequest: @escaping ReqCreateFunction,
+         createResponse: @escaping ResCreateFunction ) {
 
-        self.callback_  = callback
-        self.create_req_ = create_req
-        self.create_res_ = create_res
+        self.callback = callback
+        self.createRequest = createRequest
+        self.createResponse = createResponse
     }
 
-
-
     func call(params: ServiceCallbackHelperCallParams) -> Bool {
-        let req = create_req_()
-        let res = create_res_()
+        let req = createRequest()
+        let res = createResponse()
 
-
-        _ = ServiceSpecCallParams(request: req, response: res, connection_header: params.connection_header)
+        _ = ServiceSpecCallParams(request: req, response: res, connectionHeader: params.connectionHeader)
 
         ROS_ERROR("ServiceCallbackHelperT.call not implemented")
         return false
     }
-
 
 }

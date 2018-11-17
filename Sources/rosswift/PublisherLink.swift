@@ -7,18 +7,17 @@
 
 import Foundation
 
-
 class PublisherLink {
 
     unowned var parent: Subscription
-    final var connectionId : Int
+    final var connectionId: Int
     final let publisherXmlrpcUri: String
-    final var stats: Stats? = nil
+    final var stats: Stats?
     final let transportHints: TransportHints
     final var latched: Bool
-    final var callerId : String = ""
-    final var header : Header? = nil
-    final var md5sum : String = ""
+    final var callerId: String = ""
+    final var header: Header?
+    final var md5sum: String = ""
 
     struct Stats {
         var bytesReceived: UInt = 0
@@ -39,28 +38,27 @@ class PublisherLink {
         fatalError()
     }
 
-    final func setHeader(header: Header) -> Bool
-    {
-        guard let new_caller_id = header.getValue(key: "callerid") else {
+    final func setHeader(header: Header) -> Bool {
+        guard let newId = header.getValue(key: "callerid") else {
             ROS_ERROR("header did not have required element: callerid")
             return false
         }
 
-        guard let new_md5sum = header.getValue(key: "md5sum") else {
+        guard let newMd5sum = header.getValue(key: "md5sum") else {
             ROS_ERROR("Publisher header did not have required element: md5sum")
             return false
         }
 
-        guard let _ = header.getValue(key: "type") else {
+        guard header.getValue(key: "type") != nil else {
             ROS_ERROR("Publisher header did not have required element: type")
             return false
         }
 
-        callerId = new_caller_id
-        md5sum = new_md5sum
+        callerId = newId
+        md5sum = newMd5sum
 
         latched = false
-        if let latched_str = header.getValue(key: "latching"), latched_str == "1" {
+        if let latchedString = header.getValue(key: "latching"), latchedString == "1" {
             latched = true
         }
 

@@ -8,12 +8,12 @@
 import Foundation
 
 final class XMLRPCCallWrapper: XmlRpcServerMethod {
-    let name : String
-    let server : XMLRPCServer
-    let function : XMLRPCFunc
+    let name: String
+    let server: XMLRPCServer
+    let function: XMLRPCFunc
 
-    init(function_name: String, cb: @escaping XMLRPCFunc, server: XMLRPCServer) {
-        self.name = function_name
+    init(function: String, cb: @escaping XMLRPCFunc, server: XMLRPCServer) {
+        self.name = function
         self.server = server
         self.function = cb
         server.addMethod(method: self)
@@ -30,6 +30,5 @@ final class XMLRPCCallWrapper: XmlRpcServerMethod {
     func help() -> String {
         return ""
     }
-
 
 }

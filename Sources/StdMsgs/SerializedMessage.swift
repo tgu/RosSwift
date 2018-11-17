@@ -14,7 +14,7 @@ public typealias TypeInfo = String
 public final class SerializedMessage {
     public var buf : [UInt8]
     public var message : Message?
-    public var type_info : TypeInfo? = nil
+    public var typeInfo : TypeInfo? = nil
 
     public var num_bytes: Int {
         return buf.count
@@ -27,7 +27,7 @@ public final class SerializedMessage {
 
     public init(msg: Message) {
         self.message = msg
-        self.type_info = String(String(reflecting: msg).prefix(while: { $0 != "(" }))
+        self.typeInfo = String(String(reflecting: msg).prefix(while: { $0 != "(" }))
 
         do {
             let code = try BinaryEncoder.encode(msg)

@@ -8,18 +8,16 @@
 import Foundation
 import StdMsgs
 import BinaryCoder
- 
 
 public final class SingleSubscriberPublisher {
     var link: SubscriberLink
-    public var callerId : String {
-        return link.destination_caller_id
+    public var callerId: String {
+        return link.destinationCallerId
     }
 
     init(link: SubscriberLink) {
         self.link = link
     }
-
 
     public func publish<M: Message>(_ msg: M) {
         do {
