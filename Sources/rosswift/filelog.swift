@@ -22,7 +22,8 @@ public struct FileLog {
                     if let home = ProcessInfo.processInfo.environment["HOME"] {
                         logFileName = home + "/.ros/log/"
                         do {
-                            try FileManager.default.createDirectory(atPath: logFileName, withIntermediateDirectories: true)
+                            try FileManager.default.createDirectory(atPath: logFileName,
+                                                                    withIntermediateDirectories: true)
                         } catch {
                             ROS_ERROR("Could not create log directory \(logFileName), reason: \(error)")
                         }
@@ -31,7 +32,8 @@ public struct FileLog {
             }
 
             // sanitize the node name and tack it to the filename
-            logFileName.components(separatedBy: CharacterSet.alphanumerics.inverted).joined(separator: "_")
+            logFileName = logFileName.components(separatedBy: CharacterSet.alphanumerics.inverted)
+                                    .joined(separator: "_")
             logFileName += Ros.ThisNode.getName() + "_\(getpid()).log"
         }
 

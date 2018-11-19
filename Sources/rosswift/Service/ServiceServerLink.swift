@@ -74,14 +74,7 @@ final class ServiceServerLink: ChannelInboundHandler {
         @objc
         func onConnectionDropped(note: NSNotification) {
             ROS_ERROR("\(onConnectionDropped) is not fully implemented")
-//            guard let conn = connection_ else {
-//                return
-//            }
-//            ROS_DEBUG("Service client from [\(conn.getRemoteString())] for [\(serviceName_)] dropped")
-
             isDropped = true
-//            clearCalls()
-
             ServiceManager.instance.removeServiceServerLink(client: self)
         }
 
@@ -101,7 +94,6 @@ final class ServiceServerLink: ChannelInboundHandler {
 
             var buffer = c.allocator.buffer(capacity: req.buf.count)
             buffer.write(bytes: req.buf)
-//            ROS_DEBUG("ServiceCall to [\(c.remoteAddress!.host):\(c.remoteAddress!.port!)]: \(req.message!)")
 
             c.writeAndFlush(buffer).whenFailure { error in
                 ROS_DEBUG("ServiceServerLink \(#line), write failed to \(c.remoteAddress)\nerror: \(error))")
@@ -131,10 +123,8 @@ final class ServiceServerLink: ChannelInboundHandler {
             while buffer.readableBytes > 0 {
             switch state {
             case .header:
-//                ROS_DEBUG("readable bytes = \(buffer.readableBytes)")
-//                ROS_DEBUG(buffer.getBytes(at: buffer.readerIndex, length: buffer.readableBytes))
                 guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
-                    fatalError()
+                    fatalError("Received an invalid TCPROS header. Invalid count")
                 }
                 precondition(len <= buffer.readableBytes)
 
@@ -142,39 +132,30 @@ final class ServiceServerLink: ChannelInboundHandler {
                 let leave = buffer.readableBytes - Int(len)
                 while buffer.readableBytes > leave {
                     guard let topicLen: UInt32 = buffer.readInteger(endianness: .little) else {
-                        ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
-                        fatalError()
+                        fatalError("Received an invalid TCPROS header. Invalid string")
                     }
 
                     guard let line = buffer.readString(length: Int(topicLen)) else {
-                        ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
+                        ROS_DEBUG("Received an invalid TCPROS header. Each line must have an equals sign.")
                         ctx.close()
                         return
                     }
 
                     guard let equalIndex = line.index(of: "=") else {
-                        fatalError("Received an invalid TCPROS header.  Each line must have an equals sign.")
+                        fatalError("Received an invalid TCPROS header. Each line must have an equals sign.")
                     }
                     let key = String(line.prefix(upTo: equalIndex))
                     let value = String(line.suffix(from: equalIndex).dropFirst())
                     readMap[key] = value
                 }
-//                ROS_DEBUG(readMap)
                 state = .message
             case .message:
-//                ROS_DEBUG("readable bytes = \(buffer.readableBytes)")
-//                ROS_DEBUG(buffer.getBytes(at: buffer.readerIndex, length: buffer.readableBytes))
                 guard let ok: UInt8 = buffer.readInteger(endianness: .little) else {
-                    fatalError()
+                    fatalError("Received malformed message")
                 }
                 ROS_DEBUG("OK = \(ok)")
-//                guard let len : UInt32 = buffer.readInteger(endianness: .little) else {
-//                    fatalError()
-//                }
-//                precondition(len <= buffer.readableBytes)
                 if let rawMessage = buffer.readBytes(length: buffer.readableBytes) {
                     response = SerializedMessage(buffer: rawMessage)
-//                    ROS_DEBUG("Received \(response.buf), from \(ctx.remoteAddress)")
                 }
                 ctx.close()
             }

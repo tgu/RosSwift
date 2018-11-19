@@ -27,9 +27,9 @@ final class MessageHandler: ChannelInboundHandler {
     weak var server: XMLRPCServer!
 
     func generateResponse(resultXML: String) -> String {
-        let rs = "<?xml version=\"1.0\"?>\r\n<methodResponse><params><param>"
-        let re = "</param></params></methodResponse>\r\n"
-        let body = rs + resultXML + re
+        let res = "<?xml version=\"1.0\"?>\r\n<methodResponse><params><param>"
+        let req = "</param></params></methodResponse>\r\n"
+        let body = res + resultXML + req
         let header = generateHeader(body: body)
         let response = header + body
         ROS_DEBUG("generateResponse: -----\n\(response)\n-----\n")

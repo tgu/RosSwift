@@ -5,15 +5,9 @@
 //  Created by Thomas Gustafsson on 2018-03-06.
 //
 
+import BinaryCoder
 import Foundation
 import StdMsgs
-import BinaryCoder
-
-//public struct SubscriptionCallbackHelperDeserializeParams {
-//    var buffer: [UInt8]
-//    var length: UInt32
-//    var connection_header : M_string
-//}
 
 public struct SubscriptionCallbackHelperCallParams<M: Message> {
     var event: MessageEvent<M>
@@ -22,7 +16,6 @@ public struct SubscriptionCallbackHelperCallParams<M: Message> {
 public protocol SubscriptionCallbackHelper {
     var id: ObjectIdentifier { get }
     func deserialize(data: [UInt8]) -> Message?
-//    func call(params: SubscriptionCallbackHelperCallParams)
     func call(msg: Message)
     func getTypeInfo() -> String
     func isConst() -> Bool
@@ -34,6 +27,7 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
     typealias Callback = (M) -> Void
 
     var callback: Callback
+
     public var id: ObjectIdentifier {
         return ObjectIdentifier(self)
     }
@@ -48,7 +42,9 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
     }
 
     public func call(msg: Message) {
-        callback(msg as! M)
+        if let message = msg as? M {
+            callback(message)
+        }
     }
 
     public func getTypeInfo() -> String {

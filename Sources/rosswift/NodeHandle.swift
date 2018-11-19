@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import StdMsgs
 import NIOConcurrencyHelpers
+import StdMsgs
 
 extension Ros {
 
@@ -172,7 +172,11 @@ extension Ros {
             return nil
         }
 
-        func serviceClient(service: String, md5sum: String, persistent: Bool = false, headerValues: StringStringMap? = nil) -> ServiceClient {
+        func serviceClient(service: String,
+                           md5sum: String,
+                           persistent: Bool = false,
+                           headerValues: StringStringMap? = nil) -> ServiceClient {
+
             let name = resolveName(name: service)
             let client = ServiceClient(name: name, md5sum: md5sum, persistent: persistent, headerValues: headerValues)
 
@@ -184,12 +188,14 @@ extension Ros {
 
         }
 
-        public func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(service: String, srvFunc: @escaping (MReq) -> MRes?) -> ServiceServer? {
+        public func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(service: String,
+                                                                                 srvFunc: @escaping (MReq) -> MRes?) -> ServiceServer? {
                 let ops = AdvertiseServiceOptions(service: service, callback: srvFunc)
             return advertiseService(ops: ops, callback: srvFunc)
         }
 
-        func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(ops: AdvertiseServiceOptions<MReq, MRes>, callback: @escaping (MReq) -> MRes?) -> ServiceServer? {
+        func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(ops: AdvertiseServiceOptions<MReq, MRes>,
+                                                                          callback: @escaping (MReq) -> MRes?) -> ServiceServer? {
             let options = ops
             options.service = resolveName(name: ops.service)
             if ServiceManager.instance.advertiseService(options) {

@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import StdMsgs
 import NIOConcurrencyHelpers
+import StdMsgs
 
 final class PeerConnDisconnCallback: CallbackInterface {
 
@@ -16,7 +16,11 @@ final class PeerConnDisconnCallback: CallbackInterface {
     var useTrackedObject: Bool
     var trackedObject: AnyObject?
 
-    init(callback: @escaping SubscriberStatusCallback, subLink: SubscriberLink, useTrackedObject: Bool = false, trackedObject: AnyObject? = nil) {
+    init(callback: @escaping SubscriberStatusCallback,
+         subLink: SubscriberLink,
+         useTrackedObject: Bool = false,
+         trackedObject: AnyObject? = nil) {
+
         self.callback = callback
         self.subLink = subLink
         self.useTrackedObject = useTrackedObject
@@ -96,7 +100,10 @@ final class Publication {
             if let connect = callback.connect {
                 subscriberLinksQueue.sync {
                     subscriberLinks.forEach {
-                        let cb = PeerConnDisconnCallback(callback: connect, subLink: $0, useTrackedObject: callback.hasTrackedObject, trackedObject: callback.trackedObject)
+                        _ = PeerConnDisconnCallback(callback: connect,
+                                                    subLink: $0,
+                                                    useTrackedObject: callback.hasTrackedObject,
+                                                    trackedObject: callback.trackedObject)
                         ROS_ERROR("addCallbacks logic not implemented")
                     }
                 }
@@ -163,8 +170,8 @@ final class Publication {
                 intraprocessSubscriberCount += 1
             }
 
-            if latch, let lm = lastMessage, lm.buf.isEmpty {
-                link.enqueueMessage(m: lm, ser: true, nocopy: true)
+            if latch, let last = lastMessage, last.buf.isEmpty {
+                link.enqueueMessage(m: last, ser: true, nocopy: true)
             }
 
             // This call invokes the subscribe callback if there is one.
@@ -226,9 +233,12 @@ final class Publication {
     func peerConnect(link: SubscriberLink) {
         pubCallbacks.forEach { cbs in
             if let conn = cbs.connect {
-                let cb = PeerConnDisconnCallback(callback: conn, subLink: link, useTrackedObject: cbs.hasTrackedObject, trackedObject: cbs.trackedObject)
+                let pcdc = PeerConnDisconnCallback(callback: conn,
+                                                   subLink: link,
+                                                   useTrackedObject: cbs.hasTrackedObject,
+                                                   trackedObject: cbs.trackedObject)
                 DispatchQueue(label: "peerConnect").async {
-                    cb.call()
+                    pcdc.call()
                 }
             }
         }
@@ -237,8 +247,11 @@ final class Publication {
     func peerDisconnect(subLink: SubscriberLink) {
         pubCallbacks.forEach {
             if let disconnect = $0.disconnect {
-                let cb = PeerConnDisconnCallback(callback: disconnect, subLink: subLink, useTrackedObject: $0.hasTrackedObject, trackedObject: $0.trackedObject)
-                    cb.call()
+                let pcdc = PeerConnDisconnCallback(callback: disconnect,
+                                                   subLink: subLink,
+                                                   useTrackedObject: $0.hasTrackedObject,
+                                                   trackedObject: $0.trackedObject)
+                    pcdc.call()
             }
 
         }

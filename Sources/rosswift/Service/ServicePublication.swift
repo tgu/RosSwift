@@ -134,7 +134,7 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
                 clientLinks.remove(at: it)
             }
             #else
-            if let index = clientLinks.index(where: {$0 === link}) {
+            if let index = clientLinks.index(where: { $0 === link }) {
                 clientLinks.remove(at: index)
             }
             #endif

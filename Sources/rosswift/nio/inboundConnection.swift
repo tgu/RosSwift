@@ -101,7 +101,7 @@ final class InboundConnection: ConnectionProtocol {
         ROS_DEBUG("onHeaderReceived")
 
         guard let link = link else {
-            fatalError()
+            fatalError("onHeaderReceived has no link")
         }
 
         if !link.setHeader(header: header) {
@@ -160,7 +160,11 @@ final class InboundConnection: ConnectionProtocol {
                 if let rawMessage = buffer.readBytes(length: Int(len)) {
                     let m = SerializedMessage(buffer: rawMessage)
                     if let sub = p.parent {
-                        let drops = sub.handle(message: m, ser: true, nocopy: false, connectionHeader: link.header!.getValues(), link: link)
+                        let drops = sub.handle(message: m,
+                                               ser: true,
+                                               nocopy: false,
+                                               connectionHeader: link.header!.getValues(),
+                                               link: link)
                     }
                 }
             }

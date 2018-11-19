@@ -224,7 +224,9 @@ public extension SynchronizedArray {
             var result: Element?
 
             queue.sync {
-                guard self.array.startIndex..<self.array.endIndex ~= index else { return }
+                guard self.array.startIndex..<self.array.endIndex ~= index else {
+                    return
+                }
                 result = self.array[index]
             }
 

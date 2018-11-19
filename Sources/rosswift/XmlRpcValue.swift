@@ -130,7 +130,7 @@ public final class XmlRpcValue {
         if i == 0 {
             return self
         }
-        fatalError()
+        fatalError("subscript accesing \(i)")
     }
 
     var uncertainString: String? {
@@ -156,7 +156,7 @@ public final class XmlRpcValue {
                 return a[0].string
             }
         default:
-            fatalError()
+            fatalError("not a string \(value)")
         }
         return ""
     }
@@ -222,7 +222,7 @@ public final class XmlRpcValue {
             let xml = a.reduce("", { $0 + $1.toXml() })
             return Tags.arrayXml(xml)
         default:
-            fatalError()
+            fatalError("Could not convert to xml: \(value)")
         }
     }
 
@@ -302,14 +302,14 @@ public final class XmlRpcValue {
     }
 
     func getMap(_ m: [String: XmlRpcValue]) -> [String: String]? {
-        var nm = [String: String]()
+        var map = [String: String]()
         for k in m {
             guard let s = k.value.uncertainString else {
                 return nil
             }
-            nm[k.key] = s
+            map[k.key] = s
         }
-        return nm
+        return map
     }
 
     func getMap<T: Numeric>(_ m: [String: XmlRpcValue]) -> [String: T]? {
@@ -552,7 +552,8 @@ enum Tags: String {
     }
 
     static func arrayXml(_ val: String) -> String {
-        return "\(value.rawValue)\(array.rawValue)\(data.rawValue)\(val)\(endData.rawValue)\(endArray.rawValue)\(endValue.rawValue)"
+        return "\(value.rawValue)\(array.rawValue)\(data.rawValue)\(val)" +
+        "\(endData.rawValue)\(endArray.rawValue)\(endValue.rawValue)"
     }
 
 }

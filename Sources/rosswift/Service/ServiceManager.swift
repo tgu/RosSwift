@@ -65,7 +65,10 @@ import StdMsgs
                 return false
             }
 
-            let pub = ServicePublication(name: ops.service, helper: ops.helper, trackedObject: ops.trackedObject, callback: ops.callback)
+            let pub = ServicePublication(name: ops.service,
+                                         helper: ops.helper,
+                                         trackedObject: ops.trackedObject,
+                                         callback: ops.callback)
             servicePublications.append(pub)
 
             let uri = "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"
@@ -112,7 +115,7 @@ import StdMsgs
         }
 
         func isServiceAdvertised(name: String) -> Bool {
-            return servicePublications.first(where: { $0.name == name && !$0.isDropped })  != nil
+            return servicePublications.first(where: { $0.name == name && !$0.isDropped }) != nil
         }
 
         func lookupServicePublication(service: String) -> ServiceProtocol? {
@@ -124,67 +127,6 @@ import StdMsgs
         func callback(m: StringStringMap) {
             ROS_DEBUG("callback: \(m)")
             self.response = m
-
-        }
-
-        final class ServiceHandler: ChannelInboundHandler {
-            enum ServiceState {
-                case header
-                case message
-            }
-            var state: ServiceState = .header
-
-            typealias InboundIn = ByteBuffer
-
-            func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-                var buffer = self.unwrapInboundIn(data)
-                switch state {
-                case .header:
-                    guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
-                        fatalError()
-                    }
-                    precondition(len <= buffer.readableBytes)
-
-                    var readMap = [String: String]()
-
-                    while buffer.readableBytes > 0 {
-                        guard let topicLen: UInt32 = buffer.readInteger(endianness: .little) else {
-                            ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
-                            fatalError()
-                        }
-
-                        guard let line = buffer.readString(length: Int(topicLen)) else {
-                            ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
-                            fatalError()
-                        }
-
-                        guard let equalIndex = line.index(of: "=") else {
-                            ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
-                            fatalError()
-                        }
-                        let key = String(line.prefix(upTo: equalIndex))
-                        let value = String(line.suffix(from: equalIndex).dropFirst())
-                        readMap[key] = value
-                    }
-                    ROS_DEBUG(readMap.debugDescription)
-                    state = .message
-                case .message:
-                    guard let ok: UInt8 = buffer.readInteger(endianness: .little) else {
-                        fatalError()
-                    }
-                    guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
-                        fatalError()
-                    }
-                    precondition(len <= buffer.readableBytes)
-                    if ok != 0 {
-                        ROS_DEBUG("missing logic for non-ok return")
-                    }
-                    if let rawMessage = buffer.readBytes(length: Int(len)) {
-                        let m = SerializedMessage(buffer: rawMessage)
-                        ROS_DEBUG("Servce response \(m)")
-                    }
-                }
-            }
 
         }
 

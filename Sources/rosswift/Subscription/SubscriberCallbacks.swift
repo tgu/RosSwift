@@ -15,7 +15,11 @@ final class SubscriberCallbacks {
     var hasTrackedObject: Bool = false
     var trackedObject: AnyObject?
 
-    init(connect: SubscriberStatusCallback?, disconnect: SubscriberStatusCallback?, hasTrackedObject: Bool, trackedObject: AnyObject? = nil) {
+    init(connect: SubscriberStatusCallback?,
+         disconnect: SubscriberStatusCallback?,
+         hasTrackedObject: Bool,
+         trackedObject: AnyObject? = nil) {
+
         self.connect = connect
         self.disconnect = disconnect
         self.hasTrackedObject = hasTrackedObject

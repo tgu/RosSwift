@@ -128,30 +128,30 @@ final class Subscription {
 
         var retval = true
 
-        var ss = newPubs.joined(separator: ", ")
-        ss += " already have these connections: "
-        ss += publisherLinks.compactMap { $0.publisherXmlrpcUri }.joined(separator: ", ")
-        ROS_DEBUG("Publisher update for [\(self.name)]: \(ss)")
+        var msg = newPubs.joined(separator: ", ")
+        msg += " already have these connections: "
+        msg += publisherLinks.compactMap { $0.publisherXmlrpcUri }.joined(separator: ", ")
+        ROS_DEBUG("Publisher update for [\(self.name)]: \(msg)")
 
         var additions = [String]()
         var subtractions = [PublisherLink]()
 
-        publisherLinks.forEach { pl in
+        publisherLinks.forEach { link in
             let pub = newPubs.first(where: {
-                urisEqual(uri: $0, uri2: pl.publisherXmlrpcUri)
+                urisEqual(uri: $0, uri2: link.publisherXmlrpcUri)
             })
             if pub == nil {
-                subtractions.append(pl)
+                subtractions.append(link)
                 return
             }
         }
 
-        newPubs.forEach { np in
+        newPubs.forEach { newPub in
             let pub = publisherLinks.first(where: {
-                urisEqual(uri: np, uri2: $0.publisherXmlrpcUri )
+                urisEqual(uri: newPub, uri2: $0.publisherXmlrpcUri )
             })
             if pub == nil {
-                additions.append(np)
+                additions.append(newPub)
             }
 
         }
@@ -217,8 +217,11 @@ final class Subscription {
 //        // If this link is latched, store off the message so we can immediately pass it to new subscribers later
 
         if link.latched {
-            let li = LatchInfo(message: message, link: link, connectionHeader: connectionHeader, receiptTime: receiptTime)
-            latchedMessages[ObjectIdentifier(link)] = li
+            let info = LatchInfo(message: message,
+                                 link: link,
+                                 connectionHeader: connectionHeader,
+                                 receiptTime: receiptTime)
+            latchedMessages[ObjectIdentifier(link)] = info
         }
 
         return drops
@@ -262,7 +265,10 @@ final class Subscription {
             return false
         }
 
-        let resp = Master.shared.execute(method: "requestTopic", request: params, host: peerHost, port: UInt16(peerPort))
+        let resp = Master.shared.execute(method: "requestTopic",
+                                         request: params,
+                                         host: peerHost,
+                                         port: UInt16(peerPort))
 
         resp.whenSuccess({ payload in
             guard payload.size() == 3,

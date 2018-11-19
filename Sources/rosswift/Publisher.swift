@@ -74,8 +74,8 @@ public protocol Publisher: class {
             let datatype = type(of: message).datatype
 
             guard impl.md5sum == "*" || md5sum == "*" || impl.md5sum == md5sum else {
-                ROS_ERROR("Trying to publish message of type [\(datatype)/\(md5sum)] on a publisher with type [\(impl.datatype)/\(impl.md5sum)]")
-                fatalError()
+                fatalError("Trying to publish message of type [\(datatype)/\(md5sum)]" +
+                    " on a publisher with type [\(impl.datatype)/\(impl.md5sum)]")
             }
 
             let msg = SerializedMessage(msg: message)

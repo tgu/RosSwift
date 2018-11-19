@@ -38,8 +38,8 @@ public final class TransportHints {
     }
 
     func maxDatagramSize() -> UInt32 {
-        if let mds = options["max_datagram_size"], let md = UInt32(mds) {
-            return md
+        if let mds = options["max_datagram_size"], let mdSize = UInt32(mds) {
+            return mdSize
         }
 
         return 0

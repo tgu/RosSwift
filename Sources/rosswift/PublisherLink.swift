@@ -34,8 +34,7 @@ class PublisherLink {
     }
 
     func drop() {
-        ROS_DEBUG("drop")
-        fatalError()
+        ROS_ERROR("drop")
     }
 
     final func setHeader(header: Header) -> Bool {

@@ -138,25 +138,25 @@ struct StdMessage<T> {
 
 }
 
-let types = ["int8" : "Int8",
-             "int16" : "Int16",
-             "int32":"Int32",
-             "int64":"Int64",
-             "uint8":"UInt8",
-             "uint16":"UInt16",
-             "uint32":"UInt32",
-             "uint64":"UInt64",
-             "string":"String",
-             "byte":"Int8",
-             "char":"UInt8",
-             "duration":"RosTime.Duration",
-             "time":"RosTime.TimeBase",
-             "bool":"Bool",
-             "float32":"Float32",
-             "float64":"Float64",
-             "empty":"Empty",
-             "Header":"std_msgs.header"
-]
+let types = ["int8": "Int8",
+             "int16": "Int16",
+             "int32": "Int32",
+             "int64": "Int64",
+             "uint8": "UInt8",
+             "uint16": "UInt16",
+             "uint32": "UInt32",
+             "uint64": "UInt64",
+             "string": "String",
+             "byte": "Int8",
+             "char": "UInt8",
+             "duration": "RosTime.Duration",
+             "time": "RosTime.TimeBase",
+             "bool": "Bool",
+             "float32": "Float32",
+             "float64": "Float64",
+             "empty": "Empty",
+             "Header": "std_msgs.header"
+            ]
 
 var generatedMessages = [String:String]()
 
@@ -167,9 +167,9 @@ func generateCode(msg: String) {
     let structName = parts[0] == "" ? "empty" : parts[0]
     let type = types[structName]!
     let name = parts.count > 1 ? String(parts[1]) : "data"
-    let decl = "public var \(name) : \(type)"
+    let decl = "public var \(name): \(type)"
     let md5sum = String(data).hashed(.md5) ?? "*"
-    let size = structName == "string" ? "4+data.utf8.count" : "MemoryLayout<\(type)>.size"
+    let size = structName == "string" ? "4 + data.utf8.count" : "MemoryLayout<\(type)>.size"
 
     let ser = """
     var buffer = StreamBuffer()
@@ -238,11 +238,11 @@ func generateMessageCode(msg: String) {
             if array {
                 if builtin {
                     if let fs = fixedArraySize {
-                        return "MemoryLayout<\(simpleType)>.size*\(fs)"
+                        return "MemoryLayout<\(simpleType)>.size * \(fs)"
                     }
-                    return "4+MemoryLayout<\(simpleType)>*\(name).count"
+                    return "4 + MemoryLayout<\(simpleType)> * \(name).count"
                 } else {
-                    return "\(name).reduce(0,{$0+$1.serializationLength()})"
+                    return "\(name).reduce(0, { $0+$1.serializationLength() })"
                 }
             }
             return "\(name).serializationLength()"
@@ -258,10 +258,10 @@ func generateMessageCode(msg: String) {
             if array {
                 if fixedArraySize == nil {
                     return """
-                    \(name).forEach{$0.serialize(stream: &stream)}
+                    \(name).forEach{ $0.serialize(stream: &stream) }
                     """
                 }
-                return "\(name).forEach{$0.serialize(stream: &stream)}"
+                return "\(name).forEach{ $0.serialize(stream: &stream) }"
             }
             return "\(name).serialize(stream: &stream)"
 
@@ -302,7 +302,7 @@ func generateMessageCode(msg: String) {
 
         var declaration: String {
             if let v = value {
-                return "public let \(name) : \(fullType) = \(v)"
+                return "public let \(name): \(fullType) = \(v)"
             }
             return "public var \(name): \(fullType)"
         }

@@ -23,7 +23,10 @@ final class ServiceClientLink {
     }
 
     func handleHeader(header: Header) -> Bool {
-        guard let md5sum = header.getValue(key: "md5sum"), let service = header.getValue(key: "service"), let clientCallerId = header.getValue(key: "callerid") else {
+        guard let md5sum = header.getValue(key: "md5sum"),
+            let service = header.getValue(key: "service"),
+            let clientCallerId = header.getValue(key: "callerid") else {
+
             let msg = "bogus tcpros header. did not have the required elements: md5sum, service, callerid"
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
@@ -43,7 +46,8 @@ final class ServiceClientLink {
         }
 
         if servicePublication.md5sum != md5sum && md5sum != "*" && servicePublication.md5sum != "*" {
-            let msg = "client wants service \(service) to have md5sum \(md5sum) but it has \(servicePublication.md5sum). Dropping connection."
+            let msg = "client wants service \(service) to have md5sum \(md5sum)" +
+                      " but it has \(servicePublication.md5sum). Dropping connection."
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
             return false
@@ -68,19 +72,11 @@ final class ServiceClientLink {
                             "md5sum": servicePublication.md5sum,
                             "callerid": Ros.ThisNode.getName()]
 
-//        ROS_DEBUG("\(#file):\(#line)  write from \(self.connection?.channel.localAddress) => \(self.connection?.channel.remoteAddress)")
-//        ROS_DEBUG(m)
-
         connection?.writeHeader(keyVals: m).map {
             ROS_DEBUG("data written")
         }.whenFailure { error in
             ROS_DEBUG("Could not wite header: \(m)\n\n error: \(error)")
         }
-
-//        connection?.channel.writeAndFlush(m).whenFailure({ (error) in
-//            ROS_DEBUG("Could not wite data: \(m)\n\n error: \(error)")
-//        })
-        //connection?.writeHeader(key_vals: m)
         servicePublication.addServiceClientLink(link: self)
 
         return true

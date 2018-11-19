@@ -60,7 +60,9 @@ internal final class ServiceClient {
         let promise: EventLoopPromise<SerializedMessage> = eventLoop.newPromise()
 
         guard let impl = implementation, impl.serviceMd5sum == serviceMd5sum else {
-            let err = ServiceError.invalidInput("Call to service [\(implementation!.name)] with md5sum [\(serviceMd5sum)] does not match md5sum when the handle was created ([\(implementation!.serviceMd5sum)])")
+            let err = ServiceError.invalidInput("Call to service [\(implementation!.name)]" +
+                " with md5sum [\(serviceMd5sum)] does not match md5sum when the handle was" +
+                " created ([\(implementation!.serviceMd5sum)])")
             promise.fail(error: err)
             return promise.futureResult
         }

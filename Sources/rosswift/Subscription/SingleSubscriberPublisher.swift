@@ -5,9 +5,9 @@
 //  Created by Thomas Gustafsson on 2018-03-03.
 //
 
+import BinaryCoder
 import Foundation
 import StdMsgs
-import BinaryCoder
 
 public final class SingleSubscriberPublisher {
     var link: SubscriberLink

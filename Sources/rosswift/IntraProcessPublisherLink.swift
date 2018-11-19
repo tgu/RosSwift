@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import StdMsgs
 import NIOConcurrencyHelpers
+import StdMsgs
 
 final class IntraProcessPublisherLink: PublisherLink {
     var publisher: IntraProcessSubscriberLink?
@@ -50,7 +50,11 @@ final class IntraProcessPublisherLink: PublisherLink {
             return
         }
 
-        parent.handle(message: m, ser: ser, nocopy: nocopy, connectionHeader: header?.getValues() ?? StringStringMap(), link: self)
+        parent.handle(message: m,
+                      ser: ser,
+                      nocopy: nocopy,
+                      connectionHeader: header?.getValues() ?? StringStringMap(),
+                      link: self)
 
     }
 

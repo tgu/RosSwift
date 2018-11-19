@@ -5,8 +5,8 @@
 //  Created by Thomas Gustafsson on 2018-03-10.
 //
 
-import Foundation
 import BinaryCoder
+import Foundation
 
 public protocol TimeBase: Comparable, BinaryCodable {
 }
@@ -15,13 +15,10 @@ public struct RosTime {
     static func rosWalltime() -> (sec: UInt32, nsec: UInt32) {
         var start = timespec()
         clock_gettime(CLOCK_REALTIME, &start)
-        if start.tv_sec < 0 || start.tv_sec > UInt32.max {
-            fatalError()
-        }
-        return (UInt32(start.tv_sec),UInt32(start.tv_nsec))
+        return (UInt32(start.tv_sec), UInt32(start.tv_nsec))
     }
 
-    static func ros_wallsleep(sec: UInt32, nsec: UInt32) -> Bool {
+    static func rosWallsleep(sec: UInt32, nsec: UInt32) -> Bool {
         var req = timespec(tv_sec: Int(sec), tv_nsec: Int(nsec))
         var rem = timespec(tv_sec: 0, tv_nsec: 0)
         while nanosleep(&req, &rem) != 0 && !Time.gStopped {
@@ -30,7 +27,6 @@ public struct RosTime {
         }
         return !Time.gStopped
     }
-
 
     static func normalizeSecNSec(_ sec: inout UInt64, _ nsec: inout UInt64) {
         let nsecPart = nsec % 1_000_000_000
@@ -56,15 +52,15 @@ public struct RosTime {
     }
 
     static func normalizeSecNSecSigned(_ sec: inout Int64, _ nsec: inout Int64) {
-        var nsecPart = nsec % 1000000000;
-        var secPart = sec + nsec / 1000000000;
+        var nsecPart = nsec % 1000000000
+        var secPart = sec + nsec / 1000000000
         if nsecPart < 0 {
-            nsecPart += 1000000000;
+            nsecPart += 1000000000
             secPart -= 1
         }
 
         if secPart < Int32.min || secPart > Int32.max {
-            fatalError()
+            fatalError("normalizeSecNSecSigned of \(sec):\(nsec) failed")
         }
 
         sec = secPart
@@ -81,56 +77,44 @@ public struct RosTime {
         nsec = Int32(nsec64)
     }
 
-
-
-    //struct WallDuration: DurationBase {
-    //
-    //}
-    //
-    //func + (lhs: WallDuration, rhs: WallDuration) -> WallDuration {
-    //    return WallDuration.nanoseconds(lhs.nanoseconds+rhs.nanoseconds)
-    //}
-    //
-    //
     public struct TimerEvent {
-        let lastExpected : Time
-        let lastReal : Time
-        let currentExpected : Time
-        let currentReal : Time
+        let lastExpected: Time
+        let lastReal: Time
+        let currentExpected: Time
+        let currentReal: Time
 
         struct Profile {
-            let lastDuration : WallDuration
+            let lastDuration: WallDuration
         }
     }
 
     public struct SteadyTimerEvent {
-        let lastExpected : SteadyTime
-        let lastReal : SteadyTime
-        let currentExpected : SteadyTime
-        let currentReal : SteadyTime
+        let lastExpected: SteadyTime
+        let lastReal: SteadyTime
+        let currentExpected: SteadyTime
+        let currentReal: SteadyTime
 
         struct Profile {
-            let lastDuration : WallDuration
+            let lastDuration: WallDuration
         }
     }
 
     public struct WallTimerEvent {
-        let lastExpected : WallTime
-        let lastReal : WallTime
-        let currentExpected : WallTime
-        let currentReal : WallTime
+        let lastExpected: WallTime
+        let lastReal: WallTime
+        let currentExpected: WallTime
+        let currentReal: WallTime
 
         struct Profile {
-            let lastDuration : WallDuration
+            let lastDuration: WallDuration
         }
     }
-
 
     public final class WallTime: TimeBase {
 
         public static func now() -> WallTime {
-            let t = rosWalltime()
-            return WallTime(sec: t.sec, nsec: t.nsec)
+            let time = rosWalltime()
+            return WallTime(sec: time.sec, nsec: time.nsec)
         }
 
         public static func + (lhs: WallTime, rhs: WallDuration) -> WallTime {
@@ -143,16 +127,15 @@ public struct RosTime {
 
     }
 
-
     public class TimeBase: Comparable, BinaryCodable {
 
-        public final var nanoseconds : UInt64
+        public final var nanoseconds: UInt64
 
-        public final var sec : UInt32 {
+        public final var sec: UInt32 {
             return UInt32(nanoseconds / 1_000_000_000)
         }
 
-        public final var nsec : UInt32 {
+        public final var nsec: UInt32 {
             return UInt32(nanoseconds % 1_000_000_000)
         }
 
@@ -181,11 +164,10 @@ public struct RosTime {
         }
 
         public final func toSec() -> TimeInterval {
-            return TimeInterval(sec)*1e-9
+            return TimeInterval(sec) * 1e-9
         }
 
         public static let distantFuture = TimeBase(nanosec: UInt64.max)
-
 
         public static func < (lhs: TimeBase, rhs: TimeBase) -> Bool {
             return lhs.nanoseconds < rhs.nanoseconds
@@ -194,22 +176,20 @@ public struct RosTime {
         public static func == (lhs: TimeBase, rhs: TimeBase) -> Bool {
             return lhs.nanoseconds == rhs.nanoseconds
         }
-
-
     }
 
     public class Time: TimeBase {
 
-        public static var g_use_sim_time = true
+        public static var useSimTime = true
         public static var gStopped = false
-        public static var g_initialized = false
-        public static var g_sim_time = Time()
-        public static var g_sim_time_mutex = DispatchQueue(label: "g_sim_time_mutex")
+        public static var gInitialized = false
+        public static var simTime = Time()
+        public static var simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
 
         public static func initialize() {
             gStopped = false
-            g_use_sim_time = false
-            g_initialized = true
+            useSimTime = false
+            gInitialized = true
         }
 
         public static func shutDown() {
@@ -217,17 +197,19 @@ public struct RosTime {
         }
 
         public static func isValid() -> Bool {
-            return !g_use_sim_time || g_sim_time.isZero()
+            return !useSimTime || simTime.isZero()
         }
 
         public static func now() -> Time {
-            guard Time.g_initialized else {
-                fatalError()
+            guard Time.gInitialized else {
+                fatalError("Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start()" +
+                    " has been called. If this is a standalone app or test that just uses ros::Time and does not" +
+                    " communicate over ROS, you may also call ros::Time::init()")
             }
 
-            if Time.g_use_sim_time {
-                return Time.g_sim_time_mutex.sync {
-                    Time.g_sim_time
+            if Time.useSimTime {
+                return Time.simTimeQueue.sync {
+                    Time.simTime
                 }
             }
 
@@ -235,17 +217,17 @@ public struct RosTime {
             return Time(sec: time.sec, nsec: time.nsec)
         }
 
-        public static func setNow(_ new_now: Time) {
-            g_sim_time_mutex.sync {
-                g_sim_time = new_now
-                g_use_sim_time = true
+        public static func setNow(_ now: Time) {
+            simTimeQueue.sync {
+                simTime = now
+                useSimTime = true
             }
         }
 
         public static func waitForValid(timeout: WallDuration) -> Bool {
             let start = WallTime.now()
             while !isValid() && !gStopped {
-                let _ = WallDuration(seconds: 0.01).sleep()
+                _ = WallDuration(seconds: 0.01).sleep()
                 if timeout > WallDuration(sec: 0, nsec: 0) && WallTime.now() - start > timeout {
                     return false
                 }
@@ -265,7 +247,7 @@ public struct RosTime {
 
     }
 
-    public class SteadyTime : TimeBase {
+    public class SteadyTime: TimeBase {
 
         public static func now() -> SteadyTime {
             var start = timespec()

@@ -32,6 +32,7 @@ opt_in_rules:
   - yoda_condition
 included:
   - Sources/rosswift
+  - Sources/RosTime
 identifier_name:
   excluded:
     - m
@@ -54,6 +55,7 @@ identifier_name:
     - n
     - ok
     - ns
+    - to
     - ROS_DEBUG
     - ROS_WARNING
     - ROS_INFO

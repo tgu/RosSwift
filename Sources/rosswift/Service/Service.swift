@@ -13,8 +13,8 @@ import StdMsgs
 public struct Service {
 
     public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq) -> EventLoopFuture<MRes?> {
-        let nh = Ros.NodeHandle()
-        let client = nh.serviceClient(service: Ros.Names.resolve(name: serviceName), md5sum: MReq.srvMd5sum)
+        let node = Ros.NodeHandle()
+        let client = node.serviceClient(service: Ros.Names.resolve(name: serviceName), md5sum: MReq.srvMd5sum)
         return client.call(req: req)
     }
 
@@ -101,7 +101,9 @@ public struct Service {
         var port: UInt16 = 0
         if ServiceManager.instance.lookupService(name: mappedName, servHost: &host, servPort: &port) {
             let keymap = ["probe": "1", "md5sum": "*", "callerid": Ros.ThisNode.getName(), "service": mappedName]
-            let transport = Nio.TransportTCP(pipeline: [Nio.MessageDelimiterCodec(), Nio.HeaderMessageCodec(), Nio.TransportTCP.Handler(callback: callback)])
+            let transport = Nio.TransportTCP(pipeline: [Nio.MessageDelimiterCodec(),
+                                                        Nio.HeaderMessageCodec(),
+                                                        Nio.TransportTCP.Handler(callback: callback)])
             do {
 
             try transport.connect(host: host, port: Int(port)).map { channel -> Void in

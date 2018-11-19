@@ -38,8 +38,6 @@ final class MessageDeserializer {
                 return
             }
 
-//            let params = SubscriptionCallbackHelperDeserializeParams(buffer: serialized_message_.buf, length: UInt32(serialized_message_.buf.count), connection_header: connection_header_)
-
             message = helper.deserialize(data: serializedMessage.buf)
             serializedMessage.buf.removeAll()
         }

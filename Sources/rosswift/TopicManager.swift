@@ -226,7 +226,8 @@ extension Ros {
             if let s = sub {
                 return s.pubUpdate(newPubs: pubs)
             } else {
-                ROS_DEBUG("got a request for updating publishers of topic \(topic), but I don't have any subscribers to that topic.")
+                ROS_DEBUG("got a request for updating publishers of topic" +
+                    " \(topic), but I don't have any subscribers to that topic.")
             }
 
             return false
@@ -291,7 +292,9 @@ extension Ros {
 
             if let sub = sub {
                 if !found {
-                    fatalError("Tried to subscribe to a topic with the same name but different md5sum as a topic that was already subscribed [\(M.datatype)/\(M.md5sum) vs. \(sub.datatype)/\(sub.md5sum)]")
+                    fatalError("Tried to subscribe to a topic with the same name" +
+                        " but different md5sum as a topic that was already subscribed" +
+                        " [\(M.datatype)/\(M.md5sum) vs. \(sub.datatype)/\(sub.md5sum)]")
                 } else if !sub.add(callback: ops.helper!,
                                    md5: M.md5sum,
                                    trackedObject: ops.trackedObject,
@@ -438,8 +441,8 @@ extension Ros {
 
             if ok {
                 _ = s.pubUpdate(newPubs: pubUris)
-                if selfSubscribed, let pl = pubLocal {
-                    s.add(localConnection: pl)
+                if selfSubscribed, let local = pubLocal {
+                    s.add(localConnection: local)
                 }
             }
 
@@ -472,7 +475,8 @@ extension Ros {
                 fatalError("Advertising on topic [\(ops.topic)] with an empty datatype")
             }
             if M.definition.isEmpty {
-                ROS_DEBUG("Advertising on topic \(ops.topic) with an empty message definition.  Some tools (e.g. rosbag) may not work correctly.")
+                ROS_DEBUG("Advertising on topic \(ops.topic) with an empty message definition." +
+                    " Some tools (e.g. rosbag) may not work correctly.")
             }
 
             if let pub = lookupPublicationWithoutLock(topic: ops.topic) {
@@ -574,7 +578,8 @@ extension Ros {
                 if let p = lookupPublicationWithoutLock(topic: topic) {
 
                     if p.hasSubscribers() || p.isLatching() {
-                        ROS_DEBUG("Publishing message on topic [\(p.name)] with sequence number [\(p.sequenceNr.load())]")
+                        ROS_DEBUG("Publishing message on topic [\(p.name)] " +
+                            "with sequence number [\(p.sequenceNr.load())]")
 
                         p.publish(msg: serMsg)
 

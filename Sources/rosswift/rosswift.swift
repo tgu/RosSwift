@@ -266,7 +266,10 @@ public struct Ros {
             return
         }
 
-        ROS_INFO("Started node [\(Ros.ThisNode.getName())], pid [\(getpid())], bound on [\(Network.getHost())], xmlrpc port [\(XMLRPCManager.instance.serverPort)], tcpros port [\(Ros.ConnectionManager.instance.getTCPPort())], using [real] time")
+        ROS_INFO("Started node [\(Ros.ThisNode.getName())], " +
+            "pid [\(getpid())], bound on [\(Network.getHost())], " +
+            "xmlrpc port [\(XMLRPCManager.instance.serverPort)], " +
+            "tcpros port [\(Ros.ConnectionManager.instance.getTCPPort())], using [real] time")
 
     }
 
