@@ -45,14 +45,12 @@ final class IntraProcessPublisherLink: PublisherLink {
         }
     }
 
-    func handleMessage(m: SerializedMessage, ser: Bool, nocopy: Bool) {
+    func handleMessage(m: SerializedMessage) {
         if isDropped.load() {
             return
         }
 
         parent.handle(message: m,
-                      ser: ser,
-                      nocopy: nocopy,
                       connectionHeader: header?.getValues() ?? StringStringMap(),
                       link: self)
 

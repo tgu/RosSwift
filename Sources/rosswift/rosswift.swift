@@ -48,6 +48,9 @@ public struct Ros {
 
     public typealias InitOption = Set<InitOptions>
 
+    static let gGlobalQueue = CallbackQueue()
+    static let gInternalCallbackQueue = CallbackQueue()
+
     static var rosoutAppender: ROSOutAppender?
     static var fileLog: FileLog?
     static var initOptions = InitOption()
@@ -60,6 +63,10 @@ public struct Ros {
     static let logg = HeliumLogger(.debug)
 
     public static var ok: Bool { return isRunning }
+
+    static func getGlobalCallbackQueue() -> CallbackQueue {
+        return gGlobalQueue
+    }
 
     static func requestShutdown() {
         isShutdownRequested = true
@@ -87,21 +94,20 @@ public struct Ros {
         return XmlRpc.responseInt(code: 1, msg: "", response: 0)
     }
 
-    /** ROS initialization function.
-
-      This function will parse any ROS arguments (e.g., topic name
-      remappings), and will consume them (i.e., argc and argv may be
-      modified as a result of this call).
-
-      Use this version if you are using the NodeHandle API
-
-    - Parameter argv: Command line argumets
-    - Parameter name: Name of this node.  The name must be a base name, ie.
-                it cannot contain namespaces.
-    - Parameter options: [optional] Options to start the node with
-                (a set of bit flags from `Ros.InitOption`)
-
-     */
+    ///  ROS initialization function.
+    ///
+    /// This function will parse any ROS arguments (e.g., topic name
+    /// remappings), and will consume them (i.e., argc and argv may be
+    /// modified as a result of this call).
+    ///
+    /// Use this version if you are using the NodeHandle API
+    ///
+    /// - Parameter argv: Command line argumets
+    /// - Parameter name: Name of this node.  The name must be a base name, ie.
+    ///             it cannot contain namespaces.
+    /// - Parameter options: [optional] Options to start the node with
+    /// (a set of bit flags from `Ros.InitOption`)
+    /// - Returns: a future that will succeed at shutdown
 
     public static func initialize(argv: inout [String],
                                   name: String,
@@ -135,17 +141,16 @@ public struct Ros {
         return initialize(remappings: remappings, name: name, options: options)
     }
 
-    /** Alternate ROS initialization function.
-
-       Alternate ROS initialization function
-
-    - Parameter remappings: A map<string, string> where each one constitutes
-        a name remapping, or one of the special remappings like __name, __master, __ns, etc.
-    - Parameter name: Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
-    - Parameter options: [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
-     */
-
     static let promise: EventLoopPromise<Void> = threadGroup.next().newPromise()
+
+    /// Alternate ROS initialization function.
+    ///
+    /// - Parameter remappings: A map<string, string> where each one constitutes
+    /// a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+    /// - Parameter name: Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
+    /// - Parameter options: [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
+    /// - Returns: a future that will succeed at shutdown
+
 
     public static func initialize(remappings: StringStringMap,
                                   name: String,
@@ -206,7 +211,6 @@ public struct Ros {
         isShutdownRequested = false
         isStarted = true
         isRunning = true
-        let enableDebug = false
 
         _ = Param.param(name: "/tcp_keepalive", value: &TransportTCP.useKeepalive, defaultValue: TransportTCP.useKeepalive)
 
@@ -243,20 +247,20 @@ public struct Ros {
             return
         }
 
-        if enableDebug {
+        if let enableDebug = ProcessInfo.processInfo.environment["ROSCPP_ENABLE_DEBUG"],
+            enableDebug.lowercased() == "true" || enableDebug == "1" {
+
             _ = ServiceManager.instance.advertiseService(.init(service: "~debug/close_all_connections",
-                                                               callback: closeAllConnections))
+                                                                   callback: closeAllConnections))
         }
 
-        var useSimTime = false
-        _ = Param.param(name: "/use_sim_time", value: &useSimTime, defaultValue: useSimTime)
-
+        let useSimTime = Param.param(name: "/use_sim_time", defaultValue: false)
         if useSimTime {
             RosTime.Time.setNow(RosTime.Time())
         }
 
         if useSimTime {
-            let ops = SubscribeOptions(topic: "/clock", callback: clockCallback)
+            let ops = SubscribeOptions(topic: "/clock", queueSize: 1, callback: clockCallback)
             if !TopicManager.instance.subscribeWith(options: ops) {
                 ROS_ERROR("could not subscribe to /clock")
             }
@@ -269,108 +273,10 @@ public struct Ros {
         ROS_INFO("Started node [\(Ros.ThisNode.getName())], " +
             "pid [\(getpid())], bound on [\(Network.getHost())], " +
             "xmlrpc port [\(XMLRPCManager.instance.serverPort)], " +
-            "tcpros port [\(Ros.ConnectionManager.instance.getTCPPort())], using [real] time")
+            "tcpros port [\(Ros.ConnectionManager.instance.getTCPPort())], using [\(RosTime.Time.useSimTime ? "sim":"real")] time")
 
     }
 
-    struct Logger: Message {
-
-        static let md5sum = "a6069a2ff40db7bd32143dd66e1f408e"
-        static let datatype = "roscpp/Logger"
-        static let hasHeader = false
-        static let definition = "string name\nstring level\n"
-
-        let name: String
-        let level: String
-
-        init() {
-            name = ""
-            level = ""
-        }
-
-    }
-
-    struct GetLoggersRequest: ServiceMessage {
-        static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-        static let srvMd5sum = GetLoggers.md5sum
-        static let srvDatatype = GetLoggers.datatype
-        static let datatype = "roscpp/GetLoggersRequest"
-        static let hasHeader = false
-        static let definition = "\n"
-    }
-
-    struct GetLoggersResponse: ServiceMessage {
-        static let md5sum = "32e97e85527d4678a8f9279894bb64b0"
-        static let srvMd5sum = GetLoggers.md5sum
-        static let srvDatatype = GetLoggers.datatype
-        static let datatype = "roscpp/GetLoggersResponse"
-        static let hasHeader = false
-        static let definition = """
-            Logger[] loggers
-
-            ================================================================================\n\
-            MSG: roscpp/Logger
-            string name
-            string level
-            """
-
-        let loggers: [Logger]
-
-        init() {
-            self.loggers = [Logger]()
-        }
-    }
-
-    struct GetLoggers {
-        typealias Request = GetLoggersRequest
-        typealias Response = GetLoggersResponse
-        static let md5sum = "32e97e85527d4678a8f9279894bb64b0"
-        static let datatype = "roscpp/GetLoggers"
-    }
-
-    static func getLoggers(x: GetLoggersRequest, y: inout GetLoggersRequest) -> Bool {
-        ROS_ERROR("getLoggers not implemented")
-        return false
-    }
-
-    struct SetLoggerLevelRequest: ServiceMessage {
-        static let md5sum = "51da076440d78ca1684d36c868df61ea"
-        static let datatype = "roscpp/SetLoggerLevelRequest"
-        static let hasHeader = false
-        static let definition = "string logger\nstring level\n"
-        static let srvMd5sum = SetLoggerLevel.md5sum
-        static let srvDatatype = SetLoggerLevel.datatype
-
-        let logger: String
-        let level: String
-
-        init() {
-            logger = ""
-            level = ""
-        }
-    }
-
-    struct SetLoggerLevelResponse: ServiceMessage {
-        static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-        static let datatype = "roscpp/SetLoggerLevelResponse"
-        static let hasHeader = false
-        static let definition = "\n"
-        static let srvMd5sum = SetLoggerLevel.md5sum
-        static let srvDatatype = SetLoggerLevel.datatype
-    }
-
-    struct SetLoggerLevel {
-        typealias Request = SetLoggerLevelRequest
-        typealias Response = SetLoggerLevelResponse
-        static let md5sum = "51da076440d78ca1684d36c868df61ea"
-        static let datatype = "roscpp/SetLoggerLevel"
-    }
-
-    static func setLoggerLevel(x: SetLoggerLevelRequest) -> SetLoggerLevelResponse? {
-        ROS_ERROR("Set logger level \(x.level) for logger \(x.logger) --- Not implemented")
-
-        return nil
-    }
 
     struct EmptyRequest: ServiceMessage {
         static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
@@ -406,27 +312,22 @@ public struct Ros {
 
     struct RosgraphMsgs {
         struct Clock: Message {
-            init() {
-            }
-
             static let md5sum = "a9c97c1d230cfc112e270351a944ee47"
-
             static let datatype = "rosgraph_msgs/Clock"
-
             static let definition = """
                 # roslib/Clock is used for publishing simulated time in ROS. \n
                 # This message simply communicates the current time.\n
                 # For more information, see http://www.ros.org/wiki/Clock\n
                 time clock\n
                 """
-
             static let hasHeader = false
 
+            var time: RosTime.Time
         }
     }
 
     static func clockCallback(msg: RosgraphMsgs.Clock) {
-//    Time::setNow(msg->clock);
+        RosTime.Time.setNow(msg.time)
     }
 
     static func shutdown() {
@@ -443,6 +344,19 @@ public struct Ros {
             isRunning = false
             promise.succeed(result: Void())
         }
+    }
+
+    static func spin() {
+        let spinner = SingleThreadSpinner()
+        spin(spinner)
+    }
+
+    static func spin(_ spinner: Spinner) {
+        spinner.spin(queue: nil)
+    }
+
+    static func spinOnce() {
+        Ros.gGlobalQueue.callAvailable()
     }
 
 }

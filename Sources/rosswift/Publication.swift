@@ -146,7 +146,7 @@ final class Publication {
                 ROS_ERROR("header not handled")
             }
             subscriberLinks.forEach {
-                $0.enqueueMessage(m: m, ser: true, nocopy: false)
+                $0.enqueueMessage(m: m)
             }
 
             if latch {
@@ -171,7 +171,7 @@ final class Publication {
             }
 
             if latch, let last = lastMessage, last.buf.isEmpty {
-                link.enqueueMessage(m: last, ser: true, nocopy: true)
+                link.enqueueMessage(m: last)
             }
 
             // This call invokes the subscribe callback if there is one.
@@ -290,20 +290,13 @@ final class Publication {
     }
 
     func publish(msg: SerializedMessage) {
-        if msg.message != nil {
-            subscriberLinksQueue.sync {
-                subscriberLinks.forEach {
-                    if $0.isIntraprocess() {
-                        $0.enqueueMessage(m: msg, ser: false, nocopy: true)
-                    }
-                }
+        precondition(msg.message != nil)
+
+        incrementSequence()
+        subscriberLinksQueue.sync {
+            subscriberLinks.forEach {
+                $0.enqueueMessage(m: msg)
             }
-
-            msg.message = nil
-        }
-
-        if !msg.buf.isEmpty {
-            _ = enqueueMessage(m: msg)
         }
     }
 

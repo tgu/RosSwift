@@ -42,7 +42,7 @@ class paramTests: XCTestCase {
         ("testmapBoolParam",testmapBoolParam),
         ("testparamTemplateFunction",testparamTemplateFunction),
         ("testparamNodeHandleTemplateFunction",testparamNodeHandleTemplateFunction),
-        ("testgetParamNames",testgetParamNames)
+        ("testZgetParamNames",testZgetParamNames)
 
     ]
 
@@ -558,7 +558,8 @@ class paramTests: XCTestCase {
         XCTAssertEqual( nh.param( name: "loob", defaultValue: true ), true )
     }
 
-    func testgetParamNames() {
+    // should run last, tests runs in alphabetical order (unless random order is selected)
+    func testZgetParamNames() {
         var test_params = [String]()
         sleep(10)
         let b = Ros.Param.getParamNames(keys: &test_params)

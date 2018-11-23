@@ -47,11 +47,11 @@ final class MessageHandler: ChannelInboundHandler {
     }
 
     func channelActive(ctx: ChannelHandlerContext) {
-        ROS_DEBUG("xmlrpcserver channelActive")
+        ROS_DEBUG("xmlrpcserver channelActive \(ctx.remoteAddress)")
     }
 
     func channelInactive(ctx: ChannelHandlerContext) {
-        ROS_DEBUG("xmlrpcserver channelInactive")
+        ROS_DEBUG("xmlrpcserver channelInactive \(ctx.remoteAddress)")
 
     }
 
@@ -81,16 +81,6 @@ final class MessageHandler: ChannelInboundHandler {
             fatalError()
         }
 
-//        guard let data = request.data(using: .utf8) else {
-//            return
-//        }
-//        var obj : XMLRPCRequest? = nil
-//        do {
-//            obj = try XMLRPCSerialization.xmlrpcRequest(from: data)
-//        } catch let error {
-//            ROS_ERROR(error.localizedDescription)
-//            fatalError()
-//        }
         let obj = XMLRPCManager.parseRequest(xml: request)
         let methodName = obj.method
         let params = XmlRpcValue(anyArray: obj.params)

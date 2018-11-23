@@ -13,10 +13,24 @@ import StdMsgs
 protocol TransportUDP {}
 
 final class Subscription {
-    struct CallBackInfo {
-        var helper: SubscriptionCallbackHelper?
+    class CallBackInfo {
+        var callbackQueue: CallbackQueueInterface
+        var helper: SubscriptionCallbackHelper
+        var subscriptionQueue: SubscriptionQueue
         var hasTrackedObject: Bool
         var trackedObject: AnyObject?
+
+        init(queue: CallbackQueueInterface,
+             helper: SubscriptionCallbackHelper,
+             subscriptionQueue: SubscriptionQueue,
+             hasTrackedObject: Bool,
+             trackedObject: AnyObject?) {
+            self.callbackQueue = queue
+            self.helper = helper
+            self.subscriptionQueue = subscriptionQueue
+            self.hasTrackedObject = hasTrackedObject
+            self.trackedObject = trackedObject
+        }
     }
 
     struct LatchInfo {
@@ -76,7 +90,12 @@ final class Subscription {
         return publisherLinks.count
     }
 
-    func add(callback: SubscriptionCallbackHelper, md5: String, trackedObject: AnyObject?, allowConcurrentCallbacks: Bool) -> Bool {
+    func add(callback: SubscriptionCallbackHelper,
+             md5: String,
+             queue: CallbackQueueInterface,
+             queueSize: UInt32,
+             trackedObject: AnyObject?,
+             allowConcurrentCallbacks: Bool) -> Bool {
 
         md5sumQueue.sync {
             if md5sum == "*" && md5 != "*" {
@@ -89,7 +108,12 @@ final class Subscription {
         }
 
         callbacksQueue.sync {
-            let info = CallBackInfo(helper: callback, hasTrackedObject: trackedObject != nil, trackedObject: trackedObject)
+            let subQueue = SubscriptionQueue(topic: name, queueSize: queueSize, allowConcurrentCallbacks: allowConcurrentCallbacks)
+            let info = CallBackInfo(queue: queue,
+                                    helper: callback,
+                                    subscriptionQueue: subQueue,
+                                    hasTrackedObject: trackedObject != nil,
+                                    trackedObject: trackedObject)
 
             callbacks.append(info)
             if !latchedMessages.isEmpty {
@@ -114,7 +138,7 @@ final class Subscription {
 
         let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: XMLRPCManager.instance.serverURI, transportHints: transportHints)
         let subLink = IntraProcessSubscriberLink(parent: localConnection)
-        pubLink.setPublisher(publisher: subLink)
+        _ = pubLink.setPublisher(publisher: subLink)
         subLink.setSubscriber(subscriber: pubLink)
 
         publisherLinks.append(pubLink)
@@ -179,43 +203,35 @@ final class Subscription {
 
     func remove(callback: SubscriptionCallbackHelper) {
         callbacksQueue.sync {
-            if let index = callbacks.index(where: { $0.helper != nil && $0.helper!.id == callback.id }) {
+            if let index = callbacks.index(where: { $0.helper.id == callback.id }) {
                 callbacks.remove(at: index)
             }
         }
     }
 
     @discardableResult
-    func handle(message: SerializedMessage, ser: Bool, nocopy: Bool, connectionHeader: StringStringMap, link: PublisherLink) -> Int {
-        callbacksQueue.sync {}
+    func handle(message: SerializedMessage, connectionHeader: StringStringMap, link: PublisherLink) -> Int {
 
         var drops = 0
-
         let receiptTime = RosTime.Time.now()
 
-        callbacks.forEach { info in
-            if let mes = message.message {
-                info.helper?.call(msg: mes)
-            } else {
-                let ti = info.helper!.getTypeInfo()
-                let a = nocopy && message.typeInfo != nil && message.typeInfo! == ti
-                let b = ser && ( message.typeInfo == nil || ( ti != message.typeInfo! ))
-                if a || b {
-                    let deserializer = MessageDeserializer(helper: info.helper!, m: message, header: connectionHeader)
-                    DispatchQueue.global().async {
-                        if let msg = deserializer.deserialize() {
-                            info.helper?.call(msg: msg)
-                        }
-                    }
+        callbacksQueue.sync {
+            callbacks.forEach { info in
+                var wasFull: Bool = false
+                let deserializer = MessageDeserializer(helper: info.helper, m: message, header: connectionHeader)
+                info.subscriptionQueue.push(helper: info.helper,
+                                            deserializer: deserializer,
+                                            hasTrackedObject: info.hasTrackedObject,
+                                            trackedObject: info.trackedObject,
+                                            receiptTime: receiptTime,
+                                            wasFull: &wasFull)
+                if wasFull {
+                    drops += 1
+                } else {
+                    info.callbackQueue.addCallback(callback: info.subscriptionQueue, ownerId: ObjectIdentifier(info).hashValue)
                 }
             }
         }
-
-//        // measure statistics
-//        statistics_.callback(connection_header, name_, link->getCallerID(), m, link->getStats().bytes_received_, receipt_time, drops > 0);
-//
-//        // If this link is latched, store off the message so we can immediately pass it to new subscribers later
-
         if link.latched {
             let info = LatchInfo(message: message,
                                  link: link,
@@ -228,12 +244,12 @@ final class Subscription {
     }
 
     func remove(publisherLink: PublisherLink) {
-            if let index = publisherLinks.index(where: { publisherLink === $0 }) {
-                publisherLinks.remove(at: index)
-            }
-            if publisherLink.latched {
-                latchedMessages.removeValue(forKey: ObjectIdentifier(publisherLink))
-            }
+        if let index = publisherLinks.index(where: { publisherLink === $0 }) {
+            publisherLinks.remove(at: index)
+        }
+        if publisherLink.latched {
+            latchedMessages.removeValue(forKey: ObjectIdentifier(publisherLink))
+        }
     }
 
     func negotiate(connection uri: String) -> Bool {
@@ -301,7 +317,7 @@ final class Subscription {
 
     func getPublishTypes(ser: inout Bool, nocopy: inout Bool, ti: String) {
         callbacks.forEach {
-            if $0.helper?.getTypeInfo() == ti {
+            if $0.helper.getTypeInfo() == ti {
                 nocopy = true
             } else {
                 ser = true

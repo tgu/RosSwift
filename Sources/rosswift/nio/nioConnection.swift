@@ -28,8 +28,6 @@ typealias DropFunc = (Notification) -> Void
 
     final class Connection: ConnectionProtocol {
 
-    static let dropNotification = Notification.Name(rawValue: "dropConnection")
-
     var channel: Channel
     var header: Header
     var isSendingHeaderError = false
@@ -84,7 +82,6 @@ typealias DropFunc = (Notification) -> Void
     func write(buffer: [UInt8]) -> EventLoopFuture<Void> {
         var buf = channel.allocator.buffer(capacity: buffer.count)
         buf.write(bytes: buffer)
-//        ROS_DEBUG("\(#file):\(#line)  write from \(self.channel.localAddress) => \(self.channel.remoteAddress)")
         return channel.writeAndFlush(buf)
     }
 

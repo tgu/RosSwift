@@ -33,12 +33,16 @@ final class IntraProcessSubscriberLink: SubscriberLink {
         return parent?.isLatching() ?? false
     }
 
-    func enqueueMessage(m: SerializedMessage, ser: Bool, nocopy: Bool) {
+    func enqueueMessage(m: SerializedMessage) {
         if isDropped.load() {
             return
         }
 
-        subscriber?.handleMessage(m: m, ser: ser, nocopy: nocopy)
+        // We have to remove the four first bytes with length information
+
+        m.buf = [UInt8](m.buf.dropFirst(4))
+
+        subscriber?.handleMessage(m: m)
     }
 
     func drop() {

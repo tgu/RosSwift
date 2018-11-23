@@ -40,6 +40,7 @@ final class MessageDeserializer {
 
             message = helper.deserialize(data: serializedMessage.buf)
             serializedMessage.buf.removeAll()
+            serializedMessage.message = message
         }
 
         return message

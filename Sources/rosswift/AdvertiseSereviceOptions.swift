@@ -6,11 +6,6 @@
 //
 import StdMsgs
 
-/**
-
- - Todo: check service datatype
- */
-
 final class AdvertiseServiceOptions<MReq: ServiceMessage, MRes: ServiceMessage> {
     var service: String
     var md5sum: String { return MReq.srvMd5sum }
@@ -20,6 +15,7 @@ final class AdvertiseServiceOptions<MReq: ServiceMessage, MRes: ServiceMessage> 
     var helper: ServiceCallbackHelper?
     var trackedObject: AnyObject?
     var callback: (MReq) -> MRes?
+    var callbackQueue: CallbackQueueInterface?
 
     init(service: String, callback: @escaping (MReq) -> MRes?) {
 

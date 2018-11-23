@@ -44,7 +44,7 @@ public final class Subscriber {
     func unsubscribe() {
         if !isUnsubscribed {
             isUnsubscribed = true
-            TopicManager.instance.unsubscribe(topic: topic, helper: helper!)
+            _ = TopicManager.instance.unsubscribe(topic: topic, helper: helper!)
             node = nil
             helper = nil
             topic = ""

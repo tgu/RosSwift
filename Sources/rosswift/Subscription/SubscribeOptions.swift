@@ -10,16 +10,32 @@ import StdMsgs
 
 public struct SubscribeOptions<M: Message> {
     var topic: String
-//    var md5sum : String { return M.md5sum }
-//    var datatype : String { return M.datatype }
     var transportHints: TransportHints?
     var helper: SubscriptionCallbackHelper?
     var trackedObject: AnyObject?
     var allowConcurrentCallbacks = false
+    private var callbackQueueInternal: CallbackQueueInterface?
+    var queueSize: UInt32
 
-    init(topic: String, callback: @escaping ((M) -> Void)) {
+    init(topic: String, queueSize: UInt32, callback: @escaping ((M) -> Void)) {
         self.topic = topic
         self.helper = SubscriptionCallbackHelperT(callback: callback)
+        self.queueSize = queueSize
+    }
+
+    init(topic: String, queueSize: UInt32, callback: @escaping ((MessageEvent<M>) -> Void)) {
+        self.topic = topic
+        self.helper = SubscriptionEventCallbackHelperT(callback: callback)
+        self.queueSize = queueSize
+    }
+
+    var callbackQueue: CallbackQueueInterface {
+        get {
+            return callbackQueueInternal != nil ? callbackQueueInternal! : Ros.getGlobalCallbackQueue()
+        }
+        set {
+            callbackQueueInternal = newValue
+        }
     }
 
 }

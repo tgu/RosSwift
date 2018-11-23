@@ -74,11 +74,14 @@ class connectionTests: XCTestCase {
             print("I saw: [\(msg)]")
             chatter = msg.data
         }
-        let vab = n.subscribe(topic: "/intrachatter", callback: chatterCallback)
+        let vab = n.subscribe(topic: "/intrachatter", queueSize: 1, callback: chatterCallback)
 
-        chatter_pub.publish(message: std_msgs.float64(1.0))
-        usleep(5000000)
-        XCTAssertEqual(chatter, 1.0)
+        chatter_pub.publish(message: std_msgs.float64(10.0))
+        usleep(100000)
+        Ros.spinOnce()
+        usleep(100000)
+
+        XCTAssertEqual(chatter, 10.0)
 
     }
 
@@ -153,19 +156,24 @@ class connectionTests: XCTestCase {
         let msg = std_msgs.float64(3.14)
         do {
             let helper = SubscribeHelper()
-            let sub_class = n.subscribe(topic: "test", callback: helper.callback)
+            let sub_class = n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
 
+            let d = RosTime.Duration(milliseconds: 50)
             var last_class_count = helper.recv_count_
             while last_class_count == helper.recv_count_ {
                 pub.publish(message: msg)
+                Ros.spinOnce()
+                d.sleep()
             }
 
             var last_fn_count = g_recv_count
             do {
-                let sub_fn = n.subscribe(topic: "test", callback: subscriberCallback)
+                let sub_fn = n.subscribe(topic: "test", queueSize: 0, callback: subscriberCallback)
                 last_fn_count = g_recv_count
                 while last_fn_count == g_recv_count {
                     pub.publish(message: msg)
+                    Ros.spinOnce()
+                    d.sleep()
                 }
             }
 
@@ -173,6 +181,8 @@ class connectionTests: XCTestCase {
             last_class_count = helper.recv_count_
             while last_class_count == helper.recv_count_ {
                 pub.publish(message: msg)
+                Ros.spinOnce()
+                d.sleep()
             }
 
             XCTAssertEqual(last_fn_count, g_recv_count);

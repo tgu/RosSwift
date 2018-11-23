@@ -137,7 +137,7 @@ final class ServiceServerLink: ChannelInboundHandler {
 
                     guard let line = buffer.readString(length: Int(topicLen)) else {
                         ROS_DEBUG("Received an invalid TCPROS header. Each line must have an equals sign.")
-                        ctx.close()
+                        _ = ctx.close()
                         return
                     }
 

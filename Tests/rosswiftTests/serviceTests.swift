@@ -7,7 +7,6 @@
 
 import XCTest
 @testable import RosSwift
-@testable import XMLRPCSerialization
 @testable import StdMsgs
 @testable import BinaryCoder
 
@@ -25,6 +24,7 @@ class serviceTests: XCTestCase {
 
 
     override func setUp() {
+        print("##########  SETUP ##############")
         // Put setup code here. This method is called before the invocation of each test method in the class.
         Ros.initialize(argv: &CommandLine.arguments, name: "serviceTests")
 
@@ -33,6 +33,8 @@ class serviceTests: XCTestCase {
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
         Ros.shutdown()
+        print("##########  SHUTDOWN ##############")
+
     }
 
     func srvCallback(req: TestStringString.Request) -> TestStringString.Response? {

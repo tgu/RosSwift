@@ -20,14 +20,14 @@ func deserialize<T : BinaryCodable>(_ buffer: [UInt8]) -> T {
 }
 
 
-public func serializeMessage(message: Message) -> SerializedMessage? {
-    do {
-        let data = try BinaryEncoder.encode(message)
-        let buf = try BinaryEncoder.encode(UInt32(data.count))
-        return SerializedMessage(msg: message, buffer: buf+data)
-    } catch {
-        print("Serialization of \(message) failed")
-    }
-    return nil
-}
+//public func serializeMessage(message: Message) -> SerializedMessage? {
+//    do {
+//        let data = try BinaryEncoder.encode(message)
+//        let buf = try BinaryEncoder.encode(UInt32(data.count))
+//        return SerializedMessage(msg: message, buffer: buf+data)
+//    } catch {
+//        print("Serialization of \(message) failed")
+//    }
+//    return nil
+//}
 

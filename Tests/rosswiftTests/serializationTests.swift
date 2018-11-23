@@ -74,9 +74,9 @@ class serializationTests: XCTestCase {
 
 
 
-        let s1 = n.subscribe(Bool.self, topic: "test_bool", callback: callback)
-        let s2 = n.subscribe(Int32.self, topic: "test_int", callback: callback)
-        let s3 = n.subscribe(Double.self, topic: "test_double", callback: callback)
+        let s1 = n.subscribe(Bool.self, topic: "test_bool", queueSize: 1, callback: callback)
+        let s2 = n.subscribe(Int32.self, topic: "test_int", queueSize: 1, callback: callback)
+        let s3 = n.subscribe(Double.self, topic: "test_double", queueSize: 1, callback: callback)
         XCTAssertEqual(s1!.getNumPublishers(),1)
         XCTAssertEqual(s2!.getNumPublishers(),1)
         XCTAssertEqual(s3!.getNumPublishers(),1)

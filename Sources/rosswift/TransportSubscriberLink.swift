@@ -9,8 +9,6 @@ import Foundation
 import NIO
 import StdMsgs
 
-let dropNotification = Notification.Name(rawValue: "dropConnection")
-
 extension Ros {
     final class TransportSubscriberLink: SubscriberLink {
 
@@ -29,14 +27,6 @@ extension Ros {
 
     init(connection: Nio.Connection) {
         self.connection = connection
-
-        #if os(OSX)
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(onConnectionDropped(_:)),
-                                               name: dropNotification,
-                                               object: connection)
-        #endif
-
     }
 
     func drop() {
@@ -107,26 +97,10 @@ extension Ros {
         return true
     }
 
-        #if os(OSX)
-    @objc
-    func onConnectionDropped(_ note: Notification) {
-        running = false
-        ROS_INFO("Connection to subscriber [\(self.connection?.remoteString ?? "#####")]" +
-                 " to topic [\(self.topic)] dropped")
-        parent?.removeSubscriberLink(self)
-    }
-
-        #endif
-
-    func enqueueMessage(m: SerializedMessage, ser: Bool, nocopy: Bool) {
-        if !ser {
-            return
-        }
-
+    func enqueueMessage(m: SerializedMessage) {
         connection?.write(buffer: m.buf).whenFailure({ error in
             ROS_ERROR("writing \(m), \(error)")
         })
-
     }
 
     }

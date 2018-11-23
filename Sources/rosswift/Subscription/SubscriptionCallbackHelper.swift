@@ -8,6 +8,7 @@
 import BinaryCoder
 import Foundation
 import StdMsgs
+import RosTime
 
 public struct SubscriptionCallbackHelperCallParams<M: Message> {
     var event: MessageEvent<M>
@@ -60,3 +61,46 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
     }
 
 }
+
+
+public final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+
+    typealias Callback = (MessageEvent<M>) -> Void
+
+    var callback: Callback
+
+    public var id: ObjectIdentifier {
+        return ObjectIdentifier(self)
+    }
+
+    init(callback: @escaping Callback ) {
+        self.callback = callback
+
+    }
+
+    public func deserialize(data: [UInt8]) -> Message? {
+        return try? BinaryDecoder.decode(M.self, data: data)
+    }
+
+    public func call(msg: Message) {
+        if let message = msg as? M {
+            let event = MessageEvent(message: message, header: ["callerid":"unknown"], receiptTime: RosTime.Time())
+            callback(event)
+        }
+    }
+
+    public func getTypeInfo() -> String {
+        return String(String(reflecting: M.self).prefix(while: { $0 != "(" }))
+    }
+
+    public func isConst() -> Bool {
+        return  false
+    }
+
+    public func hasHeader() -> Bool {
+        return M.hasHeader
+    }
+
+}
+
+

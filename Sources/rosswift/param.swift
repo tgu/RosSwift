@@ -290,42 +290,36 @@ public struct Param {
 
     }
 
-    /**
-     * \brief Return value from parameter server, or default if unavailable.
-     *
-     * This method tries to retrieve the indicated parameter value from the
-     * parameter server. If the parameter cannot be retrieved, \c default_val
-     * is returned instead.
-     *
-     * \param param_name The key to be searched on the parameter server.
-     *
-     * \param default_val Value to return if the server doesn't contain this
-     * parameter.
-     *
-     * \return The parameter value retrieved from the parameter server, or
-     * \c default_val if unavailable.
-     *
-     * \throws InvalidNameException If the key is not a valid graph resource name.
-     */
+    /// Return value from parameter server, or default if unavailable.
+    ///
+    /// This method tries to retrieve the indicated parameter value from the
+    /// parameter server. If the parameter cannot be retrieved, \c default_val
+    /// is returned instead.
+    ///
+    /// - parameter name: The key to be searched on the parameter server.
+    /// - parameter defaultValue: Value to return if the server doesn't contain this
+    /// parameter.
+    ///
+    /// - returns: The parameter value retrieved from the parameter server, or
+    /// defaultValue if unavailable.
 
     static func param<T>(name: String, defaultValue: T) -> T {
         var value = defaultValue
-        param(name: name, value: &value, defaultValue: defaultValue )
+        _ = param(name: name, value: &value, defaultValue: defaultValue )
         return value
     }
 
-    /** Assign value from parameter server, with default.
+    /// Assign value from parameter server, with default.
+    ///
+    /// This method tries to retrieve the indicated parameter value from the
+    /// parameter server, storing the result in param_val.  If the value
+    /// cannot be retrieved from the server, default_val is used instead.
 
-      This method tries to retrieve the indicated parameter value from the
-      parameter server, storing the result in param_val.  If the value
-      cannot be retrieved from the server, default_val is used instead.
-
-     - Parameter param_name: The key to be searched on the parameter server.
-     - Parameter param_val: Storage for the retrieved value.
-     - Parameter default_val: Value to use if the server doesn't contain this
-      parameter.
-    - Returns `true` if the parameter was retrieved from the server, `false` otherwise.
-     */
+    /// - Parameter param_name: The key to be searched on the parameter server.
+    /// - Parameter param_val: Storage for the retrieved value.
+    /// - Parameter default_val: Value to use if the server doesn't contain this
+    /// parameter.
+    /// - Returns: `true` if the parameter was retrieved from the server, `false` otherwise.
 
     static func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
         if has(key: name) {

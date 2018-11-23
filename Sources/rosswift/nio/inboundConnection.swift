@@ -17,7 +17,6 @@ enum ConnectionError: Error {
 
 final class InboundConnection: ConnectionProtocol {
 
-//    var bootstrap : ClientBootstrap?
     var channel: Channel?
     var dropped = Atomic<Bool>(value: false)
     weak var parent: Subscription?
@@ -44,7 +43,7 @@ final class InboundConnection: ConnectionProtocol {
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 channel.pipeline.add(handler: InboundHandler(parent: self))
-            }
+        }
 
         do {
             self.channel = try bootstrap.connect(host: host, port: port).wait()
@@ -76,7 +75,6 @@ final class InboundConnection: ConnectionProtocol {
         }
         var buf = channel.allocator.buffer(capacity: buffer.count)
         buf.write(bytes: buffer)
-//        ROS_DEBUG("\(#file):\(#line)  write from \(channel.localAddress) => \(channel.remoteAddress)")
         return channel.writeAndFlush(buf)
     }
 
@@ -126,14 +124,13 @@ final class InboundConnection: ConnectionProtocol {
 
         func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
 
-            ROS_DEBUG("messge from \(ctx.channel.remoteAddress!) => \(ctx.channel.localAddress!)")
             var buffer = self.unwrapInboundIn(data)
             guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                 fatalError()
             }
             if len > buffer.readableBytes {
                 ROS_ERROR("Received length \(buffer.readableBytes) < \(len) [\(self.parent?.remoteAddress ?? "uknown host")]")
-                ctx.close()
+                _ = ctx.close()
             }
 
             guard let p = parent, let link = parent?.link else {
@@ -155,21 +152,15 @@ final class InboundConnection: ConnectionProtocol {
                     }
                 }
 
-            } else {
-
-                if let rawMessage = buffer.readBytes(length: Int(len)) {
-                    let m = SerializedMessage(buffer: rawMessage)
-                    if let sub = p.parent {
-                        let drops = sub.handle(message: m,
-                                               ser: true,
-                                               nocopy: false,
-                                               connectionHeader: link.header!.getValues(),
-                                               link: link)
-                    }
+            } else if let rawMessage = buffer.readBytes(length: Int(len)) {
+                let m = SerializedMessage(buffer: rawMessage)
+                if let sub = p.parent {
+                    let drops = sub.handle(message: m,
+                                           connectionHeader: link.header!.getValues(),
+                                           link: link)
                 }
             }
-
         }
     }
-
 }
+

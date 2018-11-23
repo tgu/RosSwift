@@ -24,7 +24,7 @@ public final class SerializedMessage {
         buf = [UInt8]()
         message = nil
     }
-
+    
     public init(msg: Message) {
         self.message = msg
         self.typeInfo = String(String(reflecting: msg).prefix(while: { $0 != "(" }))
@@ -40,10 +40,10 @@ public final class SerializedMessage {
         }
     }
 
-    public init(msg: Message, buffer: [UInt8]) {
-        self.message = msg
-        self.buf = buffer
-    }
+    //    public init(msg: Message, buffer: [UInt8]) {
+    //        self.message = msg
+    //        self.buf = buffer
+    //    }
 
     public init(buffer: [UInt8]) {
         self.buf = buffer

@@ -26,7 +26,7 @@ extension Ros {
 
         static let instance = TopicManager()
 
-        let advertisedTopicsQueue = DispatchQueue(label: "advertised_topics_mutex_")
+        let advertisedTopicsMutex = NSRecursiveLock()
         let subsQueue = DispatchQueue(label: "subs_mutex_")
         let shuttingDownQueue = DispatchQueue(label: "shutting_down_mutex_")
 
@@ -70,7 +70,7 @@ extension Ros {
                     return
                 }
 
-                advertisedTopicsQueue.sync {
+                advertisedTopicsMutex.sync {
                     subsQueue.sync {
                         shuttingDown = true
                     }
@@ -86,7 +86,7 @@ extension Ros {
                 ROS_DEBUG("Shutting down topics...")
                 ROS_DEBUG("shutting down publishers")
 
-                advertisedTopicsQueue.sync {
+                advertisedTopicsMutex.sync {
                     advertisedTopics.forEach {
                         if !$0.isDropped.load() {
                             ROS_DEBUG("shutting down \($0.name)")
@@ -186,7 +186,7 @@ extension Ros {
 
         func getBusInfo(info: inout XmlRpcValue) {
             var busInfo = [XmlRpcValue]()
-            advertisedTopicsQueue.sync {
+            advertisedTopicsMutex.sync {
                 advertisedTopics.forEach({ pub in
                     busInfo.append(contentsOf: pub.getInfo() )
                 })
@@ -234,13 +234,13 @@ extension Ros {
         }
 
         func lookupPublication(topic: String) -> Publication? {
-            return advertisedTopicsQueue.sync {
+            return advertisedTopicsMutex.sync {
                 lookupPublicationWithoutLock(topic: topic)
             }
         }
 
         func getAdvertised(topics: inout [String]) {
-            advertisedTopicsQueue.sync {
+            advertisedTopicsMutex.sync {
                 topics = advertisedTopicNames.all()
             }
         }
@@ -264,11 +264,10 @@ extension Ros {
             return true
         }
 
-        /** if it finds a pre-existing subscription to the same topic and of the
-         *  same message type, it appends the Functor to the callback vector for
-         *  that subscription. otherwise, it returns false, indicating that a new
-         *  subscription needs to be created.
-         */
+        /// if it finds a pre-existing subscription to the same topic and of the
+        /// same message type, it appends the Functor to the callback vector for
+        /// that subscription. otherwise, it returns false, indicating that a new
+        /// subscription needs to be created.
 
         func addSubCallback<M: Message>(ops: SubscribeOptions<M>) -> Bool {
             // spin through the subscriptions and see if we find a match. if so, use it.
@@ -297,6 +296,8 @@ extension Ros {
                         " [\(M.datatype)/\(M.md5sum) vs. \(sub.datatype)/\(sub.md5sum)]")
                 } else if !sub.add(callback: ops.helper!,
                                    md5: M.md5sum,
+                                   queue: ops.callbackQueue,
+                                   queueSize: ops.queueSize,
                                    trackedObject: ops.trackedObject,
                                    allowConcurrentCallbacks: ops.allowConcurrentCallbacks) {
                     return false
@@ -340,6 +341,8 @@ extension Ros {
                                            transportHints: options.transportHints!)
                     _ = sub.add(callback: options.helper!,
                                 md5: M.md5sum,
+                                queue: options.callbackQueue,
+                                queueSize: options.queueSize,
                                 trackedObject: options.trackedObject,
                                 allowConcurrentCallbacks: options.allowConcurrentCallbacks)
 
@@ -420,7 +423,7 @@ extension Ros {
             // Figure out if we have a local publisher
 
             var ok = true
-            advertisedTopicsQueue.sync {
+            advertisedTopicsMutex.sync {
                 for pub in advertisedTopics {
                     let pubMd5sum = pub.md5sum
 
@@ -538,7 +541,7 @@ extension Ros {
 
         func unadvertisePublisher(topic: String, callbacks: SubscriberCallbacks?) -> Bool {
             var pub: Publication?
-            advertisedTopicsQueue.sync {
+            advertisedTopicsMutex.sync {
                 if !shuttingDown {
                     pub = advertisedTopics.first(where: { $0.name == topic && !$0.isDropped.load() })
                 }
@@ -552,9 +555,9 @@ extension Ros {
                 p.removeCallbacks(callback: c)
             }
 
-            advertisedTopicsQueue.sync {
+            advertisedTopicsMutex.sync {
                 if p.numCallbacks == 0 {
-                    unregisterPublisher(topic: p.name)
+                    _ = unregisterPublisher(topic: p.name)
                     p.drop()
                     #if swift(>=4.2)
                     advertisedTopics.removeAll(where: { $0.name == topic && !$0.dropped })
@@ -573,7 +576,7 @@ extension Ros {
                 return
             }
 
-            advertisedTopicsQueue.sync {
+            advertisedTopicsMutex.sync {
 
                 if let p = lookupPublicationWithoutLock(topic: topic) {
 
@@ -621,7 +624,7 @@ extension Ros {
                 return 0
             }
 
-            return advertisedTopicsQueue.sync {
+            return advertisedTopicsMutex.sync {
                 if let p = lookupPublicationWithoutLock(topic: topic) {
                     return p.getNumSubscribers()
                 } else {

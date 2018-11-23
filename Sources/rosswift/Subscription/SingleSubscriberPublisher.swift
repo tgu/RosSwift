@@ -21,10 +21,7 @@ public final class SingleSubscriberPublisher {
 
     public func publish<M: Message>(_ msg: M) {
         do {
-            let data = try BinaryEncoder.encode(msg)
-            var count = try BinaryEncoder.encode(UInt32(data.count))
-            count.append(contentsOf: data)
-            let ser = SerializedMessage(msg: msg, buffer: count)
+            let ser = SerializedMessage(msg: msg)
             publish(m: ser)
         } catch {
             ROS_ERROR("publish failed \(error)")
@@ -32,7 +29,7 @@ public final class SingleSubscriberPublisher {
     }
 
     func publish(m: StdMsgs.SerializedMessage) {
-        link.enqueueMessage(m: m, ser: true, nocopy: true)
+        link.enqueueMessage(m: m)
     }
 
 }

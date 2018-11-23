@@ -26,7 +26,7 @@ public final class ServiceServer {
         func unadvertise() {
             if !isUnadvertised {
                 isUnadvertised = true
-                ServiceManager.instance.unadvertiseService(name: service)
+                _ = ServiceManager.instance.unadvertiseService(name: service)
             }
         }
 

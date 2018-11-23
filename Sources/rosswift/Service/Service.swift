@@ -47,13 +47,12 @@ public struct Service {
         return waitForService(serviceName: serviceName, timeout: dur )
     }
 
-    /**
-     * \brief Wait for a service to be advertised and available.  Blocks until it is.
-     * \param serviceName Name of the service to wait for.
-     * \param timeout The amount of time to wait for before timing out.  If timeout is -1 (default),
-     * waits until the node is shutdown
-     * \return true on success, false otherwise
-     */
+    /// Wait for a service to be advertised and available.  Blocks until it is.
+    ///
+    /// - Parameter serviceName: Name of the service to wait for.
+    /// - Parameter timeout: The amount of time to wait for before timing out.  If timeout is -1 (default),
+    /// waits until the node is shutdown
+    /// - Returns: true on success, false otherwise
     static func waitForService(serviceName: String, timeout: RosTime.Duration = RosTime.Duration(seconds: TimeInterval(-1))) -> Bool {
         let mappedNames = Ros.Names.resolve(name: serviceName)
         let startTime = RosTime.Time.now()
@@ -83,17 +82,16 @@ public struct Service {
         return result
     }
 
-    /**
-     * \brief Checks if a service is both advertised and available.
-     * \param serviceName Name of the service to check for
-     * \param print_failure_reason Whether to print the reason for failure to the console (service not advertised vs.
-     * could not connect to the advertised host)
-     * \return true if the service is up and available, false otherwise
-     */
-
     static func callback(m: StringStringMap) {
         ROS_DEBUG(m.debugDescription)
     }
+
+    /// Checks if a service is both advertised and available.
+    ///
+    /// - Parameter serviceName: Name of the service to check for
+    /// - Parameter printFailureReason: Whether to print the reason for failure to the console (service not advertised vs.
+    /// could not connect to the advertised host)
+    /// - Returns: true if the service is up and available, false otherwise
 
     static func exists(serviceName: String, printFailureReason: Bool) -> Bool {
         let mappedName = Ros.Names.resolve(name: serviceName)
@@ -107,7 +105,7 @@ public struct Service {
             do {
 
             try transport.connect(host: host, port: Int(port)).map { channel -> Void in
-                channel.writeAndFlush(keymap)
+                _ = channel.writeAndFlush(keymap)
             }.wait()
             return true
             } catch {

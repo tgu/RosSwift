@@ -46,7 +46,8 @@ extension Data {
             self.withUnsafeBytes { (messageBytes: UnsafePointer<UInt8>) in
                 let length = CC_LONG(self.count)
                 switch type {
-                case .md5: CC_MD5(messageBytes, length, digestBytes)
+                case .md5: let extractedExpr: UnsafeMutablePointer<UInt8>? = CC_MD5(messageBytes, length, digestBytes)
+                    extractedExpr
                 case .sha1: CC_SHA1(messageBytes, length, digestBytes)
                 case .sha224: CC_SHA224(messageBytes, length, digestBytes)
                 case .sha256: CC_SHA256(messageBytes, length, digestBytes)
