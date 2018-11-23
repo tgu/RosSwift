@@ -20,7 +20,7 @@ import Foundation
 ///  If the spinner is multi-threaded, the stored thread-id is NULL and future SingleThreadedSpinners
 ///  should not spin this queue. However, other multi-threaded spinners are allowed.
 
-class SpinnerMonitor {
+final class SpinnerMonitor {
 
     /// store spinner information per callback queue:
     /// Only alike spinners (single-threaded or multi-threaded) are allowed on a callback queue.

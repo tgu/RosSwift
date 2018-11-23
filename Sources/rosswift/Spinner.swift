@@ -21,7 +21,7 @@ protocol Spinner {
 
 /// Spinner which runs in a single thread.
 
-class SingleThreadSpinner: Spinner {
+final class SingleThreadSpinner: Spinner {
 
     func spin(queue: CallbackQueue? = nil) {
         let useQueue = queue != nil ? queue! : Ros.getGlobalCallbackQueue()
@@ -40,7 +40,7 @@ class SingleThreadSpinner: Spinner {
 
 /// Spinner which spins in multiple threads.
 
-class MultiThreadedSpinner: Spinner {
+final class MultiThreadedSpinner: Spinner {
     private let threadCount: Int
 
     ///
@@ -56,7 +56,7 @@ class MultiThreadedSpinner: Spinner {
     }
 }
 
-class AsyncSpinnner {
+final class AsyncSpinnner {
     private let mutex = DispatchQueue(label: "mutex")
     private var threads = [Thread]()
     private let threadCount: Int

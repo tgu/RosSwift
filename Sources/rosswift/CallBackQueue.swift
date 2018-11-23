@@ -61,7 +61,7 @@ fileprivate struct CallbackInfo
     var markedForRemoval : Bool
 }
 
-fileprivate class ThreadLocalStorage {
+fileprivate final class ThreadLocalStorage {
     static let noThread = OwnerType.max
     var callingInThisThread = ThreadLocalStorage.noThread
     var callbacksIndex: Deque<CallbackInfo>.Index
@@ -71,7 +71,7 @@ fileprivate class ThreadLocalStorage {
     }
 }
 
-class CallbackQueue: CallbackQueueInterface {
+final class CallbackQueue: CallbackQueueInterface {
     private var callbacks = Deque<CallbackInfo>()
     private var calling: Int = 0
     private let condition = NSCondition()

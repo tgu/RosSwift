@@ -127,7 +127,7 @@ struct XMLRPCClient {
 
 }
 
-    class Master {
+    final class Master {
         public static var shared = Master(group: threadGroup)
 
         var masterHost = "127.0.0.1"

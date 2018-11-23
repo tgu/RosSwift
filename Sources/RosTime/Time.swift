@@ -178,7 +178,7 @@ public struct RosTime {
         }
     }
 
-    public class Time: TimeBase {
+    public final class Time: TimeBase {
 
         public static var useSimTime = true
         public static var gStopped = false
@@ -247,7 +247,7 @@ public struct RosTime {
 
     }
 
-    public class SteadyTime: TimeBase {
+    public final class SteadyTime: TimeBase {
 
         public static func now() -> SteadyTime {
             var start = timespec()
