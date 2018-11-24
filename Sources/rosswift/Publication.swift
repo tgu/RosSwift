@@ -166,7 +166,7 @@ final class Publication {
 
             subscriberLinks.append(link)
 
-            if link.isIntraprocess() {
+            if link.isIntraprocess {
                 intraprocessSubscriberCount += 1
             }
 
@@ -187,7 +187,7 @@ final class Publication {
         }
 
         subscriberLinksQueue.async {
-            if link.isIntraprocess() {
+            if link.isIntraprocess {
                 self.intraprocessSubscriberCount -= 1
             }
 
@@ -214,7 +214,7 @@ final class Publication {
                     "TCPROS",
                     name,
                     true,
-                    sub.getTransportInfo()]
+                    sub.transportInfo]
                 ret.append(XmlRpcValue(anyArray: info))
             })
         }
@@ -267,22 +267,6 @@ final class Publication {
 
     func getNumSubscribers() -> Int {
         return subscriberLinksQueue.sync(execute: { subscriberLinks.count })
-    }
-
-    func getPublishTypes(serialize: inout Bool, nocopy: inout Bool, ti: TypeInfo) {
-        subscriberLinksQueue.sync {
-            subscriberLinks.forEach({ sub in
-                var s = false
-                var n = false
-                sub.getPublishTypes(ser: &s, nocopy: &n, ti: ti)
-                serialize = serialize || s
-                nocopy = nocopy || n
-                if serialize && nocopy {
-                    return
-                }
-            })
-        }
-
     }
 
     func hasSubscribers() -> Bool {

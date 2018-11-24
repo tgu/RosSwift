@@ -21,9 +21,7 @@ extension Ros {
     var connection: Nio.Connection?
     var running = true
 
-    func isIntraprocess() -> Bool {
-        return false
-    }
+    let isIntraprocess = false
 
     init(connection: Nio.Connection) {
         self.connection = connection
@@ -41,9 +39,7 @@ extension Ros {
         }
     }
 
-    func getTransportInfo() -> String {
-        return connection?.getTransportInfo() ?? ""
-    }
+    var transportInfo: String { return connection?.getTransportInfo() ?? "" }
 
     func handleHeader(header: Header) -> Bool {
         guard let connection = connection else {

@@ -9,32 +9,27 @@ import Foundation
 import StdMsgs
 
 protocol SubscriberLink: class {
-    var parent: Publication! { get }
     var connectionId: UInt { get }
     var destinationCallerId: String { get }
+    var isIntraprocess: Bool { get }
+    var parent: Publication! { get }
     var topic: String { get }
+    var transportInfo: String { get }
 
     func drop()
-    func isIntraprocess() -> Bool
     func enqueueMessage(m: SerializedMessage)
-    func getTransportInfo() -> String
 }
 
 extension SubscriberLink {
-    func getDataType() -> String {
+    var dataType: String {
         return parent.datatype
     }
 
-    func getMD5Sum() -> String {
+    var md5Sum: String {
         return parent.md5sum
     }
 
-    func getMessageDefinition() -> String {
+    var messageDefinition: String {
         return parent.messageDefinition
-    }
-
-    func getPublishTypes(ser: inout Bool, nocopy: inout Bool, ti: TypeInfo) {
-        ser = true
-        nocopy = false
     }
 }

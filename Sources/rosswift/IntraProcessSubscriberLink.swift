@@ -14,6 +14,8 @@ final class IntraProcessSubscriberLink: SubscriberLink {
     var connectionId: UInt = 0
     var destinationCallerId: String = ""
     let topic: String
+    let isIntraprocess = true
+    let transportInfo = "INTRAPROCESS"
 
     weak var subscriber: IntraProcessPublisherLink?
     var isDropped = Atomic<Bool>(value: false)
@@ -55,24 +57,6 @@ final class IntraProcessSubscriberLink: SubscriberLink {
         }
     }
 
-    func getTransportType() -> String {
-        return "INTRAPROCESS"
-    }
 
-    func getTransportInfo() -> String {
-        return getTransportType()
-    }
-
-    func isIntraprocess() -> Bool {
-        return true
-    }
-
-    func getPublishTypes(ser: inout Bool, nocopy: inout Bool, ti: TypeInfo) {
-        if isDropped.load() {
-            return
-        }
-
-        subscriber?.getPublishTypes(ser: &ser, nocopy: &nocopy, ti: ti)
-    }
 
 }

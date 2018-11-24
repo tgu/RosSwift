@@ -217,14 +217,12 @@ final class Subscription {
 
         callbacksQueue.sync {
             callbacks.forEach { info in
-                var wasFull: Bool = false
                 let deserializer = MessageDeserializer(helper: info.helper, m: message, header: connectionHeader)
-                info.subscriptionQueue.push(helper: info.helper,
+                let wasFull = info.subscriptionQueue.push(helper: info.helper,
                                             deserializer: deserializer,
                                             hasTrackedObject: info.hasTrackedObject,
                                             trackedObject: info.trackedObject,
-                                            receiptTime: receiptTime,
-                                            wasFull: &wasFull)
+                                            receiptTime: receiptTime)
                 if wasFull {
                     drops += 1
                 } else {
@@ -313,19 +311,6 @@ final class Subscription {
         ROS_DEBUG("Began asynchronous xmlrpc connection to [\(peerHost):\(peerPort)]")
 
         return true
-    }
-
-    func getPublishTypes(ser: inout Bool, nocopy: inout Bool, ti: String) {
-        callbacks.forEach {
-            if $0.helper.getTypeInfo() == ti {
-                nocopy = true
-            } else {
-                ser = true
-            }
-            if nocopy && ser {
-                return
-            }
-        }
     }
 
     func getInfo() -> [XmlRpcValue] {

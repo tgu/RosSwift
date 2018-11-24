@@ -23,9 +23,9 @@ final class IntraProcessPublisherLink: PublisherLink {
 
         header.headers = ["callerid": Ros.ThisNode.getName(),
                       "topic": parent.name,
-                      "type": publisher.getDataType(),
-                      "md5sum": publisher.getMD5Sum(),
-                      "message_definition": publisher.getMessageDefinition(),
+                      "type": publisher.dataType,
+                      "md5sum": publisher.md5Sum,
+                      "message_definition": publisher.messageDefinition,
                       "latching": publisher.isLatching() ? "1" : "0"
                     ]
         return setHeader(header: header)
@@ -54,16 +54,6 @@ final class IntraProcessPublisherLink: PublisherLink {
                       connectionHeader: header?.getValues() ?? StringStringMap(),
                       link: self)
 
-    }
-
-    func getPublishTypes(ser: inout Bool, nocopy: inout Bool, ti: String) {
-        if isDropped.load() {
-            ser = false
-            nocopy = false
-            return
-        }
-
-        parent.getPublishTypes(ser: &ser, nocopy: &nocopy, ti: ti)
     }
 
 }

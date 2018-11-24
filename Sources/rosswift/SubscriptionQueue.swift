@@ -43,12 +43,12 @@ final class SubscriptionQueue: CallbackInterface {
         self.queue = Deque<Item>(minimumCapacity: queueSize == 0 ? 10 : Int(queueSize))
     }
 
+    @discardableResult
     func push(helper: SubscriptionCallbackHelper,
               deserializer: MessageDeserializer,
-              hasTrackedObject: Bool,
-              trackedObject: AnyObject?,
-              receiptTime: RosTime.Time,
-              wasFull: inout Bool) {
+              hasTrackedObject: Bool = false,
+              trackedObject: AnyObject? = nil,
+              receiptTime: RosTime.Time = RosTime.Time()) -> Bool {
 
         let item = Item(helper: helper,
                         deserializer: deserializer,
@@ -70,7 +70,7 @@ final class SubscriptionQueue: CallbackInterface {
             queue.append(item)
         }
 
-        wasFull = self.wasFull
+        return self.wasFull
     }
 
     func clear() {
@@ -81,6 +81,7 @@ final class SubscriptionQueue: CallbackInterface {
         }
     }
 
+    @discardableResult
     func call() -> CallResult {
         var ret = CallResult.tryAgain
         if allowConcurrentCallbacks {

@@ -18,8 +18,6 @@ public protocol SubscriptionCallbackHelper {
     var id: ObjectIdentifier { get }
     func deserialize(data: [UInt8]) -> Message?
     func call(msg: Message)
-    func getTypeInfo() -> String
-    func isConst() -> Bool
     func hasHeader() -> Bool
 }
 
@@ -46,14 +44,6 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
         if let message = msg as? M {
             callback(message)
         }
-    }
-
-    public func getTypeInfo() -> String {
-        return String(String(reflecting: M.self).prefix(while: { $0 != "(" }))
-    }
-
-    public func isConst() -> Bool {
-        return  false
     }
 
     public func hasHeader() -> Bool {
@@ -87,14 +77,6 @@ public final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCal
             let event = MessageEvent(message: message, header: ["callerid":"unknown"], receiptTime: RosTime.Time())
             callback(event)
         }
-    }
-
-    public func getTypeInfo() -> String {
-        return String(String(reflecting: M.self).prefix(while: { $0 != "(" }))
-    }
-
-    public func isConst() -> Bool {
-        return  false
     }
 
     public func hasHeader() -> Bool {
