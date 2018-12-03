@@ -4,6 +4,17 @@ import RosTime
 
 
 extension rosgraph_msgs {
+/// name of the topic
+/// node id of the publisher
+/// node id of the subscriber
+/// the statistics apply to this time window
+/// number of messages delivered during the window
+/// numbers of messages dropped during the window
+/// traffic during the window, in bytes
+/// mean/stddev/max period between two messages
+/// mean/stddev/max age of the message based on the
+/// timestamp in the message header. In case the
+/// message does not have a header, it will be 0.
 public struct TopicStatistics: Message {
 public static var md5sum: String = "10152ed868c5097a5e2e4a89d7daa710"
 public static var datatype = "rosgraph_msgs/TopicStatistics"

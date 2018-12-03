@@ -4,6 +4,11 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Single scan from a planar laser range-finder
+///
+/// If you have another ranging device with different behavior (e.g. a sonar
+/// array), please find or create a different message, since applications
+/// will make fairly laser-specific assumptions about this data
 public struct LaserScan: Message {
 public static var md5sum: String = "90c7ef2dc6895d81024acba2ac42f369"
 public static var datatype = "sensor_msgs/LaserScan"

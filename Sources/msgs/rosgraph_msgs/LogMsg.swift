@@ -4,6 +4,12 @@ import RosTime
 
 
 extension rosgraph_msgs {
+//////
+////// Severity level constants
+//////
+//////
+////// Fields
+//////
 public struct Log: Message {
 public static var md5sum: String = "acffd30cd6b6de30f120938c17c593fb"
 public static var datatype = "rosgraph_msgs/Log"

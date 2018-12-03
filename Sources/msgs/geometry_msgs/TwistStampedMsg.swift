@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// A twist with reference coordinate frame and timestamp
 public struct TwistStamped: Message {
 public static var md5sum: String = "98d34b0043a2093cf9d9345ab6eef12e"
 public static var datatype = "geometry_msgs/TwistStamped"
@@ -12,7 +13,7 @@ public static var definition = """
 Header header
 Twist twist
 """
-public static var hasHeader = true
+public static var hasHeader = false
 
 public var header: std_msgs.header
 public var twist: Twist

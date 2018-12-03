@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// This message publishes values for multiple feedback at once. 
 public struct JoyFeedbackArray: Message {
 public static var md5sum: String = "cde5730a895b1fc4dee6f91b754b213d"
 public static var datatype = "sensor_msgs/JoyFeedbackArray"

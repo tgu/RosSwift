@@ -4,6 +4,12 @@ import RosTime
 
 
 extension sensor_msgs {
+/// This message contains an uncompressed image
+/// (0, 0) is at top-left corner of image
+///
+/// The legal values for encoding are in file src/image_encodings.cpp
+/// If you want to standardize a new string format, join
+/// ros-users@lists.sourceforge.net and send an email proposing a new encoding.
 public struct Image: Message {
 public static var md5sum: String = "060021388200f6f0f447d0fcd9c64743"
 public static var datatype = "sensor_msgs/Image"

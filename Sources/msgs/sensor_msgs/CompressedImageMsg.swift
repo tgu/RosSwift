@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// This message contains a compressed image
 public struct CompressedImage: Message {
 public static var md5sum: String = "8f7a12909da2c9d3332d540a0977563f"
 public static var datatype = "sensor_msgs/CompressedImage"

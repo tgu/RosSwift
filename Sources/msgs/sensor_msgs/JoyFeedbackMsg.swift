@@ -4,6 +4,11 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Declare of the type of feedback
+/// This will hold an id number for each type of each feedback.
+/// Example, the first led would be id=0, the second would be id=1
+/// Intensity of the feedback, from 0.0 to 1.0, inclusive.  If device is
+/// actually binary, driver should treat 0<=x<0.5 as off, 0.5<=x<=1 as on.
 public struct JoyFeedback: Message {
 public static var md5sum: String = "f4dcd73460360d98f36e55ee7f2e46f1"
 public static var datatype = "sensor_msgs/JoyFeedback"
@@ -25,9 +30,9 @@ float32 intensity
 """
 public static var hasHeader = false
 
-public let TYPE_LED : UInt8 = 0
-public let TYPE_RUMBLE : UInt8 = 1
-public let TYPE_BUZZER : UInt8 = 2
+public let TYPE_LED: UInt8 = 0
+public let TYPE_RUMBLE: UInt8 = 1
+public let TYPE_BUZZER: UInt8 = 2
 public var type: UInt8
 public var id: UInt8
 public var intensity: Float32

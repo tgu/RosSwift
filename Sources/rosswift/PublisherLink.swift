@@ -7,17 +7,19 @@
 
 import Foundation
 
-class PublisherLink {
+protocol PublisherLink: class {
+    var parent: Subscription { get }
+    var connectionId: Int { get set }
+    var publisherXmlrpcUri: String { get }
+    var stats: Stats? { get }
+    var transportHints: TransportHints { get }
+    var latched: Bool { get set }
+    var callerId: String { get set }
+    var header: Header? { get set }
+    var md5sum: String { get set }
 
-    unowned var parent: Subscription
-    final var connectionId: Int
-    final let publisherXmlrpcUri: String
-    final var stats: Stats?
-    final let transportHints: TransportHints
-    final var latched: Bool
-    final var callerId: String = ""
-    final var header: Header?
-    final var md5sum: String = ""
+    func drop()
+}
 
     struct Stats {
         var bytesReceived: UInt = 0
@@ -25,19 +27,9 @@ class PublisherLink {
         var drops: UInt = 0
     }
 
-    init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
-        self.parent = parent
-        self.connectionId = 0
-        self.publisherXmlrpcUri = xmlrpcUri
-        self.transportHints = transportHints
-        self.latched = false
-    }
+extension PublisherLink {
 
-    func drop() {
-        ROS_ERROR("drop")
-    }
-
-    final func setHeader(header: Header) -> Bool {
+    func setHeader(header: Header) -> Bool {
         guard let newId = header.getValue(key: "callerid") else {
             ROS_ERROR("header did not have required element: callerid")
             return false
@@ -68,9 +60,4 @@ class PublisherLink {
 
         return true
     }
-
-    func getTransportInfo() -> String {
-        return ""
-    }
-
 }

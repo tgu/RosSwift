@@ -4,6 +4,18 @@ import RosTime
 
 
 extension sensor_msgs {
+/// This message holds a collection of N-dimensional points, which may
+/// contain additional information such as normals, intensity, etc. The
+/// point data is stored as a binary blob, its layout described by the
+/// contents of the "fields" array.
+/// The point cloud data may be organized 2d (image-like) or 1d
+/// (unordered). Point clouds organized as 2d images may be produced by
+/// camera depth sensors such as stereo or time-of-flight.
+/// Time of sensor data acquisition, and the coordinate frame ID (for 3d
+/// points).
+/// 2D structure of the point cloud. If the cloud is unordered, height is
+/// 1 and width is the length of the point cloud.
+/// Describes the channels and their layout in the binary data blob.
 public struct PointCloud2: Message {
 public static var md5sum: String = "1158d486dd51d683ce2f1be655c3c181"
 public static var datatype = "sensor_msgs/PointCloud2"

@@ -318,13 +318,14 @@ extension Ros {
 
                     if shuttingDown {
                         ok = false
+                        return
                     }
 
-                    if M.md5sum == "" {
+                    if M.md5sum.isEmpty {
                         throw InvalidParameterError("Subscribing to topic [\(options.topic)] with an empty md5sum")
                     }
 
-                    if M.datatype == "" {
+                    if M.datatype.isEmpty {
                         throw InvalidParameterError("Subscribing to topic [\(options.topic)] with an empty datatype")
                     }
 

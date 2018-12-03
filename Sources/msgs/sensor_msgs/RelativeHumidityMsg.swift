@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Single reading from a relative humidity sensor.  Defines the ratio of partial
 public struct RelativeHumidity: Message {
 public static var md5sum: String = "8730015b05955b7e992ce29a2678d90f"
 public static var datatype = "sensor_msgs/RelativeHumidity"

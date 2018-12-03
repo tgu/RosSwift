@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Reports the state of a joysticks axes and buttons.
 public struct Joy: Message {
 public static var md5sum: String = "5a9ea5f83505693b71e785041e67a8bb"
 public static var datatype = "sensor_msgs/Joy"

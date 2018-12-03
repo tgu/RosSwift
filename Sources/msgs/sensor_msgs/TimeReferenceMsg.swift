@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Measurement from an external time source not actively synchronized with the system clock.
 public struct TimeReference: Message {
 public static var md5sum: String = "fded64a0265108ba86c3d38fb11c0c16"
 public static var datatype = "sensor_msgs/TimeReference"

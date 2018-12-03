@@ -4,6 +4,7 @@ import RosTime
 import nav_msgs
 
 extension map_msgs {
+
 public struct ProjectedMap: Message {
 public static var md5sum: String = "7bbe8f96e45089681dc1ea7d023cbfca"
 public static var datatype = "map_msgs/ProjectedMap"

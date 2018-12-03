@@ -4,6 +4,7 @@ import RosTime
 
 
 extension control_msgs {
+
 public struct PidState: Message {
 public static var md5sum: String = "b138ec00e886c10e73f27e8712252ea6"
 public static var datatype = "control_msgs/PidState"

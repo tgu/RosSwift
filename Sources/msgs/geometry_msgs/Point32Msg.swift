@@ -4,6 +4,13 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This contains the position of a point in free space(with 32 bits of precision).
+/// It is recommeded to use Point wherever possible instead of Point32.  
+/// 
+/// This recommendation is to promote interoperability.  
+///
+/// This message is designed to take up less space when sending
+/// lots of points at once, as in the case of a PointCloud.  
 public struct Point32: Message {
 public static var md5sum: String = "cc153912f1453b708d221682bc23d9ac"
 public static var datatype = "geometry_msgs/Point32"

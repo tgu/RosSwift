@@ -6,105 +6,55 @@
 //
 
 import Foundation
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
 import CommonCrypto
+#elseif os(Linux)
+import OpenSSL
+typealias CC_LONG = size_t
+#endif
 
 extension Data {
 
-    /// Hashing algorithm that prepends an RSA2048ASN1Header to the beginning of the data being hashed.
+    /// MD5 Hashing algorithm for hashing a Data instance.
     ///
-    /// - Parameters:
-    ///   - type: The type of hash algorithm to use for the hashing operation.
-    ///   - output: The type of output string desired.
-    /// - Returns: A hash string using the specified hashing algorithm, or nil.
-    public func hashWithRSA2048Asn1Header(_ type: HashType, output: HashOutputType = .hex) -> String? {
+    /// - Returns: The requested hash output or nil if failure.
+    public func hashed() -> String {
 
-        let rsa2048Asn1Header:[UInt8] = [
-            0x30, 0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86,
-            0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00, 0x03, 0x82, 0x01, 0x0f, 0x00
-        ]
+        #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+        let length = CC_MD5_DIGEST_LENGTH
+        #elseif os(Linux)
+        let length = MD5_DIGEST_LENGTH
+        #endif
 
-        var headerData = Data(bytes: rsa2048Asn1Header)
-        headerData.append(self)
+        var digest = Data(count: Int(length))
 
-        return hashed(type, output: output)
-    }
-
-    /// Hashing algorithm for hashing a Data instance.
-    ///
-    /// - Parameters:
-    ///   - type: The type of hash to use.
-    ///   - output: The type of hash output desired, defaults to .hex.
-    ///   - Returns: The requested hash output or nil if failure.
-    public func hashed(_ type: HashType, output: HashOutputType = .hex) -> String? {
-
-        // setup data variable to hold hashed value
-        var digest = Data(count: Int(type.length))
-
-        // generate hash using specified hash type
+        // generate md5 hash
         _ = digest.withUnsafeMutableBytes { (digestBytes: UnsafeMutablePointer<UInt8>) in
             self.withUnsafeBytes { (messageBytes: UnsafePointer<UInt8>) in
                 let length = CC_LONG(self.count)
-                switch type {
-                case .md5: CC_MD5(messageBytes, length, digestBytes)
-                case .sha1: CC_SHA1(messageBytes, length, digestBytes)
-                case .sha224: CC_SHA224(messageBytes, length, digestBytes)
-                case .sha256: CC_SHA256(messageBytes, length, digestBytes)
-                case .sha384: CC_SHA384(messageBytes, length, digestBytes)
-                case .sha512: CC_SHA512(messageBytes, length, digestBytes)
-                }
-            }
+                #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+                CC_MD5(messageBytes, length, digestBytes)
+                #elseif os(Linux)
+                MD5(messageBytes, length, digestBytes)
+                #endif
+           }
         }
 
         // return the value based on the specified output type.
-        switch output {
-        case .hex: return digest.map { String(format: "%02hhx", $0) }.joined()
-        case .base64: return digest.base64EncodedString()
-        }
+        return digest.map { String(format: "%02hhx", $0) }.joined()
     }
 }
 
-// Defines types of hash string outputs available
-public enum HashOutputType {
-    // standard hex string output
-    case hex
-    // base 64 encoded string output
-    case base64
-}
-
-// Defines types of hash algorithms available
-public enum HashType {
-    case md5
-    case sha1
-    case sha224
-    case sha256
-    case sha384
-    case sha512
-
-    var length: Int32 {
-        switch self {
-        case .md5: return CC_MD5_DIGEST_LENGTH
-        case .sha1: return CC_SHA1_DIGEST_LENGTH
-        case .sha224: return CC_SHA224_DIGEST_LENGTH
-        case .sha256: return CC_SHA256_DIGEST_LENGTH
-        case .sha384: return CC_SHA384_DIGEST_LENGTH
-        case .sha512: return CC_SHA512_DIGEST_LENGTH
-        }
-    }
-}
 
 public extension String {
 
-    /// Hashing algorithm for hashing a string instance.
-    ///
-    /// - Parameters:
-    ///   - type: The type of hash to use.
-    ///   - output: The type of output desired, defaults to .hex.
+    /// MD5 Hashing algorithm for hashing a string instance.
     /// - Returns: The requested hash output or nil if failure.
-    public func hashed(_ type: HashType, output: HashOutputType = .hex) -> String? {
+    public func hashed() -> String? {
 
         // convert string to utf8 encoded data
         guard let message = data(using: .utf8) else { return nil }
-        return message.hashed(type, output: output)
+        return message.hashed()
     }
 }
 
@@ -168,16 +118,7 @@ func generateCode(msg: String) {
     let type = types[structName]!
     let name = parts.count > 1 ? String(parts[1]) : "data"
     let decl = "public var \(name): \(type)"
-    let md5sum = String(data).hashed(.md5) ?? "*"
-    let size = structName == "string" ? "4 + data.utf8.count" : "MemoryLayout<\(type)>.size"
-
-    let ser = """
-    var buffer = StreamBuffer()
-                let len = \(size)
-                StdMsgs.serialize(stream: &buffer, t: UInt32(len))
-                StdMsgs.serialize(stream: &buffer, t: \(name))
-                return SerializedMessage(msg: self, buffer: buffer.buffer)
-    """
+    let md5sum = String(data).hashed() ?? "*"
 
     let code = """
     import Foundation
@@ -194,10 +135,6 @@ func generateCode(msg: String) {
 
             public init(_ value: \(type)) {
                 self.\(name) = value
-            }
-
-            public init() {
-                self.\(name) = \(type)()
             }
 
         }
@@ -230,63 +167,6 @@ func generateMessageCode(msg: String) {
             }
             return type
         }
-
-        var size : String? {
-            if value != nil {
-                return nil
-            }
-            if array {
-                if builtin {
-                    if let fs = fixedArraySize {
-                        return "MemoryLayout<\(simpleType)>.size * \(fs)"
-                    }
-                    return "4 + MemoryLayout<\(simpleType)> * \(name).count"
-                } else {
-                    return "\(name).reduce(0, { $0+$1.serializationLength() })"
-                }
-            }
-            return "\(name).serializationLength()"
-        }
-
-        var ser : String? {
-            if value != nil {
-                return nil
-            }
-            if builtin && simpleType != "std_msgs.header" {
-                return "StdMsgs.serialize(stream: &stream, t: \(name))"
-            }
-            if array {
-                if fixedArraySize == nil {
-                    return """
-                    \(name).forEach{ $0.serialize(stream: &stream) }
-                    """
-                }
-                return "\(name).forEach{ $0.serialize(stream: &stream) }"
-            }
-            return "\(name).serialize(stream: &stream)"
-
-
-        }
-
-        var deser : String? {
-            if value != nil {
-                return nil
-            }
-            if array {
-                return """
-                var list = [\(simpleType)]()
-                for _ in 0..<\(name).count {
-                    var item = \(simpleType)()
-                    item.deserialize(from: &from )
-                    list.append(item)
-                }
-                \(name) = list
-                """
-            }
-            return "\(name).deserialize(from: &from)"
-
-        }
-
 
         var initCode: String? {
             return value == nil ? "self.\(name) = \(name)" : nil
@@ -367,6 +247,10 @@ func generateMessageCode(msg: String) {
     let modules = Set(items.compactMap{$0.module})
     let importModules = modules.map{"import \($0)"}.joined(separator: "\n")
     let hasHeader = "false"  // Some logic here...
+
+    let comments = data.filter{ $0.starts(with: "#") }
+        .joined(separator: "\n")
+        .replacingOccurrences(of: "#", with: "///")
     var argInit = ""
     if !arguments.isEmpty {
         argInit = """
@@ -383,6 +267,7 @@ func generateMessageCode(msg: String) {
     \(importModules)
 
     extension \(path.dropLast().joined(separator: ".")) {
+    \(comments)
     public struct \(path.last!): Message {
     public static var md5sum: String = "\(md5sum)"
     public static var datatype = "\(msg)"
@@ -408,18 +293,20 @@ func generateMessageCode(msg: String) {
 
 }
 
-generateMessageCode(msg: "actionlib_msgs/GoalStatus")
-
 let allMsgs = rosmsg(["list"]).components(separatedBy: .newlines)
+
+
 let msgs = allMsgs.filter { !$0.hasPrefix("std_msgs") }
 for msg in msgs {
     generateMessageCode(msg: msg)
 }
 
+
 let stdMsgs = allMsgs.filter { $0.hasPrefix("std_msgs") && !$0.contains("Array") }
 for msg in stdMsgs {
     generateCode(msg: msg)
 }
+
 
 
 

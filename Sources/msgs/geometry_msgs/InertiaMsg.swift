@@ -1,8 +1,15 @@
 import Foundation
 import StdMsgs
 import RosTime
+import geometry_msgs
 
 extension geometry_msgs {
+/// Mass [kg]
+/// Center of mass [m]
+/// Inertia Tensor [kg-m^2]
+///     | ixx ixy ixz |
+/// I = | ixy iyy iyz |
+///     | ixz iyz izz |
 public struct Inertia: Message {
 public static var md5sum: String = "1d26e4bb6c83ff141c5cf0d883c2b0fe"
 public static var datatype = "geometry_msgs/Inertia"

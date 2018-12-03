@@ -4,6 +4,11 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This represents a pose in free space with uncertainty.
+/// Row-major representation of the 6x6 covariance matrix
+/// The orientation parameters use a fixed-axis representation.
+/// In order, the parameters are:
+/// (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
 public struct PoseWithCovariance: Message {
 public static var md5sum: String = "c23e848cf1b7533a8d7c259073a97e6f"
 public static var datatype = "geometry_msgs/PoseWithCovariance"

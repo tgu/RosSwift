@@ -4,6 +4,7 @@ import RosTime
 
 
 extension dynamic_reconfigure {
+
 public struct IntParameter: Message {
 public static var md5sum: String = "65fedc7a0cbfb8db035e46194a350bf1"
 public static var datatype = "dynamic_reconfigure/IntParameter"

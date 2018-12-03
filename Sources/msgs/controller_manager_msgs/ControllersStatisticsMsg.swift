@@ -1,10 +1,11 @@
 import Foundation
 import StdMsgs
 import RosTime
-import controller_manager_msgs
 import std_msgs
+import controller_manager_msgs
 
 extension controller_manager_msgs {
+
 public struct ControllersStatistics: Message {
 public static var md5sum: String = "a154c347736773e3700d1719105df29d"
 public static var datatype = "controller_manager_msgs/ControllersStatistics"

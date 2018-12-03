@@ -10,11 +10,25 @@ import NIOConcurrencyHelpers
 import StdMsgs
 
 final class IntraProcessPublisherLink: PublisherLink {
+    var parent: Subscription
+    var connectionId: Int
+    var publisherXmlrpcUri: String
+    var stats: Stats?
+    var transportHints: TransportHints
+    var latched: Bool
+    var callerId: String = ""
+    var header: Header?
+    var md5sum: String = ""
+
     var publisher: IntraProcessSubscriberLink?
     var isDropped = Atomic<Bool>(value: false)
 
-    override init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
-        super.init(parent: parent, xmlrpcUri: xmlrpcUri, transportHints: transportHints)
+    init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
+        self.parent = parent
+        self.connectionId = 0
+        self.publisherXmlrpcUri = xmlrpcUri
+        self.transportHints = transportHints
+        self.latched = false
     }
 
     func setPublisher(publisher: IntraProcessSubscriberLink) -> Bool {
@@ -35,7 +49,7 @@ final class IntraProcessPublisherLink: PublisherLink {
         return "INTRAPROCESS"
     }
 
-    override func drop() {
+    func drop() {
         if isDropped.compareAndExchange(expected: false, desired: true) {
             publisher?.drop()
             publisher = nil

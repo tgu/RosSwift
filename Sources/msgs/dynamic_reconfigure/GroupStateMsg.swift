@@ -4,6 +4,7 @@ import RosTime
 
 
 extension dynamic_reconfigure {
+
 public struct GroupState: Message {
 public static var md5sum: String = "a2d87f51dc22930325041a2f8b1571f8"
 public static var datatype = "dynamic_reconfigure/GroupState"

@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This expresses an estimated pose with a reference coordinate frame and timestamp
 public struct PoseWithCovarianceStamped: Message {
 public static var md5sum: String = "953b798c0f514ff060a53a3498ce6246"
 public static var datatype = "geometry_msgs/PoseWithCovarianceStamped"

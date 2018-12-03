@@ -4,6 +4,7 @@ import RosTime
 
 
 extension dynamic_reconfigure {
+
 public struct BoolParameter: Message {
 public static var md5sum: String = "23f05028c1a699fb83e22401228c3a9e"
 public static var datatype = "dynamic_reconfigure/BoolParameter"

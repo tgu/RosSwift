@@ -4,6 +4,7 @@ import RosTime
 import sensor_msgs
 
 extension map_msgs {
+
 public struct PointCloud2Update: Message {
 public static var md5sum: String = "6c58e4f249ae9cd2b24fb1ee0f99195e"
 public static var datatype = "map_msgs/PointCloud2Update"

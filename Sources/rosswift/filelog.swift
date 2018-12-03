@@ -11,6 +11,7 @@ public struct FileLog {
     public init(remappings: StringStringMap) {
         // Log filename can be specified on the command line through __log
         // If it's been set, don't create our own name
+        #if os(OSX) || os(Linux)
         var logFileName = remappings["__log"] ?? ""
         if logFileName == "" {
             if let rosLogDir = ProcessInfo.processInfo.environment["ROS_LOG_DIR"] {
@@ -36,6 +37,9 @@ public struct FileLog {
                                     .joined(separator: "_")
             logFileName += Ros.ThisNode.getName() + "_\(getpid()).log"
         }
+        #elseif os(iOS) || os(tvOS) || os(watchOS)
+            // Do something else here
+        #endif
 
 //            log_file_name = fs::system_complete(log_file_name).string();
 //            g_log_directory = fs::path(log_file_name).parent_path().string();

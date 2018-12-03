@@ -4,6 +4,7 @@ import RosTime
 import trajectory_msgs
 
 extension control_msgs {
+
 public struct JointTrajectoryControllerState: Message {
 public static var md5sum: String = "10817c60c2486ef6b33e97dcd87f4474"
 public static var datatype = "control_msgs/JointTrajectoryControllerState"

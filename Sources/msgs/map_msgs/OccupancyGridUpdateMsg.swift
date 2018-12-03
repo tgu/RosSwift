@@ -4,6 +4,7 @@ import RosTime
 
 
 extension map_msgs {
+
 public struct OccupancyGridUpdate: Message {
 public static var md5sum: String = "b295be292b335c34718bd939deebe1c9"
 public static var datatype = "map_msgs/OccupancyGridUpdate"

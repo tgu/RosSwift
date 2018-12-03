@@ -4,6 +4,9 @@ import RosTime
 
 
 extension rosgraph_msgs {
+/// roslib/Clock is used for publishing simulated time in ROS. 
+/// This message simply communicates the current time.
+/// For more information, see http://www.ros.org/wiki/Clock
 public struct Clock: Message {
 public static var md5sum: String = "a9c97c1d230cfc112e270351a944ee47"
 public static var datatype = "rosgraph_msgs/Clock"

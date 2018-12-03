@@ -4,6 +4,7 @@ import RosTime
 import geometry_msgs
 
 extension tf2_msgs {
+
 public struct TFMessage: Message {
 public static var md5sum: String = "94810edda583a504dfda3829e70d7eec"
 public static var datatype = "tf2_msgs/TFMessage"

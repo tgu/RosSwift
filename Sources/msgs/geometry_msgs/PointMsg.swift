@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This contains the position of a point in free space
 public struct Point: Message {
 public static var md5sum: String = "4a842b65f413084dc2b10fb484ea7f17"
 public static var datatype = "geometry_msgs/Point"

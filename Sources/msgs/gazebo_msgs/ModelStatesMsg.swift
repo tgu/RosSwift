@@ -4,6 +4,7 @@ import RosTime
 import geometry_msgs
 
 extension gazebo_msgs {
+/// broadcast all model states in world frame
 public struct ModelStates: Message {
 public static var md5sum: String = "48c080191eb15c41858319b4d8a609c2"
 public static var datatype = "gazebo_msgs/ModelStates"

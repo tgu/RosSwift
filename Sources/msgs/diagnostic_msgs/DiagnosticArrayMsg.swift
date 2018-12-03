@@ -4,6 +4,7 @@ import RosTime
 
 
 extension diagnostic_msgs {
+/// This message is used to send diagnostic information about the state of the robot
 public struct DiagnosticArray: Message {
 public static var md5sum: String = "60810da900de1dd6ddd437c3503511da"
 public static var datatype = "diagnostic_msgs/DiagnosticArray"

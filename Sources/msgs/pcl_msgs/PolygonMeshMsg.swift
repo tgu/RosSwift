@@ -4,6 +4,9 @@ import RosTime
 import sensor_msgs
 
 extension pcl_msgs {
+/// Separate header for the polygonal surface
+/// Vertices of the mesh as a point cloud
+/// List of polygons
 public struct PolygonMesh: Message {
 public static var md5sum: String = "45a5fc6ad2cde8489600a790acc9a38a"
 public static var datatype = "pcl_msgs/PolygonMesh"

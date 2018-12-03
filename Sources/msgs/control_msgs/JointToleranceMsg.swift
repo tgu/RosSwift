@@ -4,6 +4,16 @@ import RosTime
 
 
 extension control_msgs {
+/// The tolerances specify the amount the position, velocity, and
+/// accelerations can vary from the setpoints.  For example, in the case
+/// of trajectory control, when the actual position varies beyond
+/// (desired position + position tolerance), the trajectory goal may
+/// abort.
+/// 
+/// There are two special values for tolerances:
+///  * 0 - The tolerance is unspecified and will remain at whatever the default is
+///  * -1 - The tolerance is "erased".  If there was a default, the joint will be
+///         allowed to move without restriction.
 public struct JointTolerance: Message {
 public static var md5sum: String = "f544fe9c16cf04547e135dd6063ff5be"
 public static var datatype = "control_msgs/JointTolerance"

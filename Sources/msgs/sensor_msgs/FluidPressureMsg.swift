@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Single pressure reading.  This message is appropriate for measuring the
 public struct FluidPressure: Message {
 public static var md5sum: String = "804dc5cea1c5306d6a2eb80b9833befe"
 public static var datatype = "sensor_msgs/FluidPressure"

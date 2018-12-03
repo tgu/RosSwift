@@ -4,6 +4,7 @@ import RosTime
 
 
 extension diagnostic_msgs {
+
 public struct KeyValue: Message {
 public static var md5sum: String = "cf57fdc6617a881a88c16e768132149c"
 public static var datatype = "diagnostic_msgs/KeyValue"

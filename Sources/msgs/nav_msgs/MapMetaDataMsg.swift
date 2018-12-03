@@ -4,6 +4,13 @@ import RosTime
 import geometry_msgs
 
 extension nav_msgs {
+/// This hold basic information about the characterists of the OccupancyGrid
+/// The time at which the map was loaded
+/// The map resolution [m/cell]
+/// Map width [cells]
+/// Map height [cells]
+/// The origin of the map [m, m, rad].  This is the real-world pose of the
+/// cell (0,0) in the map.
 public struct MapMetaData: Message {
 public static var md5sum: String = "10cfc8a2818024d3248802c00c95f11b"
 public static var datatype = "nav_msgs/MapMetaData"

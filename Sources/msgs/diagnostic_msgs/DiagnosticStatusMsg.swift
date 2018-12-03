@@ -4,6 +4,9 @@ import RosTime
 
 
 extension diagnostic_msgs {
+/// This message holds the status of an individual component of the robot.
+/// 
+/// Possible levels of operations
 public struct DiagnosticStatus: Message {
 public static var md5sum: String = "d0ce08bc6e5ba34c7754f563a9cabaf1"
 public static var datatype = "diagnostic_msgs/DiagnosticStatus"

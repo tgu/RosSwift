@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// An array of poses with a header for global reference.
 public struct PoseArray: Message {
 public static var md5sum: String = "916c28c5764443f268b296bb671b9d97"
 public static var datatype = "geometry_msgs/PoseArray"

@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+///A specification of a polygon where the first and last points are assumed to be connected
 public struct Polygon: Message {
 public static var md5sum: String = "cd60a26494a087f577976f0329fa120e"
 public static var datatype = "geometry_msgs/Polygon"

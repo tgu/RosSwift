@@ -4,6 +4,7 @@ import RosTime
 import geometry_msgs
 
 extension sensor_msgs {
+/// Measurement of the Magnetic Field vector at a specific location.
 public struct MagneticField: Message {
 public static var md5sum: String = "2f3b0b43eed0c9501de0fa3ff89a45aa"
 public static var datatype = "sensor_msgs/MagneticField"

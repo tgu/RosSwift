@@ -4,6 +4,8 @@ import RosTime
 
 
 extension actionlib_msgs {
+/// Stores the statuses for goals that are currently being tracked
+/// by an action server
 public struct GoalStatusArray: Message {
 public static var md5sum: String = "8b2b82f13216d0a8ea88bd3af735e619"
 public static var datatype = "actionlib_msgs/GoalStatusArray"

@@ -4,6 +4,7 @@ import RosTime
 import controller_manager_msgs
 
 extension controller_manager_msgs {
+
 public struct ControllerState: Message {
 public static var md5sum: String = "aeb6b261d97793ab74099a3740245272"
 public static var datatype = "controller_manager_msgs/ControllerState"

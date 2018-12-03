@@ -4,6 +4,7 @@ import RosTime
 import geometry_msgs
 
 extension gazebo_msgs {
+/// @todo: FIXME: sets pose and twist of a link.  All children link poses/twists of the URDF tree are not updated accordingly, but should be.
 public struct LinkState: Message {
 public static var md5sum: String = "0818ebbf28ce3a08d48ab1eaa7309ebe"
 public static var datatype = "gazebo_msgs/LinkState"

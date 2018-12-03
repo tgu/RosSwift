@@ -299,7 +299,6 @@ class paramTests: XCTestCase {
         XCTAssertFalse(Ros.Param.get(param_name, &vec_i))
         XCTAssertFalse(Ros.Param.get(param_name, &vec_b))
 
-        Ros.Param.get(param_name, &vec_s2)
         XCTAssert(Ros.Param.get(param_name, &vec_s2))
 
         XCTAssertEqual(vec_s.count, vec_s2.count)
@@ -561,7 +560,6 @@ class paramTests: XCTestCase {
     // should run last, tests runs in alphabetical order (unless random order is selected)
     func testZgetParamNames() {
         var test_params = [String]()
-        sleep(10)
         let b = Ros.Param.getParamNames(keys: &test_params)
 
 

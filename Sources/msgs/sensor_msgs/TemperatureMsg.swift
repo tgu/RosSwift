@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Single temperature reading.
 public struct Temperature: Message {
 public static var md5sum: String = "ff71b307acdbe7c871a5a6d7ed359100"
 public static var datatype = "sensor_msgs/Temperature"

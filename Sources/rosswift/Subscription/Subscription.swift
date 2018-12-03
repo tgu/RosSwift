@@ -262,9 +262,7 @@ final class Subscription {
         }
 
         transports.forEach {
-            if $0 == "UDP" {
-                ROS_WARNING("UDP not implemented")
-            } else if $0 == "TCP" {
+            if $0 == "TCP" {
                 tcprosArray.append("TCPROS")
                 protosArray.append(tcprosArray)
             } else {

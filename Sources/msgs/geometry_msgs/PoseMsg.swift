@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// A representation of pose in free space, composed of position and orientation. 
 public struct Pose: Message {
 public static var md5sum: String = "e45d45a5a1ce597b249e23fb30fc871f"
 public static var datatype = "geometry_msgs/Pose"

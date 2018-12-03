@@ -4,6 +4,13 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Constants are chosen to match the enums in the linux kernel
+/// defined in include/linux/power_supply.h as of version 3.7
+/// The one difference is for style reasons the constants are
+/// all uppercase not mixed case.
+/// Power supply status constants
+/// Power supply health constants
+/// Power supply technology (chemistry) constants
 public struct BatteryState: Message {
 public static var md5sum: String = "476f837fa6771f6e16e3bf4ef96f8770"
 public static var datatype = "sensor_msgs/BatteryState"
@@ -59,27 +66,27 @@ string serial_number     # The best approximation of the battery serial number
 """
 public static var hasHeader = false
 
-public let POWER_SUPPLY_STATUS_UNKNOWN : UInt8 = 0
-public let POWER_SUPPLY_STATUS_CHARGING : UInt8 = 1
-public let POWER_SUPPLY_STATUS_DISCHARGING : UInt8 = 2
-public let POWER_SUPPLY_STATUS_NOT_CHARGING : UInt8 = 3
-public let POWER_SUPPLY_STATUS_FULL : UInt8 = 4
-public let POWER_SUPPLY_HEALTH_UNKNOWN : UInt8 = 0
-public let POWER_SUPPLY_HEALTH_GOOD : UInt8 = 1
-public let POWER_SUPPLY_HEALTH_OVERHEAT : UInt8 = 2
-public let POWER_SUPPLY_HEALTH_DEAD : UInt8 = 3
-public let POWER_SUPPLY_HEALTH_OVERVOLTAGE : UInt8 = 4
-public let POWER_SUPPLY_HEALTH_UNSPEC_FAILURE : UInt8 = 5
-public let POWER_SUPPLY_HEALTH_COLD : UInt8 = 6
-public let POWER_SUPPLY_HEALTH_WATCHDOG_TIMER_EXPIRE : UInt8 = 7
-public let POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE : UInt8 = 8
-public let POWER_SUPPLY_TECHNOLOGY_UNKNOWN : UInt8 = 0
-public let POWER_SUPPLY_TECHNOLOGY_NIMH : UInt8 = 1
-public let POWER_SUPPLY_TECHNOLOGY_LION : UInt8 = 2
-public let POWER_SUPPLY_TECHNOLOGY_LIPO : UInt8 = 3
-public let POWER_SUPPLY_TECHNOLOGY_LIFE : UInt8 = 4
-public let POWER_SUPPLY_TECHNOLOGY_NICD : UInt8 = 5
-public let POWER_SUPPLY_TECHNOLOGY_LIMN : UInt8 = 6
+public let POWER_SUPPLY_STATUS_UNKNOWN: UInt8 = 0
+public let POWER_SUPPLY_STATUS_CHARGING: UInt8 = 1
+public let POWER_SUPPLY_STATUS_DISCHARGING: UInt8 = 2
+public let POWER_SUPPLY_STATUS_NOT_CHARGING: UInt8 = 3
+public let POWER_SUPPLY_STATUS_FULL: UInt8 = 4
+public let POWER_SUPPLY_HEALTH_UNKNOWN: UInt8 = 0
+public let POWER_SUPPLY_HEALTH_GOOD: UInt8 = 1
+public let POWER_SUPPLY_HEALTH_OVERHEAT: UInt8 = 2
+public let POWER_SUPPLY_HEALTH_DEAD: UInt8 = 3
+public let POWER_SUPPLY_HEALTH_OVERVOLTAGE: UInt8 = 4
+public let POWER_SUPPLY_HEALTH_UNSPEC_FAILURE: UInt8 = 5
+public let POWER_SUPPLY_HEALTH_COLD: UInt8 = 6
+public let POWER_SUPPLY_HEALTH_WATCHDOG_TIMER_EXPIRE: UInt8 = 7
+public let POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE: UInt8 = 8
+public let POWER_SUPPLY_TECHNOLOGY_UNKNOWN: UInt8 = 0
+public let POWER_SUPPLY_TECHNOLOGY_NIMH: UInt8 = 1
+public let POWER_SUPPLY_TECHNOLOGY_LION: UInt8 = 2
+public let POWER_SUPPLY_TECHNOLOGY_LIPO: UInt8 = 3
+public let POWER_SUPPLY_TECHNOLOGY_LIFE: UInt8 = 4
+public let POWER_SUPPLY_TECHNOLOGY_NICD: UInt8 = 5
+public let POWER_SUPPLY_TECHNOLOGY_LIMN: UInt8 = 6
 public var header: std_msgs.header
 public var voltage: Float32
 public var current: Float32

@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This represents a Polygon with reference coordinate frame and timestamp
 public struct PolygonStamped: Message {
 public static var md5sum: String = "c6be8f7dc3bee7fe9e8d296070f53340"
 public static var datatype = "geometry_msgs/PolygonStamped"

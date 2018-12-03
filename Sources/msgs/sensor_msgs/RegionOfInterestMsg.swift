@@ -4,6 +4,16 @@ import RosTime
 
 
 extension sensor_msgs {
+/// This message is used to specify a region of interest within an image.
+///
+/// When used to specify the ROI setting of the camera when the image was
+/// taken, the height and width fields should either match the height and
+/// width fields for the associated image; or height = width = 0
+/// indicates that the full resolution image was captured.
+/// True if a distinct rectified ROI should be calculated from the "raw"
+/// ROI in this message. Typically this should be False if the full image
+/// is captured (ROI not used), and True if a subwindow is captured (ROI
+/// used).
 public struct RegionOfInterest: Message {
 public static var md5sum: String = "bdb633039d588fcccb441a4d43ccfe09"
 public static var datatype = "sensor_msgs/RegionOfInterest"

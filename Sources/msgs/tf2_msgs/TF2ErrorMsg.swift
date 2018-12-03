@@ -4,6 +4,7 @@ import RosTime
 
 
 extension tf2_msgs {
+
 public struct TF2Error: Message {
 public static var md5sum: String = "bc6848fd6fd750c92e38575618a4917d"
 public static var datatype = "tf2_msgs/TF2Error"
@@ -21,13 +22,13 @@ string error_string
 """
 public static var hasHeader = false
 
-public let NO_ERROR : UInt8 = 0
-public let LOOKUP_ERROR : UInt8 = 1
-public let CONNECTIVITY_ERROR : UInt8 = 2
-public let EXTRAPOLATION_ERROR : UInt8 = 3
-public let INVALID_ARGUMENT_ERROR : UInt8 = 4
-public let TIMEOUT_ERROR : UInt8 = 5
-public let TRANSFORM_ERROR : UInt8 = 6
+public let NO_ERROR: UInt8 = 0
+public let LOOKUP_ERROR: UInt8 = 1
+public let CONNECTIVITY_ERROR: UInt8 = 2
+public let EXTRAPOLATION_ERROR: UInt8 = 3
+public let INVALID_ARGUMENT_ERROR: UInt8 = 4
+public let TIMEOUT_ERROR: UInt8 = 5
+public let TRANSFORM_ERROR: UInt8 = 6
 public var error: UInt8
 public var error_string: String
 

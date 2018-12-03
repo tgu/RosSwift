@@ -4,6 +4,7 @@ import RosTime
 import geometry_msgs
 
 extension gazebo_msgs {
+/// Set Gazebo Model pose and twist
 public struct ModelState: Message {
 public static var md5sum: String = "9330fd35f2fcd82d457e54bd54e10593"
 public static var datatype = "gazebo_msgs/ModelState"

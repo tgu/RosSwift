@@ -4,6 +4,22 @@ import RosTime
 import sensor_msgs
 
 extension stereo_msgs {
+/// Separate header for compatibility with current TimeSynchronizer.
+/// Likely to be removed in a later release, use image.header instead.
+/// Floating point disparity image. The disparities are pre-adjusted for any
+/// x-offset between the principal points of the two cameras (in the case
+/// that they are verged). That is: d = x_l - x_r - (cx_l - cx_r)
+/// Stereo geometry. For disparity d, the depth from the camera is Z = fT/d.
+/// Subwindow of (potentially) valid disparity values.
+/// The range of disparities searched.
+/// In the disparity image, any disparity less than min_disparity is invalid.
+/// The disparity search range defines the horopter, or 3D volume that the
+/// stereo algorithm can "see". Points with Z outside of:
+///     Z_min = fT / max_disparity
+///     Z_max = fT / min_disparity
+/// could not be found.
+/// Smallest allowed disparity increment. The smallest achievable depth range
+/// resolution is delta_Z = (Z^2/fT)*delta_d.
 public struct DisparityImage: Message {
 public static var md5sum: String = "04a177815f75271039fa21f16acad8c9"
 public static var datatype = "stereo_msgs/DisparityImage"

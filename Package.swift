@@ -3,6 +3,12 @@
 
 import PackageDescription
 
+#if os(Linux)
+let msgDep: [Target.Dependency] = ["OpenSSL"]
+#else
+let msgDep: [Target.Dependency] = []
+#endif
+
 let package = Package(
     name: "RosSwift",
     products: [
@@ -23,21 +29,27 @@ let package = Package(
     targets: [
         .target( name: "RosSwift",
                  dependencies: ["StdMsgs","RosTime","BinaryCoder","NIO","HeliumLogger","Deque"],
-            path: "Sources/rosswift"),
+                 path: "Sources/rosswift"),
         .target( name: "publisher",
-            dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
+                 dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
         .target( name: "listener",
-            dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
+                 dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
         .target( name: "msgbuilder",
-            dependencies: []),
+                 dependencies: msgDep),
         .target( name: "geometry_msgs",
-            dependencies: ["StdMsgs"],
-            path: "Sources/msgs/geometry_msgs"),
+                 dependencies: ["StdMsgs"],
+                 path: "Sources/msgs/geometry_msgs"),
         .target( name: "StdMsgs",
-            dependencies: ["RosTime"]),
+                 dependencies: ["RosTime"]),
         .target( name: "RosTime",
-            dependencies: ["BinaryCoder"]),
+                 dependencies: ["BinaryCoder"]),
         .testTarget( name: "rosswiftTests",
-            dependencies: ["RosSwift","StdMsgs","BinaryCoder"]),
+                     dependencies: ["RosSwift","StdMsgs","BinaryCoder"]),
         ]
 )
+
+
+#if os(Linux)
+package.dependencies.append(
+    .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "1.0.1"))
+#endif

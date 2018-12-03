@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This represents a Vector3 with reference coordinate frame and timestamp
 public struct Vector3Stamped: Message {
 public static var md5sum: String = "7b324c7325e683bf02a9b14b01090ec7"
 public static var datatype = "geometry_msgs/Vector3Stamped"

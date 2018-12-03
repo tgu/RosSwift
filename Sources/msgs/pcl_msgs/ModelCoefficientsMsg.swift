@@ -4,6 +4,7 @@ import RosTime
 
 
 extension pcl_msgs {
+
 public struct ModelCoefficients: Message {
 public static var md5sum: String = "ca27dea75e72cb894cd36f9e5005e93e"
 public static var datatype = "pcl_msgs/ModelCoefficients"

@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This represents an estimated twist with reference coordinate frame and timestamp.
 public struct TwistWithCovarianceStamped: Message {
 public static var md5sum: String = "8927a1a12fb2607ceea095b2dc440a96"
 public static var datatype = "geometry_msgs/TwistWithCovarianceStamped"

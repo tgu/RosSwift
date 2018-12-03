@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This represents an orientation in free space in quaternion form.
 public struct Quaternion: Message {
 public static var md5sum: String = "a779879fadf0160734f906b8c19c7004"
 public static var datatype = "geometry_msgs/Quaternion"

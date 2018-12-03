@@ -4,6 +4,7 @@ import RosTime
 import geometry_msgs
 
 extension nav_msgs {
+///an array of cells in a 2D grid
 public struct GridCells: Message {
 public static var md5sum: String = "b9e4f5df6d28e272ebde00a3994830f5"
 public static var datatype = "nav_msgs/GridCells"

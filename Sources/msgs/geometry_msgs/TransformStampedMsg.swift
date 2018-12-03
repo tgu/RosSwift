@@ -4,6 +4,12 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This expresses a transform from coordinate frame header.frame_id
+/// to the coordinate frame child_frame_id
+///
+/// This message is mostly used by the 
+/// <a href="http://wiki.ros.org/tf">tf</a> package. 
+/// See its documentation for more information.
 public struct TransformStamped: Message {
 public static var md5sum: String = "b5764a33bfeb3588febc2682852579b0"
 public static var datatype = "geometry_msgs/TransformStamped"

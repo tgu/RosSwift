@@ -4,6 +4,13 @@ import RosTime
 
 
 extension smach_msgs {
+/// The path to this node in the server
+/// The initial state description
+/// Effects an arc from the top state to each one
+/// The current state description
+/// A pickled user data structure
+/// i.e. the UserData's internal dictionary
+/// Debugging info string
 public struct SmachContainerStatus: Message {
 public static var md5sum: String = "5ba2bb79ac19e3842d562a191f2a675b"
 public static var datatype = "smach_msgs/SmachContainerStatus"

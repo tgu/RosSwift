@@ -4,6 +4,8 @@ import RosTime
 
 
 extension bond {
+/// Including the timeouts for the bond makes it easier to debug mis-matches
+/// between the two sides.
 public struct Status: Message {
 public static var md5sum: String = "eacc84bf5d65b6777d4c50f463dfb9c8"
 public static var datatype = "bond/Status"

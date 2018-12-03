@@ -4,6 +4,7 @@ import RosTime
 
 
 extension sensor_msgs {
+/// Single photometric illuminance measurement.  Light should be assumed to be
 public struct Illuminance: Message {
 public static var md5sum: String = "8cf5febb0952fca9d650c3d11a81a188"
 public static var datatype = "sensor_msgs/Illuminance"

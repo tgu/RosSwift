@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This expresses a position and orientation on a 2D manifold.
 public struct Pose2D: Message {
 public static var md5sum: String = "938fa65709584ad8e77d238529be13b8"
 public static var datatype = "geometry_msgs/Pose2D"

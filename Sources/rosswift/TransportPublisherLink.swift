@@ -10,6 +10,16 @@ import RosTime
 import StdMsgs
 
 final class TransportPublisherLink: PublisherLink {
+    var parent: Subscription
+    var connectionId: Int
+    let publisherXmlrpcUri: String
+    var stats: Stats?
+    let transportHints: TransportHints
+    var latched: Bool
+    var callerId: String = ""
+    var header: Header?
+    var md5sum: String = ""
+    
     private var connection: InboundConnection?
     private var retryTimerHandle: Int32
     private var needsRetry: Bool
@@ -17,11 +27,15 @@ final class TransportPublisherLink: PublisherLink {
     private var nextRetry = RosTime.SteadyTime()
     private var isDropping: Bool
 
-    override init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
+    init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
         retryTimerHandle = -1
         needsRetry = false
         isDropping = false
-        super.init(parent: parent, xmlrpcUri: xmlrpcUri, transportHints: transportHints)
+        self.parent = parent
+        self.connectionId = 0
+        self.publisherXmlrpcUri = xmlrpcUri
+        self.transportHints = transportHints
+        self.latched = false
     }
 
     deinit {
@@ -46,14 +60,14 @@ final class TransportPublisherLink: PublisherLink {
         }
     }
 
-    override func drop() {
+    func drop() {
         isDropping = true
         parent.remove(publisherLink: self)
         connection?.drop(reason: .destructing)
         connection = nil
     }
 
-    override func getTransportInfo() -> String {
+    func getTransportInfo() -> String {
         return connection?.getTransportInfo() ?? ""
     }
 

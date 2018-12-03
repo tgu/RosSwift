@@ -4,6 +4,12 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This represents a vector in free space. 
+/// It is only meant to represent a direction. Therefore, it does not
+/// make sense to apply a translation to it (e.g., when applying a 
+/// generic rigid transformation to a Vector3, tf2 will only apply the
+/// rotation). If you want your data to be translatable too, use the
+/// geometry_msgs/Point message instead.
 public struct Vector3: Message {
 public static var md5sum: String = "4a842b65f413084dc2b10fb484ea7f17"
 public static var datatype = "geometry_msgs/Vector3"

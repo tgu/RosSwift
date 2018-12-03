@@ -4,6 +4,8 @@ import RosTime
 
 
 extension sensor_msgs {
+/// This message holds the description of one point entry in the
+/// PointCloud2 message format.
 public struct PointField: Message {
 public static var md5sum: String = "268eacb2962780ceac86cbd17e328150"
 public static var datatype = "sensor_msgs/PointField"
@@ -26,14 +28,14 @@ uint32 count     # How many elements in the field
 """
 public static var hasHeader = false
 
-public let INT8 : UInt8 = 1
-public let UINT8 : UInt8 = 2
-public let INT16 : UInt8 = 3
-public let UINT16 : UInt8 = 4
-public let INT32 : UInt8 = 5
-public let UINT32 : UInt8 = 6
-public let FLOAT32 : UInt8 = 7
-public let FLOAT64 : UInt8 = 8
+public let INT8: UInt8 = 1
+public let UINT8: UInt8 = 2
+public let INT16: UInt8 = 3
+public let UINT16: UInt8 = 4
+public let INT32: UInt8 = 5
+public let UINT32: UInt8 = 6
+public let FLOAT32: UInt8 = 7
+public let FLOAT64: UInt8 = 8
 public var name: String
 public var offset: UInt32
 public var datatype: UInt8

@@ -4,6 +4,7 @@ import RosTime
 
 
 extension gazebo_msgs {
+/// access to low level joint properties, change these at your own risk
 public struct ODEJointProperties: Message {
 public static var md5sum: String = "1b744c32a920af979f53afe2f9c3511f"
 public static var datatype = "gazebo_msgs/ODEJointProperties"

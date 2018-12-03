@@ -4,6 +4,8 @@ import RosTime
 
 
 extension geometry_msgs {
+/// This represents force in free space, separated into
+/// its linear and angular parts.
 public struct Wrench: Message {
 public static var md5sum: String = "4f539cf138b23283b520fd271b567936"
 public static var datatype = "geometry_msgs/Wrench"

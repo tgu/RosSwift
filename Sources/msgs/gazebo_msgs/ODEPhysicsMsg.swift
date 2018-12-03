@@ -4,6 +4,7 @@ import RosTime
 
 
 extension gazebo_msgs {
+
 public struct ODEPhysics: Message {
 public static var md5sum: String = "667d56ddbd547918c32d1934503dc335"
 public static var datatype = "gazebo_msgs/ODEPhysics"

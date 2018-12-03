@@ -4,6 +4,7 @@ import RosTime
 
 
 extension pcl_msgs {
+/// List of point indices
 public struct Vertices: Message {
 public static var md5sum: String = "39bd7b1c23763ddd1b882b97cb7cfe11"
 public static var datatype = "pcl_msgs/Vertices"

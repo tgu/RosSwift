@@ -523,8 +523,8 @@ enum Tags: String {
     case endMember =        "</member>"
     case endStruct =        "</struct>"
 
-    static func memberXml(_ memeberName: String, value: String) -> String {
-        return "\(member.rawValue)\(name.rawValue)\(memeberName)\(endName.rawValue)\(value)\(endMember.rawValue)"
+    static func memberXml(_ memberName: String, value: String) -> String {
+        return "\(member.rawValue)\(name.rawValue)\(memberName)\(endName.rawValue)\(value)\(endMember.rawValue)"
     }
 
     static func boolXml(_ val: Bool) -> String {

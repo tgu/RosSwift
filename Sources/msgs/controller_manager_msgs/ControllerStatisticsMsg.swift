@@ -4,6 +4,20 @@ import RosTime
 
 
 extension controller_manager_msgs {
+/// This message contains the state of one realtime controller
+/// that was spawned in the controller manager
+/// the name of the controller
+/// the type of the controller
+/// the time at which these controller statistics were measured
+/// bool that indicates if the controller is currently
+/// in a running or a stopped state
+/// the maximum time the update loop of the controller ever needed to complete
+/// the average time the update loop of the controller needs to complete.
+/// the average is computed in a sliding time window.
+/// the variance on the time the update loop of the controller needs to complete.
+/// the variance applies to a sliding time window.
+/// the number of times this controller broke the realtime loop
+/// the timestamp of the last time this controller broke the realtime loop
 public struct ControllerStatistics: Message {
 public static var md5sum: String = "697780c372c8d8597a1436d0e2ad3ba8"
 public static var datatype = "controller_manager_msgs/ControllerStatistics"

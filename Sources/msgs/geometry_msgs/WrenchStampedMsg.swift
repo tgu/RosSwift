@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// A wrench with reference coordinate frame and timestamp
 public struct WrenchStamped: Message {
 public static var md5sum: String = "d78d3cb249ce23087ade7e7d0c40cfa7"
 public static var datatype = "geometry_msgs/WrenchStamped"

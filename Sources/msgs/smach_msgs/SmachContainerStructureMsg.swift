@@ -4,6 +4,11 @@ import RosTime
 
 
 extension smach_msgs {
+/// The path to this node in the server
+/// The children of this node
+/// The outcome edges
+/// Each index across these arrays denote one edge
+/// The potential outcomes from this container
 public struct SmachContainerStructure: Message {
 public static var md5sum: String = "3d3d1e0d0f99779ee9e58101a5dcf7ea"
 public static var datatype = "smach_msgs/SmachContainerStructure"

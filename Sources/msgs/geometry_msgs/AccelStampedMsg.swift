@@ -4,6 +4,7 @@ import RosTime
 
 
 extension geometry_msgs {
+/// An accel with reference coordinate frame and timestamp
 public struct AccelStamped: Message {
 public static var md5sum: String = "d8a98a5d81351b6eb0578c78557e7659"
 public static var datatype = "geometry_msgs/AccelStamped"

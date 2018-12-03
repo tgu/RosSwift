@@ -4,6 +4,7 @@ import RosTime
 
 
 extension control_msgs {
+
 public struct JointControllerState: Message {
 public static var md5sum: String = "987ad85e4756f3aef7f1e5e7fe0595d1"
 public static var datatype = "control_msgs/JointControllerState"

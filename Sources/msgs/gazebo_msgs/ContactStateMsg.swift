@@ -4,6 +4,7 @@ import RosTime
 import geometry_msgs
 
 extension gazebo_msgs {
+
 public struct ContactState: Message {
 public static var md5sum: String = "48c0ffb054b8c444f870cecea1ee50d9"
 public static var datatype = "gazebo_msgs/ContactState"
