@@ -9,6 +9,8 @@ This is the first version and there are some unimplemented features, basic publi
 
 Minimum SDK10.12 on OSX
 
+Swift 4.2 on Raspberry, https://swift-arm.com/2019/01/07/official-swift-arm-community-releases/
+
 ## Messages
 
 The package include ``msgbuilder`` that uses calls to ``rosmsg`` to find all defined messages and generate Swift code.
