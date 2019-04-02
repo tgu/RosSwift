@@ -11,6 +11,8 @@ Minimum SDK10.12 on OSX
 
 Swift 4.2 on Raspberry, https://swift-arm.com/2019/01/07/official-swift-arm-community-releases/
 
+Swift5 and Swift-nio2 support is found in branch Swift5
+
 ## Messages
 
 The package include ``msgbuilder`` that uses calls to ``rosmsg`` to find all defined messages and generate Swift code.
