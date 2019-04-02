@@ -10,9 +10,9 @@ import Foundation
 import StdMsgs
 
 final class MessageDeserializer {
-    var helper: SubscriptionCallbackHelper
-    var serializedMessage: SerializedMessage
-    var connectionHeader: StringStringMap
+    let helper: SubscriptionCallbackHelper
+    let serializedMessage: SerializedMessage
+    let connectionHeader: StringStringMap
     let deserializeQueue = DispatchQueue(label: "deserializeQueue")
     var message: Message?
 

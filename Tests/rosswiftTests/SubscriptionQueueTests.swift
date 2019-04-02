@@ -253,6 +253,8 @@ protocol CallbackProtocol {
 
 
 class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible {
+    let hasHeader: Bool = false
+
     var debugDescription: String { return "Fake \(calls)" }
 
     public var id: ObjectIdentifier {
@@ -273,11 +275,6 @@ class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible {
         }
         cb?.call()
     }
-
-    func hasHeader() -> Bool {
-        return false
-    }
-
 
 }
 

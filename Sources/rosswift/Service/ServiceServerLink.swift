@@ -12,16 +12,16 @@ import StdMsgs
 
 final class ServiceServerLink: ChannelInboundHandler {
         var channel: Channel?
-        var serviceName: String
-        var persistent: Bool
-        var requestMd5sum: String
-        var responseMd5sum: String
+        let serviceName: String
+        let persistent: Bool
+        let requestMd5sum: String
+        let responseMd5sum: String
 
-        var extraOutgoingHeaderValues: StringStringMap?
-        var headerWritten: Bool
-        var headerRead: Bool
+        let extraOutgoingHeaderValues: StringStringMap?
+        let headerWritten: Bool
+        let headerRead: Bool
 
-        var isDropped: Bool
+        private var isDropped: Bool
 
         init(serviceName: String,
              persistent: Bool,
@@ -84,7 +84,7 @@ final class ServiceServerLink: ChannelInboundHandler {
             return !isDropped
         }
 
-        func call(req: StdMsgs.SerializedMessage) -> EventLoopFuture<SerializedMessage> {
+        func call(req: SerializedMessage) -> EventLoopFuture<SerializedMessage> {
 
             let promise: EventLoopPromise<SerializedMessage> = channel!.eventLoop.newPromise()
             guard let c = channel else {

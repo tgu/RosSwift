@@ -70,7 +70,7 @@ class serviceTests: XCTestCase {
         var res = TestStringString.Response()
         req.data = "case_FLIP"
 
-        if Service.waitForService(serviceName: "/echo", timeout: 1000 )  {
+        if Service.waitForService(serviceName: "/echo", timeout: 10 )  {
             let message = Service.call(serviceName: "/echo", req: req, response: &res)
             XCTAssert(message)
             if message {
@@ -120,6 +120,7 @@ class serviceTests: XCTestCase {
             XCTAssert(Service.call(name: "/test_srv_23", service: &t))
             XCTAssertEqual(t.response.data, "test")
         }
+        sleep(1)
         XCTAssertFalse(Service.call(name: "/test_srv_23", service: &t))
 
         print("\(n.isOK)")

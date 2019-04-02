@@ -261,6 +261,7 @@ final class Publication {
         return pubCallbacks.count
     }
 
+    @discardableResult
     func incrementSequence() -> UInt32 {
         return sequenceNr.add(1)
     }

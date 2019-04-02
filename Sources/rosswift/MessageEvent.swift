@@ -9,7 +9,7 @@ import Foundation
 import RosTime
 import StdMsgs
 
-public final class MessageEvent<M: Message> {
+public struct MessageEvent<M: Message> {
     public let message: M
     public let connectionHeader: StringStringMap
     public let receiptTime: RosTime.Time

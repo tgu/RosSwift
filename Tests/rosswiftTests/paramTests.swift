@@ -118,6 +118,7 @@ class paramTests: XCTestCase {
         Ros.Param.set(ns + "/foo", "b")
         XCTAssert(Ros.Param.getCached(ns + "/foo", &stringParam))
         XCTAssertEqual("b", stringParam)
+        Ros.Param.getCached(ns, &structParam)
         XCTAssert(Ros.Param.getCached(ns, &structParam))
         XCTAssert(structParam.hasMember("foo"))
         XCTAssertEqual("b", structParam["foo"]?.string)

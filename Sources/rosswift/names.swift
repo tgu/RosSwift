@@ -146,14 +146,12 @@ extension Ros {
                 strippedName = String(name.dropLast())
             }
 
-            #if swift(>=4.2)
             if let lastPos = strippedName.lastIndex(of: "/") {
                 if lastPos == strippedName.startIndex {
                     return "/"
                 }
                 return String(strippedName.prefix(upTo: lastPos))
             }
-            #endif
 
             return ""
         }

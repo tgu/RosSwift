@@ -18,14 +18,14 @@ public protocol SubscriptionCallbackHelper {
     var id: ObjectIdentifier { get }
     func deserialize(data: [UInt8]) -> Message?
     func call(msg: Message)
-    func hasHeader() -> Bool
+    var hasHeader: Bool { get }
 }
 
 public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (M) -> Void
 
-    var callback: Callback
+    let callback: Callback
 
     public var id: ObjectIdentifier {
         return ObjectIdentifier(self)
@@ -46,9 +46,7 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
         }
     }
 
-    public func hasHeader() -> Bool {
-        return M.hasHeader
-    }
+    public let hasHeader = M.hasHeader
 
 }
 
@@ -57,7 +55,7 @@ public final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCal
 
     typealias Callback = (MessageEvent<M>) -> Void
 
-    var callback: Callback
+    let callback: Callback
 
     public var id: ObjectIdentifier {
         return ObjectIdentifier(self)
@@ -65,7 +63,6 @@ public final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCal
 
     init(callback: @escaping Callback ) {
         self.callback = callback
-
     }
 
     public func deserialize(data: [UInt8]) -> Message? {
@@ -79,9 +76,7 @@ public final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCal
         }
     }
 
-    public func hasHeader() -> Bool {
-        return M.hasHeader
-    }
+    public let hasHeader = M.hasHeader
 
 }
 

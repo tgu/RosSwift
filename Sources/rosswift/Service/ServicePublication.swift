@@ -24,11 +24,7 @@ protocol ServiceProtocol: class {
 
 final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
 
-//    typealias CallFcn = (MReq, inout MRes) -> Bool
     typealias CallFcn = (MReq) -> MRes?
-//    lazy var hash: UInt64 = {
-//        UInt64(arc4random())
-//    }()
     var call: CallFcn
     var name: String
     var md5sum: String { return MReq.srvMd5sum }
@@ -65,9 +61,6 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
     }
 
     final class ServiceCallback: CallbackInterface {
-//        lazy var hash: UInt64 = {
-//            UInt64(arc4random())
-//        }()
 
         func call() -> CallResult {
             ROS_ERROR("call() not implemented")
@@ -102,8 +95,6 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
 
     func processRequest(buf: [UInt8]) -> ServiceMessage? {
 
-//        var request = MReq()
-//        var response = MRes()
         let m = SerializedMessage(buffer: buf)
         do {
             let request: MReq = try deserializeMessage(m: m)
