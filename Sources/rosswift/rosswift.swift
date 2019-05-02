@@ -437,7 +437,6 @@ func atexitCallback() {
     Ros.globalRos.forEach { ros in
         if ros.isRunning && !ros.isShuttingDown.load() {
             ROS_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles")
-            ros.isStarted = false
             ros.shutdown()
         }
     }
