@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import StdMsgs
 import BinaryCoder
 import LoggerAPI
 

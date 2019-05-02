@@ -24,7 +24,7 @@ public final class SingleSubscriberPublisher {
         publish(m: ser)
     }
     
-    func publish(m: StdMsgs.SerializedMessage) {
+    func publish(m: SerializedMessage) {
         link.enqueueMessage(m: m)
     }
 
