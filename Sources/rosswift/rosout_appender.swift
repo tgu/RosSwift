@@ -7,13 +7,11 @@
 
 import Foundation
 
-extension Ros {
 
-    final class ROSOutAppender: LogAppender {
-
-        init() {
-            ROS_ERROR("ROSOutAppender not implemented")
-        }
+final class ROSOutAppender: LogAppender {
+    
+    init() {
+        ROS_ERROR("ROSOutAppender not implemented")
     }
-
 }
+

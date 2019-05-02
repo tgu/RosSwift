@@ -40,7 +40,7 @@ public final class Header {
                 return false
             }
             indx += Int(len)
-            guard let eqs = line.index(of: "=") else {
+            guard let eqs = line.firstIndex(of: "=") else {
                 ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
                 return false
             }

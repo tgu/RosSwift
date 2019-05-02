@@ -12,7 +12,7 @@ import StdMsgs
 
 protocol TransportUDP {}
 
-final class Subscription {
+internal final class Subscription {
     final class CallBackInfo {
         var callbackQueue: CallbackQueueInterface
         var helper: SubscriptionCallbackHelper
@@ -37,27 +37,30 @@ final class Subscription {
         let message: SerializedMessage
         unowned var link: PublisherLink
         let connectionHeader: [String: String]
-        let receiptTime: RosTime.Time
+        let receiptTime: Time
     }
 
-    var datatype: String
+    let datatype: String
     var md5sum: String
-    var name: String
+    let name: String
     var callbacks = [CallBackInfo]()
-    var dropped = Atomic<Bool>(value: false)
-    var isShuttingDown = Atomic<Bool>(value: false)
-    var publisherLinks = SynchronizedArray<PublisherLink>()
-    var transportHints = TransportHints()
-    var statistics: StatisticLogger?
+    let dropped = Atomic<Bool>(value: false)
+    let isShuttingDown = Atomic<Bool>(value: false)
+    let publisherLinks = SynchronizedArray<PublisherLink>()
+    let transportHints: TransportHints
+    let statistics: StatisticLogger?
     let md5sumQueue = DispatchQueue(label: "md5sumQueue")
     let callbacksQueue = DispatchQueue(label: "callbacksQueue")
     var latchedMessages = [ObjectIdentifier: LatchInfo]()
+    let ros: Ros
 
-    init(name: String, md5sum: String, datatype: String, transportHints: TransportHints) {
+    init(ros: Ros, name: String, md5sum: String, datatype: String, transportHints: TransportHints) {
         self.name = name
         self.datatype = datatype
         self.md5sum = md5sum
         self.transportHints = transportHints
+        self.statistics = nil
+        self.ros = ros
     }
 
     func shutdown() {
@@ -129,17 +132,17 @@ final class Subscription {
         return true
     }
 
-    func add(localConnection: Publication) {
+    func add(ros: Ros, localConnection: Publication) {
         if dropped.load() {
             return
         }
 
         ROS_DEBUG("Creating intraprocess link for topic [\(name)]")
 
-        let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: XMLRPCManager.instance.serverURI, transportHints: transportHints)
+        let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: ros.xmlrpcManager.serverURI, transportHints: transportHints)
         let subLink = IntraProcessSubscriberLink(parent: localConnection)
-        _ = pubLink.setPublisher(publisher: subLink)
-        subLink.setSubscriber(subscriber: pubLink)
+        _ = pubLink.setPublisher(ros: ros, publisher: subLink)
+        subLink.setSubscriber(ros: ros, subscriber: pubLink)
 
         publisherLinks.append(pubLink)
         localConnection.addSubscriberLink(subLink)
@@ -180,7 +183,7 @@ final class Subscription {
 
         }
 
-        let serverURI = XMLRPCManager.instance.serverURI
+        let serverURI = ros.xmlrpcManager.serverURI
         subtractions.forEach { link in
             let uri = link.publisherXmlrpcUri
             if uri != serverURI {
@@ -203,7 +206,7 @@ final class Subscription {
 
     func remove(callback: SubscriptionCallbackHelper) {
         callbacksQueue.sync {
-            if let index = callbacks.index(where: { $0.helper.id == callback.id }) {
+            if let index = callbacks.firstIndex(where: { $0.helper.id == callback.id }) {
                 callbacks.remove(at: index)
             }
         }
@@ -213,7 +216,7 @@ final class Subscription {
     func handle(message: SerializedMessage, connectionHeader: StringStringMap, link: PublisherLink) -> Int {
 
         var drops = 0
-        let receiptTime = RosTime.Time.now()
+        let receiptTime = Time.now
 
         callbacksQueue.sync {
             callbacks.forEach { info in
@@ -270,22 +273,22 @@ final class Subscription {
             }
         }
 
-        let params = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), name, protosArray])
+        let params = XmlRpcValue(anyArray: [ros.name, name, protosArray])
 
         guard let url = URL(string: uri), let peerHost = url.host, let peerPort = url.port else {
             ROS_ERROR("Bad xml-rpc URI: [\(uri)]")
             return false
         }
 
-        let resp = Master.shared.execute(method: "requestTopic",
+        let resp = ros.master.execute(method: "requestTopic",
                                          request: params,
                                          host: peerHost,
                                          port: UInt16(peerPort))
 
         resp.whenSuccess({ payload in
             guard payload.size() == 3,
-                case .string(let pubHost) = payload[1].value,
-                case .int(let pubPort) = payload[2].value else {
+                case .string(let pubHost) = payload[1],
+                case .int(let pubPort) = payload[2] else {
                     ROS_DEBUG("publisher implements TCPROS, but the parameters aren't string,int")
                     return
             }
@@ -295,8 +298,8 @@ final class Subscription {
             DispatchQueue.global().async {
                 let connection = InboundConnection(parent: self, host: pubHost, port: pubPort)
                 let pubLink = TransportPublisherLink(parent: self, xmlrpcUri: uri, transportHints: self.transportHints)
-                _ = pubLink.initialize(connection: connection)
-                Ros.ConnectionManager.instance.addConnection(connection: connection)
+                _ = pubLink.initialize(ros: self.ros, connection: connection)
+//                self.ros.connectionManager.addConnection(connection: connection)
                 self.publisherLinks.append(pubLink)
                 ROS_DEBUG("Connected to publisher of topic [\(self.name)] at [\(pubHost):\(pubPort)]")
             }

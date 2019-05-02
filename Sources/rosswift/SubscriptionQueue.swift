@@ -18,18 +18,18 @@ extension NSRecursiveLock {
     }
 }
 
-final class SubscriptionQueue: CallbackInterface {
-    struct Item {
+internal final class SubscriptionQueue: CallbackInterface {
+    internal struct Item {
         let helper: SubscriptionCallbackHelper
         let deserializer: MessageDeserializer
         let hasTrackedObject: Bool
         let trackedObject: AnyObject?
-        let receiptTime: RosTime.Time
+        let receiptTime: Time
     }
 
     private var queue: Deque<Item>
-    private var topic: String
-    private var size: UInt32
+    private let topic: String
+    private let size: UInt32
     private var wasFull: Bool
     let queueQueue = DispatchQueue(label: "queueQueue")
     let allowConcurrentCallbacks: Bool
@@ -48,7 +48,7 @@ final class SubscriptionQueue: CallbackInterface {
               deserializer: MessageDeserializer,
               hasTrackedObject: Bool = false,
               trackedObject: AnyObject? = nil,
-              receiptTime: RosTime.Time = RosTime.Time()) -> Bool {
+              receiptTime: Time = Time()) -> Bool {
 
         let item = Item(helper: helper,
                         deserializer: deserializer,
@@ -108,7 +108,7 @@ final class SubscriptionQueue: CallbackInterface {
         }
 
         if let msg = item.deserializer.deserialize() {
-            item.helper.call(msg: msg)
+            item.helper.call(msg: msg, item: item)
         }
 
         return .success

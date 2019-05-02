@@ -71,7 +71,7 @@ fileprivate final class ThreadLocalStorage {
     }
 }
 
-final class CallbackQueue: CallbackQueueInterface {
+internal final class CallbackQueue: CallbackQueueInterface {
     private var callbacks = Deque<CallbackInfo>()
     private var calling: Int = 0
     private let condition = NSCondition()
@@ -144,7 +144,7 @@ final class CallbackQueue: CallbackQueueInterface {
     /// pushes it back onto the queue.
 
     func callOne() -> CallOneResult {
-        return callOne(timeout: RosTime.WallDuration())
+        return callOne(timeout: WallDuration())
     }
 
     /// Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
@@ -155,7 +155,7 @@ final class CallbackQueue: CallbackQueueInterface {
     /// this parameter does nothing.
 
 
-    func callOne(timeout: RosTime.WallDuration) -> CallOneResult {
+    func callOne(timeout: WallDuration) -> CallOneResult {
         setupTLS()
         var cbInfo: CallbackInfo?
         var res: CallOneResult?
@@ -222,7 +222,7 @@ final class CallbackQueue: CallbackQueueInterface {
     //// Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.
 
     func callAvailable() {
-        callAvailable(timeout: RosTime.WallDuration())
+        callAvailable(timeout: WallDuration())
     }
 
     /// Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.  This version
@@ -231,7 +231,7 @@ final class CallbackQueue: CallbackQueueInterface {
     /// - Parameter timeout: The amount of time to wait for at least one callback to be available.  If there is already at least one callback available,
     ///  this parameter does nothing.
 
-    func callAvailable(timeout: RosTime.WallDuration) {
+    func callAvailable(timeout: WallDuration) {
         setupTLS()
         var empty = true
         condition.sync {

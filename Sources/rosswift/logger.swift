@@ -7,6 +7,7 @@
 
 import Foundation
 import StdMsgs
+import LoggerAPI
 
 
 struct Logger: Message {
@@ -102,8 +103,32 @@ struct SetLoggerLevel {
     static let datatype = "roscpp/SetLoggerLevel"
 }
 
-func setLoggerLevel(x: SetLoggerLevelRequest) -> SetLoggerLevelResponse? {
-    ROS_ERROR("Set logger level \(x.level) for logger \(x.logger) --- Not implemented")
+extension LoggerMessageType {
 
-    return nil
+    init?(_ level: String) {
+        switch level.lowercased() {
+        case "debug":
+            self = .debug
+        case "info":
+            self = .info
+        case "warn":
+            self = .warning
+        case "error":
+            self = .error
+        case "fatal":
+            self = .error
+        default:
+            return nil
+        }
+    }
+}
+
+func setLoggerLevel(x: SetLoggerLevelRequest) -> SetLoggerLevelResponse? {
+    guard let level = LoggerMessageType(x.level) else {
+        ROS_ERROR("Cannot set logger level \(x.level) for logger \(x.logger)")
+        return nil
+    }
+
+    Console.setLoggerLevel(logger: x.logger, level: level)
+    return SetLoggerLevelResponse()
 }

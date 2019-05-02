@@ -8,6 +8,7 @@
 import Foundation
 import NIO
 
+
 typealias XMLRPCFunc = (XmlRpcValue) -> XmlRpcValue
 
 struct XmlRpc {
@@ -18,17 +19,14 @@ struct XmlRpc {
 
 final class XMLRPCManager {
 
-    static let instance = XMLRPCManager()
-
-    var handler: MessageHandler?
     var functions = [String: FunctionInfo]()
     var server = XMLRPCServer(group: threadGroup)
     var isUnbindRequested = false
-
+    let host: String
     let functionsQueue = DispatchQueue(label: "functionsQueue")
 
     var serverPort: Int32 { return Int32(server.channel?.localAddress?.port ?? 0) }
-    var serverURI: String { return "http://\(Ros.Network.getHost()):\(serverPort)/" }
+    var serverURI: String { return "http://\(host):\(serverPort)/" }
 
     typealias XLMRPCFunction = (XmlRpcValue) -> XmlRpcValue
     struct FunctionInfo {
@@ -37,10 +35,12 @@ final class XMLRPCManager {
         let wrapper: XMLRPCCallWrapper
     }
 
-    private init() {}
+    internal init(host: String) {
+        self.host = host
+    }
 
-    func start() {
-        server.bindAndListen(port: 0)
+    func start(host: String) {
+        server.bindAndListen(host: host, port: 0)
     }
 
     func shutdown() {
@@ -84,8 +84,8 @@ final class XMLRPCManager {
         let methodName = XmlRpcUtil.parseTag(from: .methodname, to: .endMethodname, xml: &xmlSeq)
         if !methodName.isEmpty && XmlRpcUtil.findTag(tag: .params, xml: &xmlSeq) {
             while XmlRpcUtil.nextTagIs(tag: .param, xml: &xmlSeq) {
-                let v = XmlRpcValue()
-                v.fromXML(xml: &xmlSeq)
+                var v = XmlRpcValue()
+                let _ = v.fromXML(xml: &xmlSeq)
                 params.append(v)
                 _ = XmlRpcUtil.nextTagIs(tag: .endParam, xml: &xmlSeq)
             }

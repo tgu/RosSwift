@@ -9,7 +9,7 @@ import Foundation
 import NIOConcurrencyHelpers
 import StdMsgs
 
-final class PeerConnDisconnCallback: CallbackInterface {
+internal final class PeerConnDisconnCallback: CallbackInterface {
 
     var callback: SubscriberStatusCallback
     var subLink: SubscriberLink!
@@ -191,7 +191,7 @@ final class Publication {
                 self.intraprocessSubscriberCount -= 1
             }
 
-            if let it = self.subscriberLinks.index(where: { $0 === link }) {
+            if let it = self.subscriberLinks.firstIndex(where: { $0 === link }) {
                 self.peerDisconnect(subLink: link)
                 self.subscriberLinks.remove(at: it)
             }

@@ -9,31 +9,41 @@ import Foundation
 import NIO
 import RosTime
 import StdMsgs
+import BinaryCoder
 
 public struct Service {
 
-    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq) -> EventLoopFuture<MRes?> {
-        let node = Ros.NodeHandle()
-        let client = node.serviceClient(service: Ros.Names.resolve(name: serviceName), md5sum: MReq.srvMd5sum)
+    /// Invoke an RPC service.
+    ///
+    /// This method invokes an RPC service on a remote server,
+    /// looking up the service location first via the master.
+    ///
+    /// - Parameters:
+    ///     - serviceName: The name of the service.
+    ///     - req: The request message
+    /// - Returns: A future with the response
+
+
+    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: NodeHandle, serviceName: String, req: MReq) -> EventLoopFuture<MRes> {
+
+        // name is resolved in serviceClient
+
+        let client = node.serviceClient(service: serviceName, md5sum: MReq.srvMd5sum)
         return client.call(req: req)
     }
 
-    static func call<Service: ServiceProt>(name: String, service: inout Service) -> Bool {
-        return call(serviceName: name, req: service.request, response: &service.response)
+    static func call<Service: ServiceProt>(node: NodeHandle, name: String, service: inout Service) -> Bool {
+        return call(node: node, serviceName: name, req: service.request, response: &service.response)
     }
 
-    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq, response: inout MRes) -> Bool {
-        let res: EventLoopFuture<MRes?> = call(serviceName: serviceName, req: req)
+    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: NodeHandle, serviceName: String, req: MReq, response: inout MRes)  -> Bool {
         do {
-            if let resp = try res.wait() {
-                response = resp
-                return true
-            }
+            let resp: MRes = try call(node: node, serviceName: serviceName, req: req).wait()
+            response = resp
+            return true
         } catch {
             return false
         }
-        return false
-
     }
 
     /// Wait for a service to be advertised and available.  Blocks until it is.
@@ -42,9 +52,9 @@ public struct Service {
     ///   - serviceName: Name of the service to wait for
     ///   - timeout: The amount of time to wait for, in milliseconds.  If timeout is -1, waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    static func waitForService(serviceName: String, timeout: Int32) -> Bool {
-        let dur = RosTime.Duration(milliseconds: timeout)
-        return waitForService(serviceName: serviceName, timeout: dur )
+    static func waitForService(ros: Ros, serviceName: String, timeout: Int32) -> Bool {
+        let dur = Duration(milliseconds: timeout)
+        return waitForService(ros: ros, serviceName: serviceName, timeout: dur )
     }
 
     /// Wait for a service to be advertised and available.  Blocks until it is.
@@ -53,30 +63,30 @@ public struct Service {
     /// - Parameter timeout: The amount of time to wait for before timing out.  If timeout is -1 (default),
     /// waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    static func waitForService(serviceName: String, timeout: RosTime.Duration = RosTime.Duration(seconds: TimeInterval(-1))) -> Bool {
-        let mappedNames = Ros.Names.resolve(name: serviceName)
-        let startTime = RosTime.Time.now()
+    static func waitForService(ros: Ros, serviceName: String, timeout: Duration = Duration()) -> Bool {
+        let mappedNames = ros.resolve(name: serviceName)
+        let startTime = Time.now
         var printed = false
         var result = false
-        while Ros.isRunning {
-            if exists(serviceName: serviceName, printFailureReason: !printed) {
+        while ros.isRunning {
+            if exists(ros: ros, serviceName: serviceName, printFailureReason: !printed) {
                 result = true
                 break
             } else {
                 printed = true
-                if timeout >= RosTime.Duration(seconds: 0) {
-                    let currentTime = RosTime.Time.now()
+                if !timeout.isZero() {
+                    let currentTime = Time.now
                     if currentTime - startTime >= timeout {
                         return false
                     }
                 }
 
-                RosTime.Duration(milliseconds: 20).sleep()
+                Duration(milliseconds: 20).sleep()
             }
         }
 
-        if printed && Ros.isRunning {
-            ROS_DEBUG("waitForService: Service [\(mappedNames)] is now available.")
+        if printed && ros.isRunning {
+            ROS_DEBUG("waitForService: Service [\(String(describing: mappedNames))] is now available.")
         }
 
         return result
@@ -93,19 +103,33 @@ public struct Service {
     /// could not connect to the advertised host)
     /// - Returns: true if the service is up and available, false otherwise
 
-    static func exists(serviceName: String, printFailureReason: Bool) -> Bool {
-        let mappedName = Ros.Names.resolve(name: serviceName)
-        var host = ""
-        var port: UInt16 = 0
-        if ServiceManager.instance.lookupService(name: mappedName, servHost: &host, servPort: &port) {
-            let keymap = ["probe": "1", "md5sum": "*", "callerid": Ros.ThisNode.getName(), "service": mappedName]
-            let transport = Nio.TransportTCP(pipeline: [Nio.MessageDelimiterCodec(),
-                                                        Nio.HeaderMessageCodec(),
-                                                        Nio.TransportTCP.Handler(callback: callback)])
+    static func exists(ros: Ros, serviceName: String, printFailureReason: Bool) -> Bool {
+        guard let mappedName = ros.resolve(name: serviceName) else {
+            return false
+        }
+        
+        if let server = ros.serviceManager.lookupService(name: mappedName) {
+            let keymap = ["probe": "1", "md5sum": "*", "callerid": ros.name, "service": mappedName]
+            let transport = TransportTCP()
             do {
 
-            try transport.connect(host: host, port: Int(port)).map { channel -> Void in
-                _ = channel.writeAndFlush(keymap)
+            try transport.connect(host: server.host, port: Int(server.port)).map { channel -> Void in
+                channel.pipeline.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
+                                              ByteToMessageHandler(HeaderMessageCodec()),
+                                              TransportTCP.Handler(callback: callback)])
+                let buffer = Header.write(keyVals: keymap)
+                do {
+                    let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))
+                    var buf = channel.allocator.buffer(capacity: buffer.count + 4)
+                    buf.writeBytes(sizeBuffer + buffer)
+                    let data = IOData.byteBuffer(buf)
+
+                    channel.writeAndFlush(data).whenFailure { error in
+                        ROS_DEBUG("exists, write failed to \(String(describing: channel.remoteAddress))\nerror: \(error))")
+                    }
+                } catch {
+                    ROS_ERROR("encode failed: \(error)")
+                }
             }.wait()
             return true
             } catch {

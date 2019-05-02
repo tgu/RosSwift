@@ -9,7 +9,7 @@ import Foundation
 import NIO
 import StdMsgs
 
-final class ServiceHandler: ChannelInboundHandler {
+internal final class ServiceHandler: ChannelInboundHandler {
     enum ServiceState {
         case header
         case message
@@ -18,7 +18,7 @@ final class ServiceHandler: ChannelInboundHandler {
 
     typealias InboundIn = ByteBuffer
 
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var buffer = self.unwrapInboundIn(data)
         switch state {
         case .header:
@@ -38,7 +38,7 @@ final class ServiceHandler: ChannelInboundHandler {
                     fatalError("Received an invalid TCPROS header. Each line must have an equals sign.")
                 }
 
-                guard let equalIndex = line.index(of: "=") else {
+                guard let equalIndex = line.firstIndex(of: "=") else {
                     fatalError("Received an invalid TCPROS header. Each line must have an equals sign.")
                 }
                 let key = String(line.prefix(upTo: equalIndex))

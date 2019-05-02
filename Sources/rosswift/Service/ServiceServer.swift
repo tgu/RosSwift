@@ -6,51 +6,39 @@
 //
 
 import Foundation
+import NIOConcurrencyHelpers
 
 public final class ServiceServer {
+    let service: String
+    unowned var node: NodeHandle
+    var isUnadvertised = Atomic<Bool>(value: false)
 
-    final class Impl {
-        let service: String
-        unowned var node: Ros.NodeHandle
-        var isUnadvertised = false
-
-        init(service: String, node: Ros.NodeHandle) {
-            self.service = service
-            self.node = node
-        }
-
-        deinit {
-            unadvertise()
-        }
-
-        func unadvertise() {
-            if !isUnadvertised {
-                isUnadvertised = true
-                _ = ServiceManager.instance.unadvertiseService(name: service)
-            }
-        }
-
-        func isValid() -> Bool {
-            return !isUnadvertised
-        }
+    internal init(service: String, node: NodeHandle) {
+        self.service = service
+        self.node = node
     }
 
-    var implementation: Impl?
-
-    init(service: String, node: Ros.NodeHandle) {
-        implementation = Impl(service: service, node: node)
+    deinit {
+        unadvertise()
     }
 
-    func shutdown() {
-        implementation?.unadvertise()
-    }
-
-    func getService() -> String {
-        return implementation?.service ?? ""
+    func unadvertise() {
+        if isUnadvertised.compareAndExchange(expected: false, desired: true) {
+            _ = node.ros.serviceManager.unadvertiseService(name: service)
+        }
     }
 
     func isValid() -> Bool {
-        return implementation?.isValid() ?? false
+        return !isUnadvertised.load()
+    }
+
+
+    func shutdown() {
+        unadvertise()
+    }
+
+    func getService() -> String {
+        return service
     }
 
 }

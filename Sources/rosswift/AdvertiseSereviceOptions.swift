@@ -12,7 +12,6 @@ final class AdvertiseServiceOptions<MReq: ServiceMessage, MRes: ServiceMessage> 
     var datatype: String { return MReq.srvDatatype }
     var reqDatatype: String { return MReq.datatype }
     var resDatatype: String { return MRes.datatype }
-    var helper: ServiceCallbackHelper?
     var trackedObject: AnyObject?
     var callback: (MReq) -> MRes?
     var callbackQueue: CallbackQueueInterface?

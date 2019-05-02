@@ -10,18 +10,18 @@ import NIOConcurrencyHelpers
 import StdMsgs
 
 final class IntraProcessPublisherLink: PublisherLink {
-    var parent: Subscription
+    let parent: Subscription
     var connectionId: Int
-    var publisherXmlrpcUri: String
+    let publisherXmlrpcUri: String
     var stats: Stats?
-    var transportHints: TransportHints
+    let transportHints: TransportHints
     var latched: Bool
     var callerId: String = ""
     var header: Header?
     var md5sum: String = ""
 
     var publisher: IntraProcessSubscriberLink?
-    var isDropped = Atomic<Bool>(value: false)
+    let isDropped = Atomic<Bool>(value: false)
 
     init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
         self.parent = parent
@@ -31,18 +31,18 @@ final class IntraProcessPublisherLink: PublisherLink {
         self.latched = false
     }
 
-    func setPublisher(publisher: IntraProcessSubscriberLink) -> Bool {
+    func setPublisher(ros: Ros, publisher: IntraProcessSubscriberLink) -> Bool {
         self.publisher = publisher
         let header = Header()
 
-        header.headers = ["callerid": Ros.ThisNode.getName(),
+        header.headers = ["callerid": ros.name,
                       "topic": parent.name,
                       "type": publisher.dataType,
                       "md5sum": publisher.md5Sum,
                       "message_definition": publisher.messageDefinition,
                       "latching": publisher.isLatching() ? "1" : "0"
                     ]
-        return setHeader(header: header)
+        return setHeader(ros: ros, header: header)
     }
 
     func getTransportType() -> String {

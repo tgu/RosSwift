@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol PublisherLink: class {
+internal protocol PublisherLink: class {
     var parent: Subscription { get }
     var connectionId: Int { get set }
     var publisherXmlrpcUri: String { get }
@@ -29,7 +29,7 @@ protocol PublisherLink: class {
 
 extension PublisherLink {
 
-    func setHeader(header: Header) -> Bool {
+    func setHeader(ros: Ros, header: Header) -> Bool {
         guard let newId = header.getValue(key: "callerid") else {
             ROS_ERROR("header did not have required element: callerid")
             return false
@@ -53,7 +53,7 @@ extension PublisherLink {
             latched = true
         }
 
-        connectionId = Ros.ConnectionManager.instance.getNewConnectionID()
+        connectionId = ros.connectionManager.getNewConnectionID()
         self.header = header
 
         parent.headerReceived(link: self, header: header)

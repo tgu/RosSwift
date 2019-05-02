@@ -20,40 +20,40 @@ struct B {
     }
 }
 
-func natterCallback(msg: geometry_msgs.Point) {
-    print("I heard: [\(msg)]")
-}
-
 func chatterCallback(msg: String) {
     print("I saw: [\(msg)]")
 }
 
 func chatterCallbackEvent(event: MessageEvent<String>) {
     let msg = event.message
-    print("I got [\(msg) from \(event.connectionHeader["callerid"])")
+    print("I got [\(msg) with header \(event.connectionHeader) at time \(event.receiptTime)")
 }
 
-let future = Ros.initialize(argv: &CommandLine.arguments, name: "listener")
+let ros = Ros(argv: &CommandLine.arguments, name: "listener")
 
 
-let n = Ros.NodeHandle()
+guard let n = ros.createNode(ns: "~") else {
+    exit(1)
+}
+
+let request = TestStringString.Request("request from listener")
+if let respons : TestStringString.Response = try? Service.call(node: n, serviceName: "echo", req: request).wait() {
+    print(respons)
+} else {
+    print("call returned nil")
+}
 
 let a = A(value: 345)
 let b = B(value: 99.345)
 
-let sub = n.subscribe(topic: "/natter", queueSize: 1, callback: natterCallback)
 let vab = n.subscribe(topic: "/chatter", queueSize: 1, callback: chatterCallback)
 let aab = n.subscribe(topic: "/chatter", queueSize: 1, callback: a.chatterCallback)
 let bab = n.subscribe(topic: "/chatter", queueSize: 1, callback: b.chatterCallback)
 let cab = n.subscribe(topic: "/chatter", queueSize: 1, callback: chatterCallbackEvent)
 
-n.spinThread()
-
-do {
-    try future.wait()
-} catch {
-    print(error.localizedDescription)
+let sub = n.subscribe(topic: "/natter") { (msg: geometry_msgs.Point) in
+    print("accel: [\(msg)]")
 }
 
-
+n.spinThread()
 

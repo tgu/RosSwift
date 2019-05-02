@@ -33,7 +33,7 @@ final class MessageDeserializer {
                 return
             }
 
-            if serializedMessage.buf.isEmpty && serializedMessage.num_bytes > 0 {
+            if serializedMessage.buf.isEmpty && serializedMessage.byteCount > 0 {
                 // If the buffer has been reset it means we tried to deserialize and failed
                 return
             }

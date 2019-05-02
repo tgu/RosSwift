@@ -7,21 +7,19 @@
 
 import Foundation
 
-extension RosTime {
-
 public struct Rate {
     var start: Time
     let expectedCycleTime: Duration
     var actualCycleTime: Duration
 
     public init(frequency: Double) {
-        start = Time.now()
+        start = Time.now
         expectedCycleTime = Duration(seconds: 1.0 / frequency)
         actualCycleTime = Duration()
     }
 
     public init(duration: Duration) {
-        start = Time.now()
+        start = Time.now
         expectedCycleTime = duration
         actualCycleTime = Duration()
     }
@@ -29,7 +27,7 @@ public struct Rate {
     @discardableResult
     public mutating func sleep() -> Bool {
         var expectedEnd = start + expectedCycleTime
-        let actualEnd = Time.now()
+        let actualEnd = Time.now
         if actualEnd < start {
             expectedEnd = actualEnd + expectedCycleTime
         }
@@ -47,7 +45,7 @@ public struct Rate {
     }
 
     public mutating func reset() {
-        start = Time.now()
+        start = Time.now
     }
 
     public func cycleTime() -> Duration {
@@ -61,13 +59,13 @@ struct WallRate {
     var actualCycletime: WallDuration
 
     init(frequency: Double) {
-        start = WallTime.now()
+        start = WallTime.now
         expectedCycleTime = WallDuration(seconds: 1.0 / frequency)
         actualCycletime = WallDuration()
     }
 
     init(duration: WallDuration) {
-        start = WallTime.now()
+        start = WallTime.now
         expectedCycleTime = duration
         actualCycletime = WallDuration()
     }
@@ -75,7 +73,7 @@ struct WallRate {
     @discardableResult
     mutating func sleep() -> Bool {
         var expectedEnd = start + expectedCycleTime
-        let actualEnd = WallTime.now()
+        let actualEnd = WallTime.now
         if actualEnd < start {
             expectedEnd = actualEnd + expectedCycleTime
         }
@@ -93,7 +91,7 @@ struct WallRate {
     }
 
     mutating func reset() {
-        start = WallTime.now()
+        start = WallTime.now
     }
 
     func cycleTime() -> WallDuration {
@@ -102,4 +100,3 @@ struct WallRate {
 
 }
 
-}

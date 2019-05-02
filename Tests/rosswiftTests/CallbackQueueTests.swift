@@ -40,14 +40,14 @@ class CallbackQueueTests: XCTestCase {
         let queue = CallbackQueue()
 
         queue.addCallback(callback: cb, ownerId: 1)
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 1)
 
         queue.addCallback(callback: cb, ownerId: 1)
         queue.callAvailable()
         XCTAssertEqual(cb.count, 2)
 
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 2)
 
         queue.callAvailable()
@@ -72,7 +72,7 @@ class CallbackQueueTests: XCTestCase {
         }
 
         for i in 1...1000 {
-            queue.callOne()
+            _ = queue.callOne()
             XCTAssertEqual(cb.count, i)
         }
     }
@@ -119,7 +119,7 @@ class CallbackQueueTests: XCTestCase {
         queue.addCallback(callback: cb2, ownerId: 1)
         queue.addCallback(callback: cb2, ownerId: 1)
 
-        queue.callOne()
+        _ = queue.callOne()
 
         queue.addCallback(callback: cb2, ownerId: 1)
 
@@ -147,7 +147,7 @@ class CallbackQueueTests: XCTestCase {
                 if useAvailable {
                     queue.callAvailable()
                 } else {
-                    queue.callOne()
+                _ = queue.callOne()
                 }
             }
             return .success
@@ -175,7 +175,7 @@ class CallbackQueueTests: XCTestCase {
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 3)
 
     }
@@ -186,7 +186,7 @@ class CallbackQueueTests: XCTestCase {
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 3)
 
     }
@@ -204,7 +204,7 @@ class CallbackQueueTests: XCTestCase {
 
     func callAvailableThread(queue: CallbackQueue, done: inout Bool) {
         while !done {
-            _ = queue.callOne(timeout: RosTime.WallDuration(seconds: 0.1))
+            _ = queue.callOne(timeout: WallDuration(seconds: 0.1))
         }
     }
 
@@ -217,15 +217,15 @@ class CallbackQueueTests: XCTestCase {
             threads.append(thread)
             thread.start()
         }
-        let start = RosTime.WallTime.now()
+        let start = WallTime.now
         var i = 0
-        while RosTime.WallTime.now() - start < RosTime.Duration(seconds: 5) {
+        while (WallTime.now - start).nanoseconds < Duration(seconds: 5).nanoseconds {
             queue.addCallback(callback: cb)
             i += 1
         }
 
         while !queue.isEmpty {
-            RosTime.WallDuration(milliseconds: 10).sleep()
+            WallDuration(milliseconds: 10).sleep()
         }
 
         done = true
@@ -242,7 +242,7 @@ class CallbackQueueTests: XCTestCase {
 
     func callOneThread(queue: CallbackQueue, done: inout Bool) {
         while !done {
-            _ = queue.callOne(timeout: RosTime.WallDuration(milliseconds: 100))
+            _ = queue.callOne(timeout: WallDuration(milliseconds: 100))
         }
     }
 

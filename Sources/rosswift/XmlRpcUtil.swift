@@ -15,7 +15,7 @@ extension XMLRPCClient {
             return nil
         }
 
-        let result = XmlRpcValue()
+        var result = XmlRpcValue()
 
         var data = xml.suffix(from: tagIndex.upperBound)
         if XmlRpcUtil.nextTagIs(tag: .params, xml: &data) && XmlRpcUtil.nextTagIs(tag: .param, xml: &data) {
@@ -48,8 +48,8 @@ enum XmlRpcUtil {
     }
 
     static func getNextTag(xml: inout String.SubSequence) -> String {
-        guard let open = xml.index(of: "<"),
-            let close = xml.index(of: ">"), close > open else {
+        guard let open = xml.firstIndex(of: "<"),
+            let close = xml.firstIndex(of: ">"), close > open else {
                 return ""
         }
 
@@ -83,7 +83,7 @@ enum XmlRpcUtil {
 
 extension XmlRpcValue {
 
-    func fromXML(xml: inout String.SubSequence) -> Bool {
+    mutating func fromXML(xml: inout String.SubSequence) -> Bool {
         invalidate()
 
         var xmlSeq = xml
@@ -104,26 +104,26 @@ extension XmlRpcValue {
         switch tag {
         case .boolean:
             if let b = Bool(valueString) {
-                value = .boolean(b)
+                self = .boolean(b)
                 result = true
             } else if let i = Int(valueString) {
-                value = .boolean(i != 0)
+                self = .boolean(i != 0)
                 result = true
             }
         case .i4Tag, .int:
             if let i = Int(valueString) {
-                value = .int(i)
+                self = .int(i)
                 result = true
             }
         case .double:
             if let d = Double(valueString) {
-                value = .double(d)
+                self = .double(d)
                 result = true
             }
 
         // Watch for empty/blank strings with no <string>tag
         case .string:
-            value = .string(valueString)
+            self = .string(valueString)
             result = true
         case .datetime:
             result = timeFrom(xml: valueString)
@@ -135,7 +135,7 @@ extension XmlRpcValue {
             result = structFrom(xml: &xmlSeq)
         case .endValue:
             let str = XmlRpcUtil.parseTag(from: .value, to: .endValue, xml: &xml)
-            value = .string(str)
+            self = .string(str)
             return true
         default:
             result = false
@@ -149,7 +149,7 @@ extension XmlRpcValue {
         return result
     }
 
-    func arrayFrom(xml: inout String.SubSequence) -> Bool {
+    mutating func arrayFrom(xml: inout String.SubSequence) -> Bool {
         if !XmlRpcUtil.nextTagIs(tag: .data, xml: &xml) {
             return false
         }
@@ -162,15 +162,15 @@ extension XmlRpcValue {
             array.append(newValue)
         }
         _ = XmlRpcUtil.nextTagIs(tag: .endData, xml: &xml)
-        value = .array(array)
+        self = .array(array)
         return true
     }
 
-    func structFrom(xml: inout String.SubSequence) -> Bool {
+    mutating func structFrom(xml: inout String.SubSequence) -> Bool {
         var val = ValueStruct()
         while XmlRpcUtil.nextTagIs(tag: .member, xml: &xml) {
             let name = XmlRpcUtil.parseTag(from: .name, to: .endName, xml: &xml)
-            let v = XmlRpcValue()
+            var v = XmlRpcValue()
             _ = v.fromXML(xml: &xml)
             if !v.valid() {
                 invalidate()
@@ -179,11 +179,11 @@ extension XmlRpcValue {
             val[name] = v
             _ = XmlRpcUtil.nextTagIs(tag: .endMember, xml: &xml)
         }
-        value = .struct(val)
+        self = .struct(val)
         return true
     }
 
-    func timeFrom(xml: String) -> Bool {
+    mutating func timeFrom(xml: String) -> Bool {
         invalidate()
         guard xml.count == 17 else {
             return false
@@ -208,7 +208,7 @@ extension XmlRpcValue {
         guard let date = userCalendar.date(from: dateComponents) else {
             return false
         }
-        value = .datetime(date)
+        self = .datetime(date)
         return true
     }
 

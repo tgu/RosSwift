@@ -61,7 +61,7 @@ class XmlRpcValueTest: XCTestCase {
         let map_s = ["a": "apple", "b": "blueberry", "c": "carrot"]
         let a = XmlRpcValue(any: map_s)
         var sa = [String:String]()
-        a.get(val: &sa)
+        _ = a.get(val: &sa)
 
         XCTAssertEqual(map_s, sa)
 

@@ -16,22 +16,21 @@ protocol Spinner {
     /// Spin on a callback queue (defaults to the global one). Blocks until rosswift
     /// has been shutdown.
 
-    func spin(queue: CallbackQueue?)
+    func spin(ros: Ros, queue: CallbackQueue?)
 }
 
 /// Spinner which runs in a single thread.
 
 final class SingleThreadSpinner: Spinner {
 
-    func spin(queue: CallbackQueue? = nil) {
-        let useQueue = queue != nil ? queue! : Ros.getGlobalCallbackQueue()
+    func spin(ros: Ros, queue: CallbackQueue? = nil) {
+        let useQueue = queue != nil ? queue! : ros.getGlobalCallbackQueue()
         if !SpinnerMonitor.main.add(queue: useQueue, singleThreaded: true) {
             fatalError("SingleThreadedSpinner: \(DEFAULT_ERROR_MESSAGE) You might want to use a MultiThreadedSpinner instead.")
         }
 
-        let timeout = RosTime.WallDuration(milliseconds: 100)
-        let n = Ros.NodeHandle()
-        while n.isOK {
+        let timeout = WallDuration(milliseconds: 100)
+        while ros.isRunning {
             useQueue.callAvailable(timeout: timeout)
         }
         SpinnerMonitor.main.remove(queue: useQueue)
@@ -51,7 +50,7 @@ final class MultiThreadedSpinner: Spinner {
         self.threadCount = threadCount
     }
 
-    func spin(queue: CallbackQueue? = nil) {
+    func spin(ros: Ros, queue: CallbackQueue? = nil) {
 
     }
 }
@@ -62,11 +61,12 @@ final class AsyncSpinnner {
     private let threadCount: Int
     private let callbackQueue: CallbackQueue
     private var running = Atomic<Bool>(value: false)
-    private let node = Ros.NodeHandle()
+    private let ros: Ros
 
-    init(threadCount: Int, queue: CallbackQueue? = nil) {
-        self.callbackQueue = queue != nil ? queue! : Ros.getGlobalCallbackQueue()
+    init(ros: Ros, threadCount: Int, queue: CallbackQueue? = nil) {
+        self.callbackQueue = queue != nil ? queue! : ros.getGlobalCallbackQueue()
         self.threadCount = threadCount != 0 ? threadCount : System.coreCount
+        self.ros = ros
     }
 
     deinit {
@@ -107,8 +107,8 @@ final class AsyncSpinnner {
         disableAllSignalsInThisThread()
         let queue = callbackQueue
         let useCallAvailable = threadCount == 1
-        let timeout = RosTime.WallDuration(milliseconds: 100)
-        while running.load() && node.isOK {
+        let timeout = WallDuration(milliseconds: 100)
+        while running.load() && ros.isRunning {
             if useCallAvailable {
                 queue.callAvailable(timeout: timeout)
             } else {

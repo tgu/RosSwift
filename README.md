@@ -28,13 +28,13 @@ import RosTime
 import StdMsgs
 
 
-let future = Ros.initialize(argv: &CommandLine.arguments, name: "talker")
-let n = Ros.NodeHandle()
+let ros = Ros(argv: &CommandLine.arguments, name: "talker")
+let n = ros.createNode()
 guard let chatter_pub = n.advertise(topic: "/chatter", message: String.self) else {
     exit(1)
 }
 
-var rate = RosTime.Rate(frequency: 10.0)
+var rate = Rate(frequency: 10.0)
 
 var j : Int32 = 0
 while Ros.ok {
@@ -42,10 +42,3 @@ while Ros.ok {
     j += 1
     rate.sleep()
 }
-
-do {
-    try future.wait()
-} catch {
-    print(error.localizedDescription)
-}
-```

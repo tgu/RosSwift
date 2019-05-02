@@ -139,7 +139,7 @@ class SubscriptionQueueTests: XCTestCase {
 
         func call() {
             barrier.wait()
-            RosTime.WallDuration(milliseconds: 1000).sleep()
+            WallDuration(milliseconds: 1000).sleep()
            done = true
         }
     }
@@ -206,7 +206,7 @@ class SubscriptionQueueTests: XCTestCase {
 
     struct WaitForASecond: CallbackProtocol {
         func call() {
-            RosTime.WallDuration(seconds: 1).sleep()
+            WallDuration(seconds: 1).sleep()
         }
     }
 
@@ -269,7 +269,7 @@ class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible {
         return FakeMessage()
     }
 
-    func call(msg: Message) {
+    func call(msg: Message, item: SubscriptionQueue.Item) {
         mutex.sync {
             calls += 1
         }

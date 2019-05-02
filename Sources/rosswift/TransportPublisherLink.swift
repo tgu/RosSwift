@@ -21,14 +21,14 @@ final class TransportPublisherLink: PublisherLink {
     var md5sum: String = ""
     
     private var connection: InboundConnection?
-    private var retryTimerHandle: Int32
+    private var retryTimerHandle: TimerHandle
     private var needsRetry: Bool
-    private var retryPeriod = RosTime.WallDuration()
-    private var nextRetry = RosTime.SteadyTime()
+    private var retryPeriod = WallDuration()
+    private var nextRetry = SteadyTime()
     private var isDropping: Bool
 
     init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
-        retryTimerHandle = -1
+        retryTimerHandle = .none
         needsRetry = false
         isDropping = false
         self.parent = parent
@@ -39,24 +39,29 @@ final class TransportPublisherLink: PublisherLink {
     }
 
     deinit {
-        if retryTimerHandle != -1 {
+        if !retryTimerHandle.isNone {
             getInternalTimerManager().remove(timerHandle: retryTimerHandle)
         }
         connection?.drop(reason: .destructing)
     }
 
-    func initialize(connection: InboundConnection) {
+    func initialize(ros: Ros, connection: InboundConnection) {
         self.connection = connection
         connection.initialize(owner: self)
 
         let header: StringStringMap = ["topic": parent.name,
                                      "md5sum": parent.md5sum,
-                                     "callerid": Ros.ThisNode.getName(),
+                                     "callerid": ros.name,
                                      "type": parent.datatype,
                                      "tcp_nodelay": transportHints.getTCPNoDelay() ? "1" : "0"]
 
-        connection.writeHeader(keyVals: header).whenComplete {
-            ROS_DEBUG("TransportPublisherLink: header is written")
+        connection.writeHeader(keyVals: header).whenComplete { result in
+            switch result {
+            case .success:
+                ROS_DEBUG("Header written for topic \(self.parent.name)")
+            case .failure(let error):
+                ROS_ERROR("failed to write header: \(error)")
+            }
         }
     }
 

@@ -20,14 +20,10 @@ public final class SingleSubscriberPublisher {
     }
 
     public func publish<M: Message>(_ msg: M) {
-        do {
-            let ser = SerializedMessage(msg: msg)
-            publish(m: ser)
-        } catch {
-            ROS_ERROR("publish failed \(error)")
-        }
+        let ser = SerializedMessage(msg: msg)
+        publish(m: ser)
     }
-
+    
     func publish(m: StdMsgs.SerializedMessage) {
         link.enqueueMessage(m: m)
     }

@@ -48,8 +48,8 @@ class serializationTests: XCTestCase {
         XCTAssertEqual(Float32(5), serializeAndDeserialize(Float32(5)))
         XCTAssertEqual(Float64(5), serializeAndDeserialize(Float64(5)))
         XCTAssertEqual(Double(5), serializeAndDeserialize(Double(5)))
-        XCTAssertEqual(RosTime.Time(sec: 100, nsec: 234), serializeAndDeserialize(RosTime.Time(sec: 100, nsec: 234)))
-        XCTAssertEqual(RosTime.Duration(nanosec: 12234), serializeAndDeserialize(RosTime.Duration(nanosec: 12234)))
+        XCTAssertEqual(Time(sec: 100, nsec: 234), serializeAndDeserialize(Time(sec: 100, nsec: 234)))
+        XCTAssertEqual(Duration(nanosec: 12234), serializeAndDeserialize(Duration(nanosec: 12234)))
         XCTAssertEqual("string", serializeAndDeserialize("string"))
         var str = "hello world"
         str.append("hello world22")
@@ -61,25 +61,36 @@ class serializationTests: XCTestCase {
     }
 
 
-    func callback<T : Message>(_ val: T) {
+    func callbackB(_ val: Bool) {
+
+    }
+
+    func callbackI(_ val: Int32) {
+
+    }
+
+    func callbackD(_ val: Double) {
 
     }
 
     func testBuiltinTypes() {
-        Ros.initialize(argv: &CommandLine.arguments, name: "builtinTests")
-        let n = Ros.NodeHandle()
+        let ros = Ros(argv: &CommandLine.arguments, name: "builtinTests")
+        let n = ros.createNode()
         let p1 = n.advertise(topic: "test_bool", message: Bool.self)
+        XCTAssertNotNil(p1)
         let p2 = n.advertise(topic: "test_int", message: Int32.self)
+        XCTAssertNotNil(p2)
         let p3 = n.advertise(topic: "test_double", message: Double.self)
+        XCTAssertNotNil(p3)
 
 
 
-        let s1 = n.subscribe(Bool.self, topic: "test_bool", queueSize: 1, callback: callback)
-        let s2 = n.subscribe(Int32.self, topic: "test_int", queueSize: 1, callback: callback)
-        let s3 = n.subscribe(Double.self, topic: "test_double", queueSize: 1, callback: callback)
-        XCTAssertEqual(s1!.getNumPublishers(),1)
-        XCTAssertEqual(s2!.getNumPublishers(),1)
-        XCTAssertEqual(s3!.getNumPublishers(),1)
+        let s1 = n.subscribe(topic: "test_bool", queueSize: 1, callback: callbackB)
+        let s2 = n.subscribe(topic: "test_int", queueSize: 1, callback: callbackI)
+        let s3 = n.subscribe(topic: "test_double", queueSize: 1, callback: callbackD)
+        XCTAssertEqual(s1!.publisherCount,1)
+        XCTAssertEqual(s2!.publisherCount,1)
+        XCTAssertEqual(s3!.publisherCount,1)
         XCTAssertNotNil(p1)
         XCTAssertNotNil(p2)
         XCTAssertNotNil(s1)

@@ -16,17 +16,11 @@ enum DropReason {
     case destructing
 }
 
-protocol ConnectionProtocol {
-
-}
-
-extension Nio {
-
 typealias ReadFinishedFunc = (Connection, [UInt8], Int, Bool) -> Void
 typealias WriteFinishedFunc = (Connection) -> Void
 typealias DropFunc = (Notification) -> Void
 
-    final class Connection: ConnectionProtocol {
+final class Connection {
 
     var channel: Channel
     var header: Header
@@ -63,8 +57,13 @@ typealias DropFunc = (Notification) -> Void
         var m = StringStringMap()
         m["error"] = msg
 
-        writeHeader(keyVals: m).whenComplete {
-            ROS_DEBUG("writeHeader finished")
+        writeHeader(keyVals: m).whenComplete { result in
+            switch result {
+            case .success:
+                ROS_DEBUG("writeHeader finished")
+            case .failure(let error):
+                ROS_ERROR("Failure in sendHeaderError: \(error)")
+            }
         }
         isSendingHeaderError = true
     }
@@ -81,10 +80,9 @@ typealias DropFunc = (Notification) -> Void
 
     func write(buffer: [UInt8]) -> EventLoopFuture<Void> {
         var buf = channel.allocator.buffer(capacity: buffer.count)
-        buf.write(bytes: buffer)
+        buf.writeBytes(buffer)
         return channel.writeAndFlush(buf)
     }
 
 }
 
-}

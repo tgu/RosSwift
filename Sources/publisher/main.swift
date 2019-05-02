@@ -59,29 +59,34 @@ func caseFlip(req: TestStringString.Request) -> TestStringString.Response? {
 
 func echo(req: TestStringString.Request) -> TestStringString.Response? {
     // copy over the request and overwrite the letters with their case-flip
-    print("echo")
-    return TestStringString.Response(req.data)
+
+    let response = req.data.uppercased()
+
+    return TestStringString.Response(response)
 }
 
-let future = Ros.initialize(argv: &CommandLine.arguments, name: "talker")
+let ros = Ros(argv: &CommandLine.arguments, name: "talker")
 
 
 var keys = [String]()
 
-let n = Ros.NodeHandle()
+guard let n = ros.createNode(ns: "") else {
+    exit(1)
+}
 
 let req = AddTwoIntsRequest(a: 34, b: 22)
-do {
-    if let res : AddTwoIntsResponse = try Service.call(serviceName: "/add_two_ints", req: req).wait() {
-        print("\(req.a) + \(req.b) = \(res.sum)")
-    }
-} catch {
-    print("AddTwoIntsResponse failed: \(error)" )
+if let res : AddTwoIntsResponse = try? Service.call(node: n, serviceName: "/add_two_ints", req: req).wait() {
+    print("\(req.a) + \(req.b) = \(res.sum)")
+} else {
+    print("AddTwoIntsResponse failed")
 }
 
 
-let srv1 = n.advertiseService(service: "service_adv", srvFunc: caseFlip)
-let srv2 = n.advertiseService(service: "echo", srvFunc: echo)
+let srv1 = n.advertise(service: "service_adv", srvFunc: caseFlip)
+let srv2 = n.advertise(service: "echo") { (req: TestStringString.Request) -> TestStringString.Response? in
+    let response = req.data.uppercased()
+    return .init(response)
+}
 
 
 guard let natter_pub = n.advertise(topic: "/natter", message: geometry_msgs.Point.self ) else {
@@ -112,27 +117,30 @@ guard let twist_pub = n.advertise(topic: "/twait", message: geometry_msgs.TwistS
 
 let request = TestStringString.Request("request from self")
 
-do {
-    if let respons : TestStringString.Response = try Service.call(serviceName: "echo", req: request).wait() {
-        print(respons)
-    } else {
-        print("call returned nil")
-    }
-} catch {
-    print("no response: \(error)")
+if let respons : TestStringString.Response = try? Service.call(node: n, serviceName: "echo", req: request).wait() {
+    print(respons)
+} else {
+    print("call returned nil")
 }
 
-var rate = RosTime.Rate(frequency: 1.0)
+var parameter: Int = 0
+
+if ros.param.getCached("int", &parameter) {
+    print("parameter int = \(parameter)")
+}
+ros.param.set(key: "~parm", value: ["T":34.3,"I":45.0,"D":0.34])
+
+var rate = Rate(frequency: 1.0)
 
 var j : Int32 = 0
-while Ros.ok {
+while ros.ok {
     j += 1
-    let time = RosTime.Time.now()
+    let time = Time.now
     let sm = geometry_msgs.Point(x: 1.0+Float64(j), y: Float64(j), z: sin(Float64(j)))
     natter_pub.publish(message: sm)
     chatter_pub.publish(message: std_msgs.string("Hello \(j)"))
 
-    let header = std_msgs.header(seq: UInt32(j), stamp: time, frameID: 2)
+    let header = std_msgs.Header(seq: UInt32(j), stamp: time, frame_id: "test")
     let lin = geometry_msgs.Vector3(x: 1, y: Float64(j), z: sin(Float64(j)))
     let ang = geometry_msgs.Vector3(x: 2.5, y: cos(Float64(j)), z: 4.6 )
     let tw = geometry_msgs.Twist(linear: lin, angular: ang)
@@ -143,8 +151,8 @@ while Ros.ok {
     rate.sleep()
 }
 
-do {
-    try future.wait()
-} catch {
-    print(error.localizedDescription)
-}
+//do {
+//    try future.wait()
+//} catch {
+//    print(error.localizedDescription)
+//}

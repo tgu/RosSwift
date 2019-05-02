@@ -6,22 +6,17 @@
 //
 
 import BinaryCoder
-import Foundation
 import StdMsgs
 import RosTime
 
-public struct SubscriptionCallbackHelperCallParams<M: Message> {
-    var event: MessageEvent<M>
-}
-
-public protocol SubscriptionCallbackHelper {
+internal protocol SubscriptionCallbackHelper {
     var id: ObjectIdentifier { get }
     func deserialize(data: [UInt8]) -> Message?
-    func call(msg: Message)
+    func call(msg: Message, item: SubscriptionQueue.Item)
     var hasHeader: Bool { get }
 }
 
-public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+internal final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (M) -> Void
 
@@ -40,7 +35,7 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
         return try? BinaryDecoder.decode(M.self, data: data)
     }
 
-    public func call(msg: Message) {
+    public func call(msg: Message, item: SubscriptionQueue.Item) {
         if let message = msg as? M {
             callback(message)
         }
@@ -51,7 +46,7 @@ public final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallback
 }
 
 
-public final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+internal final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (MessageEvent<M>) -> Void
 
@@ -69,10 +64,13 @@ public final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCal
         return try? BinaryDecoder.decode(M.self, data: data)
     }
 
-    public func call(msg: Message) {
+    public func call(msg: Message, item: SubscriptionQueue.Item) {
+        let time = item.receiptTime
         if let message = msg as? M {
-            let event = MessageEvent(message: message, header: ["callerid":"unknown"], receiptTime: RosTime.Time())
+            let event = MessageEvent(message: message, header: item.deserializer.connectionHeader, receiptTime: time)
             callback(event)
+        } else {
+            ROS_ERROR("Trying to send message of type \(type(of: msg)) to a subscriber that wants \(type(of: M.self))")
         }
     }
 

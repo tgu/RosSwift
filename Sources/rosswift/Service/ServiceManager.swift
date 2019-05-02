@@ -10,24 +10,26 @@ import NIO
 import NIOConcurrencyHelpers
 import StdMsgs
 
-    final class ServiceManager {
-        static let instance = ServiceManager()
+    internal final class ServiceManager {
+//        static let instance = ServiceManager()
 
         var isShuttingDown = Atomic<Bool>(value: false)
         var servicePublications = SynchronizedArray<ServiceProtocol>()
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 
-        var connectionManager: Ros.ConnectionManager { return Ros.ConnectionManager.instance }
-        var xmlrpcManager: XMLRPCManager { return XMLRPCManager.instance }
+        var connectionManager: ConnectionManager { return ros.connectionManager }
+        var xmlrpcManager: XMLRPCManager { return ros.xmlrpcManager }
+        unowned var ros: Ros!
 
-        private init() {
+        internal init() {
         }
 
         deinit {
             shutdown()
         }
 
-        func start() {
+        func start(ros: Ros) {
+            self.ros = ros
             isShuttingDown.store(false)
             ROS_DEBUG("servicemanager start")
         }
@@ -50,7 +52,7 @@ import StdMsgs
 
             serviceServerLinks.removeAll { links in
                 links.forEach {
-                    $0.channel?.close()
+                    let _ = $0.channel?.close()
                 }
             }
         }
@@ -66,15 +68,14 @@ import StdMsgs
             }
 
             let pub = ServicePublication(name: ops.service,
-                                         helper: ops.helper,
                                          trackedObject: ops.trackedObject,
                                          callback: ops.callback)
             servicePublications.append(pub)
 
-            let uri = "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"
-            let params = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), ops.service, uri, xmlrpcManager.serverURI])
+            let uri = "rosrpc://\(ros.network.getHost()):\(connectionManager.getTCPPort())"
+            let params = XmlRpcValue(anyArray: [ros.name, ops.service, uri, xmlrpcManager.serverURI])
             do {
-                try Master.shared.execute(method: "registerService", request: params).wait()
+                let _ = try ros.master.execute(method: "registerService", request: params).wait()
             } catch {
                 ROS_ERROR(error.localizedDescription)
             }
@@ -103,11 +104,11 @@ import StdMsgs
 
         private func unregisterService(service: String) {
             let args = XmlRpcValue(anyArray:
-                [Ros.ThisNode.getName(),
+                [ros.name,
                 service,
-                "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"])
+                "rosrpc://\(ros.network.getHost()):\(connectionManager.getTCPPort())"])
             do {
-                let response = try Master.shared.execute(method: "unregisterService", request: args).wait()
+                let response = try ros.master.execute(method: "unregisterService", request: args).wait()
                 ROS_DEBUG("response: \(response)")
             } catch {
                 ROS_ERROR("error during unregisterService \(error)")
@@ -140,21 +141,20 @@ import StdMsgs
                 return nil
             }
 
-            var servPort: UInt16 = 0
-            var servHost = ""
-            guard lookupService(name: service, servHost: &servHost, servPort: &servPort) else {
+            guard let server = lookupService(name: service) else {
                 return nil
             }
 
-            let trans = Nio.TransportTCP(pipeline: [])
+            let trans = TransportTCP()
 
-            let c = trans.connect(host: servHost, port: Int(servPort)).map { channel -> ServiceServerLink in
-                let client = ServiceServerLink(serviceName: service,
+            let c = trans.connect(host: server.host, port: Int(server.port)).map { channel -> ServiceServerLink in
+                let client = ServiceServerLink(ros: self.ros,
+                                               serviceName: service,
                                                persistent: persistent,
                                                requestMd5sum: requestMd5sum,
                                                responseMd5sum: responseMd5sum,
                                                headerValues: headerValues)
-                channel.pipeline.add(handler: client)
+                let _ = channel.pipeline.addHandler(client)
                 client.initialize(channel: channel)
                 return client
             }
@@ -174,33 +174,32 @@ import StdMsgs
             }
         }
 
-        func lookupService(name: String, servHost: inout String, servPort: inout UInt16) -> Bool {
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), name])
+        func lookupService(name: String) -> (host: String, port: UInt16)? {
+            let args = XmlRpcValue(anyArray: [ros.name, name])
             do {
-                let payload = try Master.shared.execute(method: "lookupService", request: args).wait()
+                let payload = try ros.master.execute(method: "lookupService", request: args).wait()
                 guard payload.valid() else {
                     ROS_DEBUG("lookupService: Invalid server URI returned from master")
-                    return false
+                    return nil
                 }
 
                 let servURI = payload.string
                 if servURI.isEmpty {
                     ROS_DEBUG("lookupService: Empty server URI returned from master")
-                    return false
+                    return nil
                 }
 
-                if !Ros.Network.splitURI(uri: servURI, host: &servHost, port: &servPort) {
+                guard let server = Network.splitURI(uri: servURI) else {
                     ROS_DEBUG("lookupService: Bad service uri [\(servURI)]")
-
-                    return false
+                    return nil
                 }
 
-                return true
+                return server
 
             } catch {
                 ROS_ERROR("lookupService: \(error)")
             }
 
-            return false
+            return nil
         }
     }

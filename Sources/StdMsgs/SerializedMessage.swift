@@ -13,7 +13,7 @@ public final class SerializedMessage {
     public var buf : [UInt8]
     public var message : Message?
 
-    public var num_bytes: Int {
+    public var byteCount: Int {
         return buf.count
     }
 

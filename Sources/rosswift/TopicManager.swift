@@ -21,10 +21,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
     return lhs == "*" || rhs == "*" || lhs == rhs
 }
 
-extension Ros {
-    final class TopicManager {
-
-        static let instance = TopicManager()
+    internal final class TopicManager {
 
         let advertisedTopicsMutex = NSRecursiveLock()
         let subsQueue = DispatchQueue(label: "subs_mutex_")
@@ -37,20 +34,24 @@ extension Ros {
         var shuttingDown = false
 
         var connectionManager: ConnectionManager {
-            return Ros.ConnectionManager.instance
+            return ros.connectionManager
         }
 
         var xmlrpcManager: XMLRPCManager {
-            return XMLRPCManager.instance
+            return ros.xmlrpcManager
         }
 
-        private init() {}
+        unowned var ros: Ros!
+
+        internal init() {
+        }
 
         deinit {
             shutdown()
         }
 
-        func start() {
+        func start(ros: Ros) {
+            self.ros = ros
             shuttingDownQueue.sync {
                 shuttingDown = false
 
@@ -95,6 +96,7 @@ extension Ros {
                         $0.drop()
                     }
                     advertisedTopics.removeAll()
+                    advertisedTopicNames.removeAll()
                 }
 
                 ROS_DEBUG("shutting down subscribers we have \(subscriptions.count) subscriptions")
@@ -131,19 +133,19 @@ extension Ros {
             ROS_DEBUG("requestTopic \(topic) with \(protos)")
             for protoIndex in 0..<protos.size() {
                 let proto = protos[protoIndex]
-                guard case .array = proto.value else {
+                guard case .array = proto else {
                     ROS_DEBUG("requestTopic protocol list was not a list of lists")
                     return XmlRpcValue()
                 }
 
-                guard case .string(let protoName) = proto[0].value else {
+                guard case .string(let protoName) = proto[0] else {
                     ROS_DEBUG( "requestTopic received a protocol list in which a sublist did not start with a string")
                     return XmlRpcValue()
                 }
 
                 if protoName == "TCPROS" {
                     let tcprosParams = XmlRpcValue(array: [.init(str: "TCPROS"),
-                                                            .init(str: Network.getHost()),
+                                                            .init(str: ros.network.getHost()),
                                                             .init(any: connectionManager.getTCPPort())])
                     let ret = XmlRpcValue(array: [.init(any: 1),
                                                   .init(str: ""),
@@ -163,20 +165,17 @@ extension Ros {
         }
 
         func getBusInfoCallback(params: XmlRpcValue ) -> XmlRpcValue {
-            var response = XmlRpcValue()
-            getBusInfo(info: &response)
+            let response = getBusInfo()
             return XmlRpcValue(anyArray: [1, "", response])
         }
 
         func getSubscriptionsCallback(params: XmlRpcValue ) -> XmlRpcValue {
-            var response = XmlRpcValue()
-            getSubscriptions(subs: &response)
+            let response = getSubscriptions()
             return XmlRpcValue(anyArray: [1, "", response])
         }
 
         func getPublicationsCallback(params: XmlRpcValue ) -> XmlRpcValue {
-            var response = XmlRpcValue()
-            getPublications(pubs: &response)
+            let response = getPublications()
             return XmlRpcValue(anyArray: [1, "", response])
         }
 
@@ -184,7 +183,7 @@ extension Ros {
             ROS_ERROR("getBusStats not implemented")
         }
 
-        func getBusInfo(info: inout XmlRpcValue) {
+        func getBusInfo() -> XmlRpcValue {
             var busInfo = [XmlRpcValue]()
             advertisedTopicsMutex.sync {
                 advertisedTopics.forEach({ pub in
@@ -198,18 +197,21 @@ extension Ros {
                 })
             }
 
-            info.value = .array(busInfo)
+            return XmlRpcValue(array: busInfo)
         }
 
-        func getSubscriptions(subs: inout XmlRpcValue) {
-            ROS_ERROR("getSubscriptions not implemented")
+        func getSubscriptions() -> XmlRpcValue {
+            let topics = subscriptions.map { sub -> XmlRpcValue in
+                XmlRpcValue(anyArray: [sub.name, sub.datatype])
+            }
+            return XmlRpcValue(anyArray: topics)
         }
 
-        func getPublications(pubs: inout XmlRpcValue) {
+        func getPublications() -> XmlRpcValue {
             let topics = advertisedTopics.map { pub -> XmlRpcValue in
                 XmlRpcValue(anyArray: [pub.name, pub.datatype])
             }
-            pubs = XmlRpcValue(anyArray: topics)
+            return XmlRpcValue(anyArray: topics)
         }
 
         func pubUpdate(topic: String, pubs: [String]) -> Bool {
@@ -239,23 +241,23 @@ extension Ros {
             }
         }
 
-        func getAdvertised(topics: inout [String]) {
-            advertisedTopicsMutex.sync {
-                topics = advertisedTopicNames.all()
+        func getAdvertised() -> [String] {
+            return advertisedTopicsMutex.sync {
+                return advertisedTopicNames.all()
             }
         }
 
-        func getSubscribed(topics: inout [String]) {
-            subsQueue.sync {
-                topics = subscriptions.map { $0.name }
+        func getSubscribed() -> [String] {
+            return subsQueue.sync {
+                return subscriptions.map { $0.name }
             }
         }
 
         func unregisterPublisher(topic: String) -> Bool {
             ROS_DEBUG("unregister publisher \(topic)")
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), topic, xmlrpcManager.serverURI])
+            let args = XmlRpcValue(anyArray: [ros.name, topic, xmlrpcManager.serverURI])
             do {
-                let response = try Master.shared.execute(method: "unregisterPublisher", request: args).wait()
+                let response = try ros.master.execute(method: "unregisterPublisher", request: args).wait()
                 ROS_DEBUG("response = \(response)")
             } catch {
                 ROS_ERROR("Error during unregisterPublisher \(error)")
@@ -294,7 +296,7 @@ extension Ros {
                     fatalError("Tried to subscribe to a topic with the same name" +
                         " but different md5sum as a topic that was already subscribed" +
                         " [\(M.datatype)/\(M.md5sum) vs. \(sub.datatype)/\(sub.md5sum)]")
-                } else if !sub.add(callback: ops.helper!,
+                } else if !sub.add(callback: ops.helper,
                                    md5: M.md5sum,
                                    queue: ops.callbackQueue,
                                    queueSize: ops.queueSize,
@@ -329,25 +331,22 @@ extension Ros {
                         throw InvalidParameterError("Subscribing to topic [\(options.topic)] with an empty datatype")
                     }
 
-                    if options.helper == nil {
-                        throw InvalidParameterError("Subscribing to topic [\(options.topic)] without a callback")
-                    }
-
                     let md5sum = M.md5sum
                     let datatype = M.datatype
 
-                    let sub = Subscription(name: options.topic,
+                    let sub = Subscription(ros: ros,
+                                           name: options.topic,
                                            md5sum: md5sum,
                                            datatype: datatype,
-                                           transportHints: options.transportHints!)
-                    _ = sub.add(callback: options.helper!,
+                                           transportHints: options.transportHints)
+                    _ = sub.add(callback: options.helper,
                                 md5: M.md5sum,
                                 queue: options.callbackQueue,
                                 queueSize: options.queueSize,
                                 trackedObject: options.trackedObject,
                                 allowConcurrentCallbacks: options.allowConcurrentCallbacks)
 
-                    if !registerSubscriber(s: sub, datatype: M.datatype) {
+                    if !registerSubscriber(callerId: ros.name, s: sub, datatype: M.datatype) {
                         ROS_DEBUG("couldn't register subscriber on topic [\(options.topic)")
                         sub.shutdown()
                         ok = false
@@ -390,12 +389,12 @@ extension Ros {
             return true
         }
 
-        func registerSubscriber(s: Subscription, datatype: String) -> Bool {
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), s.name, datatype, xmlrpcManager.serverURI])
+        func registerSubscriber(callerId: String, s: Subscription, datatype: String) -> Bool {
+            let args = XmlRpcValue(anyArray: [ros.name, s.name, datatype, xmlrpcManager.serverURI])
 
             var payload = XmlRpcValue()
             do {
-                payload = try Master.shared.execute(method: "registerSubscriber", request: args).wait()
+                payload = try ros.master.execute(method: "registerSubscriber", request: args).wait()
             } catch {
                 ROS_ERROR("registerSubscriber \(error)")
             }
@@ -406,7 +405,7 @@ extension Ros {
 
             var pubUris = [String]()
             for i in 0..<payload.size() {
-                if case .string(let uri) = payload[i].value {
+                if case .string(let uri) = payload[i] {
                     if uri != xmlrpcManager.serverURI {
                         if !uri.isEmpty {
                             pubUris.append(uri)
@@ -446,7 +445,7 @@ extension Ros {
             if ok {
                 _ = s.pubUpdate(newPubs: pubUris)
                 if selfSubscribed, let local = pubLocal {
-                    s.add(localConnection: local)
+                    s.add(ros: ros, localConnection: local)
                 }
             }
 
@@ -454,8 +453,8 @@ extension Ros {
         }
 
         func unregisterSubscriber(topic: String) {
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), topic, xmlrpcManager.serverURI])
-            let response = Master.shared.execute(method: "unregisterSubscriber", request: args)
+            let args = XmlRpcValue(anyArray: [ros.name, topic, xmlrpcManager.serverURI])
+            let response = ros.master.execute(method: "unregisterSubscriber", request: args)
             response.whenFailure { error in
                 ROS_ERROR("ouldn't unregister subscriber for topic [\(topic)]: \(error)")
             }
@@ -520,18 +519,18 @@ extension Ros {
                     s.name == ops.topic && md5sumsMatch(lhs: s.md5sum, rhs: M.md5sum) && !s.dropped.load()
                 }) {
                     DispatchQueue.main.async {
-                        it.add(localConnection: pub)
+                        it.add(ros: self.ros, localConnection: pub)
                     }
                 }
             }
 
-            let args = XmlRpcValue(array: [.init(str: Ros.ThisNode.getName()),
+            let args = XmlRpcValue(array: [.init(str: ros.name),
                                            .init(str: ops.topic),
                                            .init(str: M.datatype),
                                            .init(str: xmlrpcManager.serverURI)])
             var payload = XmlRpcValue()
             do {
-                payload = try Master.shared.execute(method: "registerPublisher", request: args).wait()
+                payload = try ros.master.execute(method: "registerPublisher", request: args).wait()
             } catch {
                 ROS_ERROR("registerPublisher \(error)")
             }
@@ -560,11 +559,7 @@ extension Ros {
                 if p.numCallbacks == 0 {
                     _ = unregisterPublisher(topic: p.name)
                     p.drop()
-                    #if swift(>=4.2)
-                    advertisedTopics.removeAll(where: { $0.name == topic && !$0.dropped })
-                    #else
-                    ROS_DEBUG("advertisedTopics.removeAll not called")
-                    #endif
+                    advertisedTopics.removeAll(where: { $0.name == topic && !$0.isDropped.load() })
                     advertisedTopicNames.remove(where: { $0 == topic })
                 }
             }
@@ -641,5 +636,3 @@ extension Ros {
         }
 
     }
-
-}

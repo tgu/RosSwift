@@ -12,11 +12,11 @@ import StdMsgs
 public struct MessageEvent<M: Message> {
     public let message: M
     public let connectionHeader: StringStringMap
-    public let receiptTime: RosTime.Time
+    public let receiptTime: Time
 
     init(message: M,
          header: StringStringMap,
-         receiptTime: RosTime.Time) {
+         receiptTime: Time) {
 
         self.message = message
         self.connectionHeader = header

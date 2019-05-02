@@ -62,10 +62,10 @@ class rosswiftTests: XCTestCase {
     func testXmlStruct() {
         let r = "<value><struct><member><name>adam</name><value><dateTime.iso8601>19831212T14:13:12</dateTime.iso8601></value></member><member><name>bertil</name><value><i4>2345</i4></value></member></struct></value>"
         var seq = r.dropFirst(0)
-        let v = XmlRpcValue()
+        var v = XmlRpcValue()
         let res = v.fromXML(xml: &seq)
         XCTAssert(res)
-        if let s = v.`struct` {
+        if let s = v.dictionary {
             XCTAssertEqual(s["bertil"]!.int!,2345)
             XCTAssertEqual(s["adam"]!.date!.description,"1983-12-12 14:13:12 +0000")
         } else {
@@ -122,25 +122,6 @@ class rosswiftTests: XCTestCase {
             + "<value>/chatter</value></param><param><value><array><data>"
             + "<value><array><data><value>TCPROS</value></data></array>"
             + "</value></data></array></value></param></params></methodCall>"
-
-        let xmlproto = "<value><array><data><value><array><data><value>"
-            + "<string>TCPROS</string></value></data></array></value>"
-            + "</data></array></value>"
-
-        let xml2 = """
-        <methodResponse><params><param>
-            <value><array><data><value><i4>1</i4></value><value></value>
-            <value><array><data><value>TCPROS</value><value>B2036.local</value>
-            <value><i4>60331</i4></value></data></array>
-            </value></data></array></value>
-        </param></params></methodResponse>
-        """
-
-        let xml3 = "<methodResponse><params><param><value><array><data>"
-            + "<value><i4>1</i4></value><value>Success</value><value>"
-            + "<array><data/></array></value></data></array></value>"
-            + "</param></params></methodResponse>"
-
 
             let ob = XMLRPCManager.parseRequest(xml: xml)
             XCTAssertEqual(ob.method, "requestTopic")

@@ -7,88 +7,100 @@
 
 import Foundation
 
-public final class XmlRpcValue {
+protocol ConvertableToXml {
+    func toXml() -> String
+}
 
-    var value: Value
+/// Remote Procedure Call (RPC) Object
 
-    enum Value: Equatable {
-        case invalid
-        case boolean(Bool)
-        case int(Int)
-        case float(Float32)
-        case double(Double)
-        case string(String)
-        case datetime(Date)
-        case base64(BinaryData)
-        case array(ValueArray)
-        case `struct`(ValueStruct)
-    }
+public enum XmlRpcValue: Equatable, ConvertableToXml {
+    case invalid
+    case boolean(Bool)
+    case int(Int)
+    case float(Float32)
+    case double(Double)
+    case string(String)
+    case datetime(Date)
+    case base64(BinaryData)
+    case array(ValueArray)
+    case `struct`(ValueStruct)
 
-    typealias BinaryData = [UInt8]
-    typealias ValueArray = [XmlRpcValue]
-    typealias ValueStruct = [String: XmlRpcValue]
+    public typealias BinaryData = [UInt8]
+    public typealias ValueArray = [XmlRpcValue]
+    public typealias ValueStruct = [String: XmlRpcValue]
 
     public init() {
-        value = .invalid
+        self = .invalid
     }
 
-    init(str: String) {
-        value = .string(str)
+    public init(str: String) {
+        self = .string(str)
     }
 
-    init(array: [XmlRpcValue]) {
-        value = .array(array)
+    public init(array: [XmlRpcValue]) {
+        self = .array(array)
     }
 
-    init(binary: [UInt8]) {
-        value = .base64(binary)
+    public init(binary: [UInt8]) {
+        self = .base64(binary)
     }
 
-    init(any: Any) {
+    public init(any: Any) {
         switch any {
         case let b as Bool:
-            value = .boolean(b)
+            self = .boolean(b)
         case let s as String:
-            value = .string(s)
+            self = .string(s)
         case let i as UInt:
-            value = .int(Int(i))
+            self = .int(Int(i))
         case let i as Int32:
-            value = .int(Int(i))
+            self = .int(Int(i))
         case let i as Int:
-            value = .int(i)
+            self = .int(i)
         case let d as Double:
-            value = .double(d)
+            self = .double(d)
         case let f as Float32:
-            value = .float(f)
+            self = .float(f)
         case let x as XmlRpcValue:
-            value = x.value
+            self = x
+        case let x as ValueStruct:
+            self = .struct(x)
+        case let x as (String, XmlRpcValue):
+            var s = ValueStruct()
+            s[x.0] = x.1
+            self = .struct(s)
         case let x as [String: Any]:
             var s = ValueStruct()
             x.forEach { arg in
                 let (key, v) = arg
                 s[key] = XmlRpcValue(any: v)
             }
-            value = .struct(s)
+            self = .struct(s)
         case let a as [Any]:
-            value = XmlRpcValue(anyArray: a).value
+            self = XmlRpcValue(anyArray: a)
         default:
-            ROS_ERROR("switch failed")
             fatalError("switch failed")
         }
     }
 
-    init(anyArray: [Any]) {
+    public init(anyArray: [Any]) {
         let val = anyArray.map { XmlRpcValue(any: $0) }
-        value = .array(val)
-//        if val.count == 1 {
-//            value = val.first!.value
-//        } else {
-//            value = .array(val)
-//        }
+        self = .array(val)
     }
 
-    func size() -> Int {
-        switch value {
+    public var count: Int {
+        switch self {
+        case .array(let a):
+            return a.count
+        case .`struct`(let s):
+            return s.count
+        default:
+            return 1
+        }
+    }
+
+    public func size() -> Int {
+        switch self {
         case .string(let s):
             return s.count
         case .base64(let b):
@@ -102,30 +114,34 @@ public final class XmlRpcValue {
         }
     }
 
-    var isArray: Bool {
-        if case .array(_) = value {
-            return true
-        }
-       return false
-    }
-
-    var isStruct: Bool {
-        if case .struct(_) = value {
+    public var isArray: Bool {
+        if case .array(_) = self {
             return true
         }
         return false
     }
 
-    var isString: Bool {
-        if case .string(_) = value {
+    public var isStruct: Bool {
+        if case .struct(_) = self {
             return true
         }
         return false
     }
 
-    subscript(i: Int) -> XmlRpcValue {
-        if case .array(let a) = value {
+    public var isString: Bool {
+        if case .string(_) = self {
+            return true
+        }
+        return false
+    }
+
+    public subscript(i: Int) -> XmlRpcValue {
+        if case .array(let a) = self {
             return a[i]
+        }
+        if case .`struct`(let s) = self {
+            let elem = Array(s)[i]
+            return XmlRpcValue(any: elem)
         }
         if i == 0 {
             return self
@@ -134,7 +150,7 @@ public final class XmlRpcValue {
     }
 
     var uncertainString: String? {
-        switch value {
+        switch self {
         case .string(let s):
             return s
         case .array(let a):
@@ -147,8 +163,8 @@ public final class XmlRpcValue {
         return nil
     }
 
-    var string: String {
-        switch value {
+    public var string: String {
+        switch self {
         case .string(let s):
             return s
         case .array(let a):
@@ -156,56 +172,63 @@ public final class XmlRpcValue {
                 return a[0].string
             }
         default:
-            fatalError("not a string \(value)")
+            fatalError("not a string \(self)")
         }
         return ""
     }
 
-    var `struct`: ValueStruct? {
-        if case .struct(let s) = value {
+    public var dictionary: ValueStruct? {
+        if case .struct(let s) = self {
+            return s
+        }
+        return nil
+    }
+
+    public var array: ValueArray? {
+        if case .array(let s) = self {
             return s
         }
         return nil
     }
 
     var int: Int? {
-        if case .int(let i) = value {
+        if case .int(let i) = self {
             return i
         }
         return nil
     }
 
     var bool: Bool? {
-        if case .boolean(let b) = value {
+        if case .boolean(let b) = self {
             return b
         }
         return nil
     }
 
     var date: Date? {
-        if case .datetime(let d) = value {
+        if case .datetime(let d) = self {
             return d
         }
         return nil
     }
 
-    func clear() {
+    mutating func clear() {
         invalidate()
     }
 
-    func invalidate() {
-        value = .invalid
+    mutating func invalidate() {
+        self = .invalid
     }
 
-    func valid() -> Bool {
-        if case .invalid = value {
+    public func valid() -> Bool {
+        if case .invalid = self {
             return false
         }
         return true
     }
 
-    func toXml() -> String {
-        switch value {
+    public func toXml() -> String {
+        switch self {
         case .boolean(let b):
             return Tags.boolXml(b)
         case .int(let i):
@@ -222,13 +245,13 @@ public final class XmlRpcValue {
             let xml = a.reduce("", { $0 + $1.toXml() })
             return Tags.arrayXml(xml)
         default:
-            fatalError("Could not convert to xml: \(value)")
+            fatalError("Could not convert to xml: \(self)")
         }
     }
 
     @discardableResult
     func get<T: Numeric>(val: inout [T]) -> Bool {
-        switch value {
+        switch self {
         case .array(let a):
             let vec = a.compactMap { v -> T? in
                 var d: T = 0
@@ -246,7 +269,7 @@ public final class XmlRpcValue {
 
     @discardableResult
     func get<T: StringProtocol>(val: inout [T]) -> Bool {
-        switch value {
+        switch self {
         case .array(let a):
             let vec = a.compactMap { v -> T? in
                 var d: T = ""
@@ -337,7 +360,7 @@ public final class XmlRpcValue {
     }
 
     func get<T>(val: inout T) -> Bool {
-        switch value {
+        switch self {
         case .invalid:
             return false
         case .boolean(let b as T):
@@ -425,25 +448,25 @@ public final class XmlRpcValue {
             val = map as! T
 
         default:
-            ROS_DEBUG("Could not get \(String(describing: T.self)) value from \(value)")
+            ROS_ERROR("Could not get \(String(describing: T.self)) value from \(self)")
             return false
         }
         return true
     }
 
-    func getType() -> Value {
-        return value
-    }
-
+    //    func getType() -> Value {
+    //        return value
+    //    }
+    //
     func hasMember(_ name: String) -> Bool {
-        if case .`struct`(let v) = value {
+        if case .`struct`(let v) = self {
             return v.keys.contains(name)
         }
         return false
     }
 
     subscript(_ name: String) -> XmlRpcValue? {
-        if case .`struct`(let v) = value {
+        if case .`struct`(let v) = self {
             return v[name]
         }
         return nil
@@ -451,15 +474,9 @@ public final class XmlRpcValue {
 
 }
 
-extension XmlRpcValue: Equatable {
-    public static func == (lhs: XmlRpcValue, rhs: XmlRpcValue) -> Bool {
-        return lhs.value == rhs.value
-    }
-}
-
 extension XmlRpcValue: CustomStringConvertible {
     public var description: String {
-        switch value {
+        switch self {
         case .invalid:
             return "invalid"
         case .boolean(let b):
@@ -484,7 +501,7 @@ extension XmlRpcValue: CustomStringConvertible {
     }
 }
 
-enum Tags: String {
+public enum Tags: String {
     case methodname =       "<methodName>"
     case endMethodname =    "</methodName>"
     case params =           "<params>"
@@ -558,12 +575,26 @@ enum Tags: String {
 
 }
 
-extension Dictionary where Value: XmlRpcValue {
+extension Dictionary where Value: ConvertableToXml {
     var xml: String {
         let a = self.map { arg -> String in
             let (key, value) = arg
             return Tags.memberXml((key as! String), value: value.toXml())
-        }.joined()
+            }.joined()
         return Tags.structXml(a)
+    }
+}
+
+extension XmlRpcValue: Collection {
+    public func index(after i: Int) -> Int {
+        return i + 1
+    }
+
+    public var startIndex: Int {
+        return 0
+    }
+
+    public var endIndex: Int {
+        return count
     }
 }

@@ -8,7 +8,7 @@
 import Foundation
 import StdMsgs
 
-protocol ServiceProtocol: class {
+internal protocol ServiceProtocol: class {
     var name: String { get }
     var isDropped: Bool { get }
     var md5sum: String { get }
@@ -22,7 +22,7 @@ protocol ServiceProtocol: class {
 
 }
 
-final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
+internal final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
 
     typealias CallFcn = (MReq) -> MRes?
     var call: CallFcn
@@ -31,7 +31,6 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
     var dataType: String { return MReq.srvDatatype }
     var requestDataType: String { return MReq.datatype }
     var responseDataType: String { return MRes.datatype }
-    var helper: ServiceCallbackHelper?
     var isDropped = false
     var hasTrackedObject: Bool { return trackedObject != nil }
     var trackedObject: AnyObject?
@@ -39,10 +38,9 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
     var clientLinks = [ServiceClientLink]()
     let clientLinksQueue = DispatchQueue(label: "clientLinksQueue")
 
-    init(name: String, helper: ServiceCallbackHelper?, trackedObject: AnyObject?, callback: @escaping CallFcn) {
+    init(name: String, trackedObject: AnyObject?, callback: @escaping CallFcn) {
         self.call = callback
         self.name = name
-        self.helper = helper
         self.trackedObject = trackedObject
     }
 
@@ -72,19 +70,16 @@ final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: Serv
             return true
         }
 
-        var helper: ServiceCallbackHelper?
         var buffer: [UInt8]
         var link: ServiceClientLink
         var hasTrackedObject: Bool
         var trackedObject: AnyObject?
 
-        init(helper: ServiceCallbackHelper?,
-             buf: [UInt8],
+        init(buf: [UInt8],
              link: ServiceClientLink,
              hasTrackedObject: Bool,
              trackedObject: AnyObject?) {
 
-            self.helper = helper
             self.buffer = buf
             self.link = link
             self.hasTrackedObject = hasTrackedObject
