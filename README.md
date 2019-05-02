@@ -9,9 +9,7 @@ This is the first version and there are some unimplemented features, basic publi
 
 Minimum SDK10.12 on OSX
 
-Swift 4.2 on Raspberry, https://swift-arm.com/2019/01/07/official-swift-arm-community-releases/
-
-Swift5 and Swift-nio2 support is found in branch Swift5
+Swift 5 on Raspberry, https://swift-arm.com/2019/01/07/official-swift-arm-community-releases/
 
 ## Messages
 
