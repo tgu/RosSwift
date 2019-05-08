@@ -93,18 +93,18 @@ public final class WallTimer {
 }
 
 public struct WallTimerEvent: Event {
-    typealias EventTime = WallTime
+    public typealias EventTime = WallTime
 
-    static func createEvent(lastExpected: WallTime, lastExpired: WallTime, lastReal: WallTime, currentExpected: WallTime, currentExpired: WallTime, currentReal: WallTime) -> WallTimerEvent {
+    public static func createEvent(lastExpected: WallTime, lastExpired: WallTime, lastReal: WallTime, currentExpected: WallTime, currentExpired: WallTime, currentReal: WallTime) -> WallTimerEvent {
         return WallTimerEvent(lastExpected: lastExpected, lastExpired: lastExpired, lastReal: lastReal, currentExpected: currentExpected, currentExpired: currentExpired, currentReal: currentReal)
     }
 
-    let lastExpected: WallTime
-    var lastExpired: WallTime
-    let lastReal: WallTime
-    let currentExpected: WallTime
-    var currentExpired: WallTime
-    let currentReal: WallTime
+    public let lastExpected: WallTime
+    public var lastExpired: WallTime
+    public let lastReal: WallTime
+    public let currentExpected: WallTime
+    public var currentExpired: WallTime
+    public let currentReal: WallTime
 }
 
 

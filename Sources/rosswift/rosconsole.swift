@@ -37,7 +37,41 @@ func ROS_DEBUG(_ msg: @autoclosure () -> String,
     #endif
 }
 
-func ROS_INFO(_ msg: @autoclosure () -> String,
+public func ROS_WARN_STREAM(_ msg: @autoclosure () -> String,
+                            functionName: String = #function,
+
+                            lineNum: Int = #line,
+                            fileName: String = #file) {
+    Log.warning(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+}
+
+public func ROS_ERROR_STREAM(_ msg: @autoclosure () -> String,
+                             functionName: String = #function,
+
+                             lineNum: Int = #line,
+                             fileName: String = #file) {
+    Log.error(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+}
+
+public func ROS_INFO_STREAM(_ msg: @autoclosure () -> String,
+                             functionName: String = #function,
+
+                             lineNum: Int = #line,
+                             fileName: String = #file) {
+    Log.info(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+}
+
+public func ROS_WARN_STREAM_THROTTLE(_ timeout: Double, _ msg: @autoclosure () -> String,
+                            functionName: String = #function,
+
+                            lineNum: Int = #line,
+                            fileName: String = #file) {
+    Log.warning(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+}
+
+
+
+public func ROS_INFO(_ msg: @autoclosure () -> String,
               functionName: String = #function,
 
               lineNum: Int = #line,

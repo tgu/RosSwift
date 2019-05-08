@@ -9,7 +9,7 @@ import Foundation
 import RosTime
 import NIOConcurrencyHelpers
 
-typealias TimerCallback = (TimerEvent) -> Void
+public typealias TimerCallback = (TimerEvent) -> Void
 
 enum TimerHandle: Equatable, Hashable {
     case none

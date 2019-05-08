@@ -124,6 +124,7 @@ class paramTests: XCTestCase {
         XCTAssert(ros.param.getCached(ns, &structParam))
         XCTAssert(structParam.hasMember("foo"))
         XCTAssertEqual("b", structParam["foo"]?.string)
+
     }
 
     func testSetThenGetCString()

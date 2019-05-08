@@ -45,7 +45,7 @@ final class InboundConnection {
 
         do {
             self.channel = try bootstrap.connect(host: host, port: port).map { channel -> Channel in
-                channel.pipeline.addHandlers([
+                _ = channel.pipeline.addHandlers([
                     ByteToMessageHandler(LengthFieldBasedFrameDecoder(lengthFieldLength: .four, lengthFieldEndianness: .little)),
                     InboundHandler(parent: self)])
                 return channel

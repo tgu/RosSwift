@@ -71,7 +71,7 @@ fileprivate final class ThreadLocalStorage {
     }
 }
 
-internal final class CallbackQueue: CallbackQueueInterface {
+public final class CallbackQueue: CallbackQueueInterface {
     private var callbacks = Deque<CallbackInfo>()
     private var calling: Int = 0
     private let condition = NSCondition()
@@ -87,7 +87,7 @@ internal final class CallbackQueue: CallbackQueueInterface {
         self.tls = ThreadSpecificVariable()
     }
 
-    func addCallback(callback: CallbackInterface, ownerId: OwnerType = 0) {
+    public func addCallback(callback: CallbackInterface, ownerId: OwnerType = 0) {
         let info = CallbackInfo(callback: callback, removal_id: ownerId, markedForRemoval: false)
         idInfoMutex.sync {
             if idInfo[ownerId] == nil {
@@ -104,7 +104,7 @@ internal final class CallbackQueue: CallbackQueueInterface {
         condition.signal()
     }
 
-    func removeByID(ownerId: OwnerType) {
+    public func removeByID(ownerId: OwnerType) {
         setupTLS()
         guard let info = idInfoMutex.sync(execute: { idInfo[ownerId] }) else {
             return
@@ -290,7 +290,7 @@ internal final class CallbackQueue: CallbackQueueInterface {
     }
     /// Removes all callbacks from the queue.  Does not wait for calls currently in progress to finish.
 
-    func clear() {
+    public func clear() {
         condition.sync {
             callbacks.removeAll()
         }

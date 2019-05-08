@@ -95,16 +95,16 @@ public final class SteadyTimer {
 
 
 public struct SteadyTimerEvent: Event {
-    static func createEvent(lastExpected: SteadyTime, lastExpired: SteadyTime, lastReal: SteadyTime, currentExpected: SteadyTime, currentExpired: SteadyTime, currentReal: SteadyTime) -> SteadyTimerEvent {
+    public static func createEvent(lastExpected: SteadyTime, lastExpired: SteadyTime, lastReal: SteadyTime, currentExpected: SteadyTime, currentExpired: SteadyTime, currentReal: SteadyTime) -> SteadyTimerEvent {
         return SteadyTimerEvent(lastExpected: lastExpected, lastExpired: lastExpired, lastReal: lastReal, currentExpected: currentExpected, currentExpired: currentExpired, currentReal: currentReal)
 
     }
 
-    let lastExpected: SteadyTime
-    var lastExpired: SteadyTime
-    let lastReal: SteadyTime
-    let currentExpected: SteadyTime
-    var currentExpired: SteadyTime
-    let currentReal: SteadyTime
+    public let lastExpected: SteadyTime
+    public var lastExpired: SteadyTime
+    public let lastReal: SteadyTime
+    public let currentExpected: SteadyTime
+    public var currentExpired: SteadyTime
+    public let currentReal: SteadyTime
 }
 

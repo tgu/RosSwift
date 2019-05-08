@@ -9,28 +9,32 @@ import Foundation
 import StdMsgs
 
 
-struct EmptyRequest: ServiceMessage {
-    static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-    static let srvMd5sum = Empty.md5sum
-    static let srvDatatype = Empty.datatype
-    static let datatype = "roscpp/EmptyRequest"
-    static let hasHeader = false
-    static let definition = "\n"
+public struct EmptyRequest: ServiceMessage {
+    public static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
+    public static let srvMd5sum = EmptySrv.md5sum
+    public static let srvDatatype = EmptySrv.datatype
+    public static let datatype = "roscpp/EmptyRequest"
+    public static let hasHeader = false
+    public static let definition = "\n"
+
+    public init() {}
 }
 
-struct EmptyResponse: ServiceMessage {
-    static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-    static let srvMd5sum = Empty.md5sum
-    static let srvDatatype = Empty.datatype
-    static let datatype = "roscpp/SetLoggerLevelResponse"
-    static let hasHeader = false
-    static let definition = "\n"
+public struct EmptyResponse: ServiceMessage {
+    public static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
+    public static let srvMd5sum = EmptySrv.md5sum
+    public static let srvDatatype = EmptySrv.datatype
+    public static let datatype = "roscpp/SetLoggerLevelResponse"
+    public static let hasHeader = false
+    public static let definition = "\n"
+
+    public init() {}
 }
 
-struct Empty {
-    typealias Request = EmptyRequest
-    typealias Response = EmptyResponse
+public enum EmptySrv {
+    public typealias Request = EmptyRequest
+    public typealias Response = EmptyResponse
 
-    static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-    static let datatype = "roscpp/Empty"
+    public static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
+    public static let datatype = "roscpp/Empty"
 }

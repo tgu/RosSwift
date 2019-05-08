@@ -406,7 +406,9 @@ public final class Param {
         var doReturn = false
         var value: XmlRpcValue?
 
-        if useCache {
+        // Caching only works when ros is started and xmlrpcManager is running
+        
+        if useCache && ros.isStarted {
             parameterQueue.sync {
                 if gSubscribedParameters.contains(mappedKey) {
                     if let it = gParameters[mappedKey] {

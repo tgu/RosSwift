@@ -114,7 +114,7 @@ public struct Service {
             do {
 
             try transport.connect(host: server.host, port: Int(server.port)).map { channel -> Void in
-                channel.pipeline.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
+                _ = channel.pipeline.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
                                               ByteToMessageHandler(HeaderMessageCodec()),
                                               TransportTCP.Handler(callback: callback)])
                 let buffer = Header.write(keyVals: keymap)

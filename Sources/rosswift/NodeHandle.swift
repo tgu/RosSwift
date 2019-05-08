@@ -40,7 +40,7 @@ public final class NodeHandle {
         return ros.nodeReferenceCount.load()
     }
 
-    internal let ros: Ros
+    public let ros: Ros
 
     // MARK: Life
 
@@ -136,7 +136,7 @@ public final class NodeHandle {
     ///
     /// - Parameters:
     ///     - topic:    Topic to advertise on
-    ///     - queue_size:    Maximum number of outgoing messages to be queued for delivery to subscribers
+    ///     - queueSize:    Maximum number of outgoing messages to be queued for delivery to subscribers
     ///     - latch:  If true, the last message published on this topic will be saved and sent to new
     /// subscribers when they connect
     ///     - message: The type of the message
@@ -144,8 +144,8 @@ public final class NodeHandle {
     /// a reference on this advertisement.
 
 
-    public func advertise<M: Message>(topic: String, latch: Bool = false, message: M.Type) -> Publisher? {
-        let ops = AdvertiseOptions(topic: topic, latch: latch, M.self)
+    public func advertise<M: Message>(topic: String, queueSize: UInt = 0, latch: Bool = false, message: M.Type) -> Publisher? {
+        let ops = AdvertiseOptions(topic: topic, queueSize: queueSize, latch: latch, M.self)
         return advertise(ops: ops)
     }
 
@@ -282,7 +282,7 @@ public final class NodeHandle {
     ///     - autostart: If true (default), return timer that is already started
 
 
-    func createTimer(period: Duration,
+    public func createTimer(period: Duration,
                      oneshot: Bool = false,
                      autostart: Bool = true,
                      trackedObject: AnyObject? = nil,
@@ -313,7 +313,7 @@ public final class NodeHandle {
     ///     - autostart: If true (default), return timer that is already started
 
 
-    func createWallTimer(period: WallDuration,
+    public func createWallTimer(period: WallDuration,
                          oneshot: Bool = false,
                          autostart: Bool = true,
                          trackedObject: AnyObject? = nil,
@@ -361,7 +361,7 @@ public final class NodeHandle {
     ///
     /// - Returns: `true` if the parameter value was retrieved, `false` otherwise
 
-    func get<T>(parameter: String, value: inout T) -> Bool {
+    public func get<T>(parameter: String, value: inout T) -> Bool {
         return ros.param.get(parameter, &value)
     }
 
@@ -391,7 +391,7 @@ public final class NodeHandle {
     ///
     /// - Returns: `true` if the parameter exists, `false` otherwise
 
-    func has(parameter: String) -> Bool {
+    public func has(parameter: String) -> Bool {
         guard let name = resolveName(name: parameter) else {
             return false
         }
@@ -413,7 +413,7 @@ public final class NodeHandle {
     /// - Returns: `true` if the parameter was retrieved from the server, `false` otherwise
 
 
-    func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
+    public func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
         if has(parameter: name) {
             if get(parameter: name, value: &value) {
                 return true
@@ -508,7 +508,7 @@ public final class NodeHandle {
     /// - Returns: `true` if the parameter was found, `false` otherwise
 
 
-    func search(parameter: String, result: inout String) -> Bool {
+    public func search(parameter: String, result: inout String) -> Bool {
         // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
         // resolved one.
 

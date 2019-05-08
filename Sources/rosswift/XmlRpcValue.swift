@@ -198,7 +198,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         return nil
     }
 
-    var bool: Bool? {
+    public var bool: Bool? {
         if case .boolean(let b) = self {
             return b
         }

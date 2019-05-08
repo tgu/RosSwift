@@ -72,7 +72,7 @@ public final class Ros: Hashable {
     let master: Master
 
     let network: Network
-    let name: String
+    public let name: String
     let namespace: String
 
     // has currently no function
@@ -254,7 +254,7 @@ public final class Ros: Hashable {
         return NodeHandle(parent: parent, ns: ns)
     }
 
-    func getGlobalCallbackQueue() -> CallbackQueue {
+    public func getGlobalCallbackQueue() -> CallbackQueue {
         return gGlobalQueue
     }
 

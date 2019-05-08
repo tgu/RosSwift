@@ -9,7 +9,7 @@ import Foundation
 import NIOConcurrencyHelpers
 
 public final class ServiceServer {
-    let service: String
+    public let service: String
     unowned var node: NodeHandle
     var isUnadvertised = Atomic<Bool>(value: false)
 
