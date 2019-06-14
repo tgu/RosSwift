@@ -9,11 +9,12 @@ import BinaryCoder
 import StdMsgs
 
 public protocol Publisher {
+    var topic: String { get }
     func publish(message: Message)
 }
 
 public final class SpecializedPublisher<M: Message>: Publisher {
-    let topic: String
+    public let topic: String
     var md5sum: String { return M.md5sum }
     var datatype: String { return M.datatype }
     let callbacks: SubscriberCallbacks

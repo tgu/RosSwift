@@ -103,7 +103,7 @@ public struct Service {
     /// could not connect to the advertised host)
     /// - Returns: true if the service is up and available, false otherwise
 
-    static func exists(ros: Ros, serviceName: String, printFailureReason: Bool) -> Bool {
+    public static func exists(ros: Ros, serviceName: String, printFailureReason: Bool) -> Bool {
         guard let mappedName = ros.resolve(name: serviceName) else {
             return false
         }

@@ -577,8 +577,8 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                 if let p = lookupPublicationWithoutLock(topic: topic) {
 
                     if p.hasSubscribers() || p.isLatching() {
-                        ROS_DEBUG("Publishing message on topic [\(p.name)] " +
-                            "with sequence number [\(p.sequenceNr.load())]")
+//                        ROS_DEBUG("Publishing message on topic [\(p.name)] " +
+//                            "with sequence number [\(p.sequenceNr.load())]")
 
                         p.publish(msg: serMsg)
 

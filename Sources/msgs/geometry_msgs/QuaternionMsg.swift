@@ -34,7 +34,7 @@ extension geometry_msgs {
 			x = Float64()
 			y = Float64()
 			z = Float64()
-			w = Float64()
+			w = Float64(1)
 		}
 	}
 }

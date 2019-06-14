@@ -383,7 +383,13 @@ public final class Param {
         let params = XmlRpcValue(anyArray: [ros.name, mappedKey, v])
         do {
             let parameter = try ros.master.execute(method: "setParam", request: params).wait()
-            ROS_DEBUG("set<T> response: \(parameter)")
+           if let res = parameter.int {
+                if res != 0 {
+                    ROS_ERROR("set<T>(key: \(key), value: \(value)) response: \(parameter)")
+                }
+            } else {
+                ROS_ERROR("set<T>(key: \(key), value: \(value)) response: \(parameter)")
+            }
             if gSubscribedParameters.contains(mappedKey) {
                 gParameters[mappedKey] = v
             }

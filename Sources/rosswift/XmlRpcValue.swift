@@ -371,6 +371,10 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
             val = (b ? Float32(1.0) : Float32(0.0)) as! T
         case .boolean(let b) where T.self == Double.self:
             val = (b ? 1.0 : 0.0) as! T
+        case .string("false") where T.self == Bool.self:
+            val = false as! T
+        case .string("true") where T.self == Bool.self:
+            val = true as! T
         case .int(let i) where T.self == Bool.self:
             val = (i != 0) as! T
         case .int(let i as T):
@@ -501,7 +505,7 @@ extension XmlRpcValue: CustomStringConvertible {
     }
 }
 
-public enum Tags: String {
+enum Tags: String {
     case methodname =       "<methodName>"
     case endMethodname =    "</methodName>"
     case params =           "<params>"

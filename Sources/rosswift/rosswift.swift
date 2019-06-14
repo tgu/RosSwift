@@ -246,9 +246,40 @@ public final class Ros: Hashable {
     }
 
 
+    /// Constructor.
+    ///
+    /// When a NodeHandle is constructed, it checks to see if the global node state has already been
+    /// started. If so, it increments a global reference count. If not, it starts the node with
+    /// `Ros.start()` and sets the reference count to 1.
+    ///
+    /// - Parameters:
+    ///     - ns:    Namespace for this NodeHandle. This acts in addition to any namespace assigned to
+    /// this ROS node. eg. If the node's namespace is "/a" and the namespace passed in here is "b",
+    /// all topics/services/parameters will be prefixed with "/a/b/"
+    ///     - remappings:    Remappings for this NodeHandle.
+
     public func createNode(ns: String, remappings: StringStringMap = [:]) -> NodeHandle? {
         return NodeHandle(ros: self, ns: ns, remappings: remappings)
     }
+
+    /// Parent constructor.
+    ///
+    /// This version of the constructor takes a "parent" NodeHandle. If the passed "ns" is relative
+    /// (does not start with a slash), it is equivalent to calling:
+    ///
+    /// NodeHandle child(parent.getNamespace() + "/" + ns, remappings);
+    /// If the passed "ns" is absolute (does start with a slash), it is equivalent to calling:
+    /// NodeHandle child(ns, remappings);
+    /// This version also lets you pass in name remappings that are specific to this NodeHandle
+    /// When a NodeHandle is copied, it inherits the namespace of the NodeHandle being copied, and
+    /// increments the reference count of the global node state by 1.
+    ///
+    /// - Parameters:
+    ///     - parent: The parent of the new node
+    ///     - ns:    Namespace for this NodeHandle. This acts in addition to any namespace assigned to this ROS node.
+    /// eg. If the node's namespace is "/a" and the namespace passed in here is "b",
+    /// all topics/services/parameters will be prefixed with "/a/b/"
+    
 
     public func createNode(parent: NodeHandle, ns: String = "") -> NodeHandle {
         return NodeHandle(parent: parent, ns: ns)
@@ -410,7 +441,7 @@ public final class Ros: Hashable {
         }
     }
 
-    func spin() {
+    public func spin() {
         let spinner = SingleThreadSpinner()
         spin(spinner)
     }
@@ -419,7 +450,7 @@ public final class Ros: Hashable {
         spinner.spin(ros: self, queue: nil)
     }
 
-    func spinOnce() {
+    public func spinOnce() {
         gGlobalQueue.callAvailable()
     }
 

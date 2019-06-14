@@ -10,6 +10,33 @@ import NIOConcurrencyHelpers
 import StdMsgs
 import RosTime
 
+
+/// Interface for creating subscribers, publishers, etc.
+///
+/// This class is used for writing nodes. It provides a RAII interface to this process' node,
+/// in that when the first NodeHandle is created, it instantiates everything necessary for this node,
+/// and when the last NodeHandle goes out of scope it shuts down the node.
+///
+/// NodeHandle uses reference counting internally, and copying a NodeHandle is very lightweight.
+///
+/// You must call one of the `Ros.createNode(...)` functions to instantiate this class.
+///
+/// The most widely used methods are:
+///
+/// ## Setup:
+///     let ros = Ros(name: "my_ros_node")
+///     let node = ros.createNode()
+/// ## Publish / subscribe messaging:
+///     `advertise(...)`
+///     `subscribe(...)`
+/// ## RPC services:
+///     `advertise(service:)`
+///     `serviceClient(...)`
+///     ros::service::call()
+/// ## Parameters:
+///     `get(...)`
+///     `set(...)`
+
 public final class NodeHandle {
 
     /// Check whether it's time to exit.
@@ -362,7 +389,10 @@ public final class NodeHandle {
     /// - Returns: `true` if the parameter value was retrieved, `false` otherwise
 
     public func get<T>(parameter: String, value: inout T) -> Bool {
-        return ros.param.get(parameter, &value)
+        if let resolvedName = resolveName(name: parameter) {
+            return ros.param.get(resolvedName, &value)
+        }
+        return false
     }
 
     /// Get a parameter value from the parameter server with local cahcing.
@@ -540,7 +570,7 @@ public final class NodeHandle {
     ///
     ///
 
-    func serviceClient(service: String,
+    public func serviceClient(service: String,
                        md5sum: String,
                        persistent: Bool = false,
                        headerValues: StringStringMap? = nil) -> ServiceClient {
@@ -560,7 +590,7 @@ public final class NodeHandle {
     ///
     /// Setting this will cause any callbacks from advertisements/subscriptions/services/etc.
     /// to happen through the use of the specified queue. `nil` (the default) causes
-    /// the global queue (serviced by Ros.spin() and Ros.spinOnce()) to be used.
+    /// the global queue (serviced by `Ros.spin()` and `Ros.spinOnce()`) to be used.
 
     func setCallbackQueue(queue: CallbackQueueInterface) {
         callbackQueue = queue
@@ -572,8 +602,10 @@ public final class NodeHandle {
     ///     - parameter: The key to be used in the parameter server's
     ///     - value: The value to be inserted.
 
-    func set<T>(parameter: String, value: T) {
-        ros.param.set(key: parameter, value: value)
+    public func set<T>(parameter: String, value: T) {
+        if let name = resolveName(name: parameter) {
+            ros.param.set(key: name, value: value)
+        }
     }
 
 
@@ -593,7 +625,7 @@ public final class NodeHandle {
     /// This method connects to the master to register interest in a given topic.
     /// The node will automatically be connected with publishers on this topic.
     /// On each message receipt, the callback is invoked and passed the received message embedded
-    /// in a MessageEvent.
+    /// in a `MessageEvent`.
     ///
     /// - Parameters:
     ///     - topic: Topic to subscribe to

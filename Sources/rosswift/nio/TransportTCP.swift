@@ -79,7 +79,7 @@ final class HeaderMessageCodec: ByteToMessageDecoder {
 
 }
 
-public final class TransportTCP {
+final class TransportTCP {
 
     final class Handler: ChannelInboundHandler {
         public typealias InboundIn = StringStringMap
@@ -99,12 +99,12 @@ public final class TransportTCP {
 
     let bootstrap: ClientBootstrap
 
-    public init() {
+    init() {
         self.bootstrap = ClientBootstrap(group: threadGroup.next())
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
     }
 
-    public func connect(host: String, port: Int) -> EventLoopFuture<Channel> {
+    func connect(host: String, port: Int) -> EventLoopFuture<Channel> {
         return bootstrap.connect(host: host, port: port)
     }
 

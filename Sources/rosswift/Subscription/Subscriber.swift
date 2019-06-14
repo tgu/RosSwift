@@ -8,7 +8,7 @@
 
 /// Manages an subscription callback on a specific topic.
 ///
-/// A Subscriber should always be created through a call to NodeHandle.subscribe(), or copied from one
+/// A Subscriber should always be created through a call to `NodeHandle.subscribe(...)`, or copied from one
 /// that was. Once all copies of a specific
 /// Subscriber go out of scope, the subscription callback associated with that handle will stop
 /// being called.  Once all Subscriber for a given topic go out of scope the topic will be unsubscribed.

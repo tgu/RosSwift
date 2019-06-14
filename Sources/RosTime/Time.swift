@@ -21,6 +21,7 @@ public struct Time: TimeBase {
     public static var gInitialized = false
     public static var simTime = Time()
     public static var simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
+    public static let max = Time(nanosec: UInt64.max)
 
     public init(nanosec: UInt64) {
         nanoseconds = nanosec

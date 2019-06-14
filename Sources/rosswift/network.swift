@@ -52,7 +52,7 @@ import NIO
             }
             var portString = parts[1]
 
-            var segs = portString.components(separatedBy: "/")
+            let segs = portString.components(separatedBy: "/")
             portString = segs[0]
 
             guard let portNr = UInt16(portString) else {
