@@ -11,7 +11,7 @@ let msgDep: [Target.Dependency] = ["StdMsgs"]
 
 let package = Package(
     name: "RosSwift",
-    platforms: [.macOS(.v10_14)],
+    platforms: [.macOS(.v10_14), .iOS(.v10), .tvOS(.v10)],
     products: [
         .library(name: "RosSwift", targets: ["RosSwift"]),
         .executable(name: "publisher", targets: ["publisher"]),
@@ -25,7 +25,7 @@ let package = Package(
         .library(name: "RosTime", targets: ["RosTime"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.2"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.3.0"),
         .package(url: "https://github.com/tgu/BinaryCoder.git", from: "1.1.0"),
         .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.8.1"),
         .package(url: "https://github.com/attaswift/Deque.git", from: "3.1.1"),
@@ -74,5 +74,5 @@ let package = Package(
 
 #if os(Linux)
 package.dependencies.append(
-    .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "1.0.1"))
+    .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "2.2.2"))
 #endif
