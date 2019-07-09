@@ -9,6 +9,7 @@ import Foundation
 import NIO
 import NIOConcurrencyHelpers
 import StdMsgs
+import rpcobject
 
     internal final class ServiceManager {
 //        static let instance = ServiceManager()

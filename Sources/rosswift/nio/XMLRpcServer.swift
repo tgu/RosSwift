@@ -8,6 +8,7 @@
 import Foundation
 import NIO
 import NIOHTTP1
+import rpcobject
 
 extension SocketAddress {
     var host: String {

@@ -7,6 +7,7 @@
 
 import Foundation
 import NIO
+import rpcobject
 
 
 typealias XMLRPCFunc = (XmlRpcValue) -> XmlRpcValue

@@ -1,5 +1,9 @@
 import XCTest
-@testable import msgbuilder
+import Foundation
+@testable import msgbuilderLib
+
+//FIXME:
+let rosDistSource = "/Users/tgu/ros-install-osx/melodic_desktop_full_ws"
 
 class GenTest: XCTestCase {
 
@@ -37,14 +41,15 @@ class GenTest: XCTestCase {
             """
 
 
-        let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log")
-        XCTAssertEqual(spec?.constants.count, 5)
-        let names = spec?.variables.map { $0.name }
-        XCTAssertEqual(names, ["header","level","name","msg","file","function","line","topics"])
-        let types = spec?.variables.map { $0.field_type }
-        XCTAssertEqual(types, ["std_msgs/Header","byte","string","string","string","string","uint32","string[]"])
-
-        print(spec)
+        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log") {
+            XCTAssertEqual(spec.constants.count, 5)
+            let names = spec.variables.map { $0.name }
+            XCTAssertEqual(names, ["header","level","name","msg","file","function","line","topics"])
+            let types = spec.variables.map { $0.field_type }
+            XCTAssertEqual(types, ["std_msgs/Header","byte","string","string","string","string","uint32","string[]"])
+        } else {
+            XCTFail("'rosgraph_msgs/Log' not found")
+        }
     }
 
     func testLoadMsgString2() {
@@ -54,8 +59,8 @@ class GenTest: XCTestCase {
             """
 
         let context = MsgContext()
-        let search_path = ["std_msgs": ["/Users/tgu/ros-install-osx/melodic_desktop_full_ws/src/std_msgs/msg"],
-                           "geometry_msgs": ["/Users/tgu/ros-install-osx/melodic_desktop_full_ws/src/common_msgs/geometry_msgs/msg"]]
+        let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
+                           "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
 
         guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel") else {
             XCTFail()
@@ -64,10 +69,12 @@ class GenTest: XCTestCase {
         XCTAssertEqual(spec.constants.count, 0)
         let names = spec.variables.map { $0.name }
         XCTAssertEqual(names, ["translation","rotation"])
-        let types = spec.variables.map { $0.field_type }
-       XCTAssertEqual(types, ["geometry_msgs/Vector3","geometry_msgs/Quaternion"])
+        let types = spec.variables.map { $0.field_type }.sorted()
+        XCTAssertEqual(types, ["geometry_msgs/Quaternion", "geometry_msgs/Vector3"])
 
-        context.load_msg_depends(spec: spec, search_path: search_path)
+        let specs = context.load_msg_depends(spec: spec, search_path: search_path)
+        let deps = specs.map { $0.full_name }.sorted()
+        XCTAssertEqual(deps,types)
 
         XCTAssertEqual(spec.compute_md5(msg_context: context), "ac9eff44abf714214112b05d54a3cf9b")
 
@@ -75,7 +82,7 @@ class GenTest: XCTestCase {
     }
 
     func testLoadFromFile() {
-        let path = "/Users/tgu/ros-install-osx/melodic_desktop_full_ws/src/common_msgs/geometry_msgs/msg/Accel.msg"
+        let path = "\(rosDistSource)/src/common_msgs/geometry_msgs/msg/Accel.msg"
         let context = MsgContext()
         let spec = context.loadMsg(from: path, full_name: "geometry_msgs/Accel")
         XCTAssertEqual(spec?.constants.count, 0)

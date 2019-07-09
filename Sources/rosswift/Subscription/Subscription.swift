@@ -9,6 +9,7 @@ import Foundation
 import NIOConcurrencyHelpers
 import RosTime
 import StdMsgs
+import rpcobject
 
 protocol TransportUDP {}
 

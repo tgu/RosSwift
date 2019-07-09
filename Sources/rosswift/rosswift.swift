@@ -6,6 +6,7 @@ import NIO
 import NIOConcurrencyHelpers
 import RosTime
 import StdMsgs
+import rpcobject
 
 public typealias StringStringMap = [String: String]
 

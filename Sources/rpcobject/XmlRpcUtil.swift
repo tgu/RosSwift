@@ -7,37 +7,9 @@
 
 import Foundation
 
-extension XMLRPCClient {
+public enum XmlRpcUtil {
 
-    static func parseResponse(xml: String) -> XmlRpcValue? {
-        guard let tagIndex = xml.range(of: methodresponseTag) else {
-            ROS_ERROR("Invalid response - no methodResponse. Response:\n\(xml)")
-            return nil
-        }
-
-        var result = XmlRpcValue()
-
-        var data = xml.suffix(from: tagIndex.upperBound)
-        if XmlRpcUtil.nextTagIs(tag: .params, xml: &data) && XmlRpcUtil.nextTagIs(tag: .param, xml: &data) {
-            if result.fromXML(xml: &data) {
-                return result
-            } else {
-                ROS_ERROR("Invalid response value. Response: \(data)")
-            }
-        } else if XmlRpcUtil.nextTagIs(tag: .fault, xml: &data) {
-            ROS_ERROR("Invalid response value. Response: \(data)")
-        } else {
-            ROS_ERROR("Invalid response - no param or fault tag. Response \(xml)")
-        }
-
-        return nil
-    }
-
-}
-
-enum XmlRpcUtil {
-
-    static func nextTagIs(tag: Tags, xml: inout String.SubSequence) -> Bool {
+    public static func nextTagIs(tag: Tags, xml: inout String.SubSequence) -> Bool {
         if xml.trimmingCharacters(in: .whitespacesAndNewlines).starts(with: tag.rawValue) {
             let tagIndex = xml.range(of: tag.rawValue)!
             xml = xml.suffix(from: tagIndex.upperBound)
@@ -47,7 +19,7 @@ enum XmlRpcUtil {
         return false
     }
 
-    static func getNextTag(xml: inout String.SubSequence) -> String {
+    public static func getNextTag(xml: inout String.SubSequence) -> String {
         guard let open = xml.firstIndex(of: "<"),
             let close = xml.firstIndex(of: ">"), close > open else {
                 return ""
@@ -58,7 +30,7 @@ enum XmlRpcUtil {
         return tag
     }
 
-    static func findTag(tag: Tags, xml: inout String.SubSequence) -> Bool {
+    public static func findTag(tag: Tags, xml: inout String.SubSequence) -> Bool {
         if let range = xml.range(of: tag.rawValue) {
             xml = xml.suffix(from: range.upperBound)
             return true
@@ -66,7 +38,7 @@ enum XmlRpcUtil {
         return false
     }
 
-    static func parseTag(from: Tags, to: Tags, xml: inout String.SubSequence) -> String {
+    public static func parseTag(from: Tags, to: Tags, xml: inout String.SubSequence) -> String {
         var xmlSeq = xml
         guard let fromRange = xmlSeq.range(of: from.rawValue) else {
             return ""
@@ -83,7 +55,7 @@ enum XmlRpcUtil {
 
 extension XmlRpcValue {
 
-    mutating func fromXML(xml: inout String.SubSequence) -> Bool {
+    public mutating func fromXML(xml: inout String.SubSequence) -> Bool {
         invalidate()
 
         var xmlSeq = xml
@@ -132,7 +104,7 @@ extension XmlRpcValue {
         case .array:
             result = arrayFrom(xml: &xmlSeq)
         case .structTag:
-            result = structFrom(xml: &xmlSeq)
+            result = dictionaryFrom(xml: &xmlSeq)
         case .endValue:
             let str = XmlRpcUtil.parseTag(from: .value, to: .endValue, xml: &xml)
             self = .string(str)
@@ -149,7 +121,7 @@ extension XmlRpcValue {
         return result
     }
 
-    mutating func arrayFrom(xml: inout String.SubSequence) -> Bool {
+    public mutating func arrayFrom(xml: inout String.SubSequence) -> Bool {
         if !XmlRpcUtil.nextTagIs(tag: .data, xml: &xml) {
             return false
         }
@@ -166,8 +138,8 @@ extension XmlRpcValue {
         return true
     }
 
-    mutating func structFrom(xml: inout String.SubSequence) -> Bool {
-        var val = ValueStruct()
+    public mutating func dictionaryFrom(xml: inout String.SubSequence) -> Bool {
+        var val = [String: XmlRpcValue]()
         while XmlRpcUtil.nextTagIs(tag: .member, xml: &xml) {
             let name = XmlRpcUtil.parseTag(from: .name, to: .endName, xml: &xml)
             var v = XmlRpcValue()
@@ -179,11 +151,11 @@ extension XmlRpcValue {
             val[name] = v
             _ = XmlRpcUtil.nextTagIs(tag: .endMember, xml: &xml)
         }
-        self = .struct(val)
+        self = .dictionary(val)
         return true
     }
 
-    mutating func timeFrom(xml: String) -> Bool {
+    public mutating func timeFrom(xml: String) -> Bool {
         invalidate()
         guard xml.count == 17 else {
             return false

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import msgbuilderLib
 
 let usage = """
 msgbuilder is a tool for converting ros msg files to swift structs

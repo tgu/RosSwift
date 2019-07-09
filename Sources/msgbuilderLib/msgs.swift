@@ -193,7 +193,7 @@ struct Variable: FullType {
 
 }
 
-struct MsgSpec {
+public struct MsgSpec {
     let variables: [Variable]
     let constants: [Constant]
     let text: String

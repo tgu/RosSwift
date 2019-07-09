@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import RosSwift
+@testable import rpcobject
 
 class XmlRpcValueTest: XCTestCase {
 

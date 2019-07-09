@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import rpcobject
 
 typealias ParameterStorage = [String: XmlRpcValue]
 

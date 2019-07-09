@@ -21,13 +21,9 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
     case double(Double)
     case string(String)
     case datetime(Date)
-    case base64(BinaryData)
-    case array(ValueArray)
-    case `struct`(ValueStruct)
-
-    public typealias BinaryData = [UInt8]
-    public typealias ValueArray = [XmlRpcValue]
-    public typealias ValueStruct = [String: XmlRpcValue]
+    case base64([UInt8])
+    case array([XmlRpcValue])
+    case dictionary([String: XmlRpcValue])
 
     public init() {
         self = .invalid
@@ -63,19 +59,19 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
             self = .float(f)
         case let x as XmlRpcValue:
             self = x
-        case let x as ValueStruct:
-            self = .struct(x)
+        case let x as [String: XmlRpcValue]:
+            self = .dictionary(x)
         case let x as (String, XmlRpcValue):
-            var s = ValueStruct()
+            var s = [String: XmlRpcValue]()
             s[x.0] = x.1
-            self = .struct(s)
+            self = .dictionary(s)
         case let x as [String: Any]:
-            var s = ValueStruct()
+            var s = [String: XmlRpcValue]()
             x.forEach { arg in
                 let (key, v) = arg
                 s[key] = XmlRpcValue(any: v)
             }
-            self = .struct(s)
+            self = .dictionary(s)
         case let a as [Any]:
             self = XmlRpcValue(anyArray: a)
         default:
@@ -92,7 +88,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         switch self {
         case .array(let a):
             return a.count
-        case .`struct`(let s):
+        case .dictionary(let s):
             return s.count
         default:
             return 1
@@ -107,7 +103,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
             return b.count
         case .array(let a):
             return a.count
-        case .`struct`(let s):
+        case .dictionary(let s):
             return s.count
         default:
             return 1
@@ -121,8 +117,8 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         return false
     }
 
-    public var isStruct: Bool {
-        if case .struct(_) = self {
+    public var isDictionary: Bool {
+        if case .dictionary(_) = self {
             return true
         }
         return false
@@ -139,7 +135,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         if case .array(let a) = self {
             return a[i]
         }
-        if case .`struct`(let s) = self {
+        if case .dictionary(let s) = self {
             let elem = Array(s)[i]
             return XmlRpcValue(any: elem)
         }
@@ -177,21 +173,21 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         return ""
     }
 
-    public var dictionary: ValueStruct? {
-        if case .struct(let s) = self {
+    public var dictionary: [String: XmlRpcValue]? {
+        if case .dictionary(let s) = self {
             return s
         }
         return nil
     }
 
-    public var array: ValueArray? {
+    public var array: [XmlRpcValue]? {
         if case .array(let s) = self {
             return s
         }
         return nil
     }
 
-    var int: Int? {
+    public var int: Int? {
         if case .int(let i) = self {
             return i
         }
@@ -205,7 +201,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         return nil
     }
 
-    var date: Date? {
+    public var date: Date? {
         if case .datetime(let d) = self {
             return d
         }
@@ -239,7 +235,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
             return Tags.float32xml(f)
         case .string(let s):
             return Tags.stringXml(s)
-        case .`struct`(let s):
+        case .dictionary(let s):
             return s.xml
         case .array(let a):
             let xml = a.reduce("", { $0 + $1.toXml() })
@@ -250,7 +246,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
     }
 
     @discardableResult
-    func get<T: Numeric>(val: inout [T]) -> Bool {
+    public func get<T: Numeric>(val: inout [T]) -> Bool {
         switch self {
         case .array(let a):
             let vec = a.compactMap { v -> T? in
@@ -268,7 +264,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
     }
 
     @discardableResult
-    func get<T: StringProtocol>(val: inout [T]) -> Bool {
+    public func get<T: StringProtocol>(val: inout [T]) -> Bool {
         switch self {
         case .array(let a):
             let vec = a.compactMap { v -> T? in
@@ -359,7 +355,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         return map
     }
 
-    func get<T>(val: inout T) -> Bool {
+    public func get<T>(val: inout T) -> Bool {
         switch self {
         case .invalid:
             return false
@@ -422,55 +418,50 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
             }
             val = vec as! T
 
-        case .`struct`(let v as T):
+        case .dictionary(let v as T):
             val = v
-        case .`struct`(let v) where T.self == [String: String].self:
+        case .dictionary(let v) where T.self == [String: String].self:
             guard let map = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v) where T.self == [String: Double].self:
+        case .dictionary(let v) where T.self == [String: Double].self:
             guard let map: [String: Double] = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v) where T.self == [String: Float32].self:
+        case .dictionary(let v) where T.self == [String: Float32].self:
             guard let map: [String: Float32] = getMap(v) else {
                 return false
             }
             val = map as! T
-        case .`struct`(let v) where T.self == [String: Int].self:
+        case .dictionary(let v) where T.self == [String: Int].self:
             guard let map: [String: Int] = getMap(v) else {
                 return false
             }
             val = map as! T
 
-        case .`struct`(let v) where T.self == [String: Bool].self:
+        case .dictionary(let v) where T.self == [String: Bool].self:
             guard let map = getBoolMap(v) else {
                 return false
             }
             val = map as! T
 
         default:
-            ROS_ERROR("Could not get \(String(describing: T.self)) value from \(self)")
-            return false
+            fatalError("Could not get \(String(describing: T.self)) value from \(self)")
         }
         return true
     }
 
-    //    func getType() -> Value {
-    //        return value
-    //    }
-    //
     func hasMember(_ name: String) -> Bool {
-        if case .`struct`(let v) = self {
+        if case .dictionary(let v) = self {
             return v.keys.contains(name)
         }
         return false
     }
 
     subscript(_ name: String) -> XmlRpcValue? {
-        if case .`struct`(let v) = self {
+        if case .dictionary(let v) = self {
             return v[name]
         }
         return nil
@@ -499,13 +490,13 @@ extension XmlRpcValue: CustomStringConvertible {
             return String(describing: b)
         case .array(let a):
             return "\(a)"
-        case .`struct`(let s):
+        case .dictionary(let s):
             return "\(s)"
         }
     }
 }
 
-enum Tags: String {
+public enum Tags: String {
     case methodname =       "<methodName>"
     case endMethodname =    "</methodName>"
     case params =           "<params>"

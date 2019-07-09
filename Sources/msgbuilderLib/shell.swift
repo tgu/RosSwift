@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct Shell {
+public struct Shell {
     let rosmsgPath: URL
     let env: [String: String]
 
-    init?() {
+    public init?() {
         env = ProcessInfo.processInfo.environment
 
         guard env["PYTHONPATH"] != nil else {
@@ -33,7 +33,7 @@ struct Shell {
     }
 
 
-    func rosmsg(_ cmd: [String]) -> String {
+    public func rosmsg(_ cmd: [String]) -> String {
         return shell(url: rosmsgPath, args: cmd, environment: env)
     }
 

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import rpcobject
 
 enum XmlRpcServerMethodError: Error {
     case notImplemented

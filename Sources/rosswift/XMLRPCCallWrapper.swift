@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import rpcobject
 
 final class XMLRPCCallWrapper: XmlRpcServerMethod {
     let name: String

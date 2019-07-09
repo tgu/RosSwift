@@ -4,9 +4,9 @@
 import PackageDescription
 
 #if os(Linux)
-let msgDep: [Target.Dependency] = ["OpenSSL","StdMsgs"]
+let msgDep: [Target.Dependency] = ["OpenSSL","StdMsgs","msgbuilderLib"]
 #else
-let msgDep: [Target.Dependency] = ["StdMsgs"]
+let msgDep: [Target.Dependency] = ["StdMsgs","msgbuilderLib"]
 #endif
 
 let package = Package(
@@ -40,7 +40,8 @@ let package = Package(
                                 "NIOHTTP1",
                                 "NIOExtras",
                                 "HeliumLogger",
-                                "Deque"],
+                                "Deque",
+                                "rpcobject"],
                  path: "Sources/rosswift"),
         .target( name: "publisher",
                  dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
@@ -48,6 +49,8 @@ let package = Package(
                  dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
         .target( name: "msgbuilder",
                  dependencies: msgDep),
+        .target( name: "msgbuilderLib",
+                 dependencies: ["StdMsgs"]),
         .target( name: "geometry_msgs",
                  dependencies: ["StdMsgs","RosTime"],
                  path: "Sources/msgs/geometry_msgs"),
@@ -64,8 +67,10 @@ let package = Package(
                  dependencies: ["RosTime"]),
         .target( name: "RosTime",
                  dependencies: ["BinaryCoder"]),
+        .target( name: "rpcobject",
+                 dependencies: []),
         .testTarget( name: "rosswiftTests",
-                     dependencies: ["RosSwift","StdMsgs","BinaryCoder"]),
+                     dependencies: ["RosSwift","StdMsgs","BinaryCoder","rpcobject"]),
         .testTarget( name: "msgBuilderTests",
                      dependencies: ["msgbuilder"]),
         ]

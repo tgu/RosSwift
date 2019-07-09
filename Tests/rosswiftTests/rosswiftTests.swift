@@ -2,6 +2,7 @@ import XCTest
 @testable import RosSwift
 @testable import StdMsgs
 @testable import BinaryCoder
+import rpcobject
 
 import Foundation
 

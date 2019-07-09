@@ -8,7 +8,7 @@
 import XCTest
 @testable import RosSwift
 @testable import RosTime
-
+@testable import rpcobject
 
 class paramTests: XCTestCase {
 

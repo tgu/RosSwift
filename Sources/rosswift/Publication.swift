@@ -8,6 +8,7 @@
 import Foundation
 import NIOConcurrencyHelpers
 import StdMsgs
+import rpcobject
 
 internal final class PeerConnDisconnCallback: CallbackInterface {
 

@@ -8,6 +8,7 @@
 import Foundation
 import NIO
 import NIOConcurrencyHelpers
+import rpcobject
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
@@ -126,6 +127,36 @@ struct XMLRPCClient {
     static let requestEnd = "</methodCall>\r\n"
     static let methodresponseTag = "<methodResponse>"
 }
+
+extension XMLRPCClient {
+
+    static func parseResponse(xml: String) -> XmlRpcValue? {
+        guard let tagIndex = xml.range(of: methodresponseTag) else {
+            ROS_ERROR("Invalid response - no methodResponse. Response:\n\(xml)")
+            return nil
+        }
+
+        var result = XmlRpcValue()
+
+        var data = xml.suffix(from: tagIndex.upperBound)
+        if XmlRpcUtil.nextTagIs(tag: .params, xml: &data) && XmlRpcUtil.nextTagIs(tag: .param, xml: &data) {
+            if result.fromXML(xml: &data) {
+                return result
+            } else {
+                ROS_ERROR("Invalid response value. Response: \(data)")
+            }
+        } else if XmlRpcUtil.nextTagIs(tag: .fault, xml: &data) {
+            ROS_ERROR("Invalid response value. Response: \(data)")
+        } else {
+            ROS_ERROR("Invalid response - no param or fault tag. Response \(xml)")
+        }
+
+        return nil
+    }
+
+}
+
+
 
 final class Master {
 

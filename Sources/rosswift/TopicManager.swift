@@ -8,6 +8,7 @@
 import BinaryCoder
 import Foundation
 import StdMsgs
+import rpcobject
 
 enum InvalidParameterError: Error {
     case invalidParameter(String)
