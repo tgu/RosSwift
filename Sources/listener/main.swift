@@ -55,5 +55,7 @@ let sub = n.subscribe(topic: "/natter") { (msg: geometry_msgs.Point) in
     print("accel: [\(msg)]")
 }
 
+ros.param.set(key: "/talker/parm/D", value: 3.34)
+
 n.spinThread()
 

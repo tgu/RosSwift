@@ -10,10 +10,17 @@ import rpcobject
 
 typealias ParameterStorage = [String: XmlRpcValue]
 
+public typealias SubscribedParameterHandler = (XmlRpcValue) -> Void
+
+struct SubscribedParameter {
+    let name: String
+    let handler: SubscribedParameterHandler?
+}
+
 public final class Param {
 
     let parameterQueue = DispatchQueue(label: "parameterQueue")
-    var gSubscribedParameters = Set<String>()
+    var gSubscribedParameters = [String: SubscribedParameter]()
     var gParameters = ParameterStorage()
     unowned var ros: Ros!
 
@@ -36,7 +43,7 @@ public final class Param {
         }
 
         parameterQueue.sync {
-            gSubscribedParameters.remove(mappedKey)
+            gSubscribedParameters.removeValue(forKey: mappedKey)
             gParameters.removeValue(forKey: mappedKey)
         }
 
@@ -127,9 +134,39 @@ public final class Param {
     /// - Throws:
     ///     - invalidName    if the key is not a valid graph resource name
 
+//
+//    public func getCached<T>(_ key: String, _ value: inout T) -> Bool {
+//        if let v = getImpl(key: key, useCache: true) {
+//            if T.self == XmlRpcValue.self {
+//                value = v as! T
+//                return true
+//            }
+//            if v.get(val: &value) {
+//                return true
+//            }
+//        }
+//        return false
+//    }
 
-    public func getCached<T>(_ key: String, _ value: inout T) -> Bool {
-        if let v = getImpl(key: key, useCache: true) {
+    /// Get a value from the parameter server, with local caching.
+    ///
+    /// This function will cache parameters locally, and subscribe for updates from the
+    /// parameter server. Once the parameter is retrieved for the first time no subsequent
+    /// getCached() calls with the same key will query the master – they will instead look up
+    /// in the local cache.
+    ///
+    /// - Parameters:
+    ///     - key:    The key to be used in the parameter server's dictionary.
+    ///     - value:  Storage for the retrieved value
+    /// - Returns:
+    ///    - true: if the parameter value was retrieved
+    ///    - false: otherwise.
+    /// - Throws:
+    ///     - invalidName    if the key is not a valid graph resource name
+
+
+    public func getCached<T>(_ key: String, _ value: inout T, completion: SubscribedParameterHandler? = nil) -> Bool {
+        if let v = getImpl(key: key, useCache: true, completion: completion) {
             if T.self == XmlRpcValue.self {
                 value = v as! T
                 return true
@@ -140,6 +177,7 @@ public final class Param {
         }
         return false
     }
+
 
     /// Get the list of all the parameters in the server
     ///
@@ -249,7 +287,7 @@ public final class Param {
         }
 
         while nsKey != "" && nsKey != "/" {
-            if gSubscribedParameters.contains(nsKey) {
+            if gSubscribedParameters.keys.contains(nsKey) {
                 // by erasing the key the parameter will be re-queried
                 gParameters.removeValue(forKey: nsKey)
             }
@@ -391,7 +429,7 @@ public final class Param {
             } else {
                 ROS_ERROR("set<T>(key: \(key), value: \(value)) response: \(parameter)")
             }
-            if gSubscribedParameters.contains(mappedKey) {
+            if gSubscribedParameters.keys.contains(mappedKey) {
                 gParameters[mappedKey] = v
             }
             invalidateParentParams(mappedKey)
@@ -400,7 +438,7 @@ public final class Param {
         }
     }
 
-    private func getImpl(key: String, useCache: Bool) -> XmlRpcValue? {
+    private func getImpl(key: String, useCache: Bool, completion: SubscribedParameterHandler? = nil) -> XmlRpcValue? {
         guard var mappedKey = ros.resolve(name: key) else {
             return nil
         }
@@ -417,7 +455,7 @@ public final class Param {
         
         if useCache && ros.isStarted {
             parameterQueue.sync {
-                if gSubscribedParameters.contains(mappedKey) {
+                if gSubscribedParameters.keys.contains(mappedKey) {
                     if let it = gParameters[mappedKey] {
                         doReturn = true
                         if it.valid() {
@@ -428,20 +466,18 @@ public final class Param {
                         }
                     }
                 } else {
-                    if gSubscribedParameters.insert(mappedKey).inserted {
-                        let params = XmlRpcValue(anyArray: [ros.name,
-                                                            ros.xmlrpcManager.serverURI, mappedKey])
+                    let params = XmlRpcValue(anyArray: [ros.name,
+                                                        ros.xmlrpcManager.serverURI, mappedKey])
 
-                        do {
-                            let result = try ros.master.execute(method: "subscribeParam", request: params).wait()
-                            ROS_DEBUG("cached_parameters: Subscribed to parameter [\(mappedKey)]" +
-                                " with result:\n\(result)")
-                        } catch {
-                            ROS_ERROR("cached_parameters: Subscribe to parameter [\(mappedKey)]:" +
-                                " call to the master failed with error \(error)")
-                            gSubscribedParameters.remove(mappedKey)
-                            useCache = false
-                        }
+                    do {
+                        let result = try ros.master.execute(method: "subscribeParam", request: params).wait()
+                        ROS_DEBUG("cached_parameters: Subscribed to parameter [\(mappedKey)]" +
+                            " with result:\n\(result)")
+                        gSubscribedParameters[mappedKey] = SubscribedParameter(name: mappedKey, handler: completion)
+                    } catch {
+                        ROS_ERROR("cached_parameters: Subscribe to parameter [\(mappedKey)]:" +
+                            " call to the master failed with error \(error)")
+                        useCache = false
                     }
                 }
             }
@@ -479,8 +515,9 @@ public final class Param {
         ROS_DEBUG("cached_parameters: Received parameter update for key [\(cleanKey)] new value: [\(value)]")
 
         parameterQueue.async {
-            if self.gSubscribedParameters.contains(cleanKey) {
+            if self.gSubscribedParameters.keys.contains(cleanKey) {
                 self.gParameters[cleanKey] = value
+                self.gSubscribedParameters[cleanKey]?.handler?(value)
             }
             self.invalidateParentParams(cleanKey)
         }

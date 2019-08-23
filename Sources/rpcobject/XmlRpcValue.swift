@@ -448,7 +448,8 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
             val = map as! T
 
         default:
-            fatalError("Could not get \(String(describing: T.self)) value from \(self)")
+            print("Could not get \(String(describing: T.self)) value from \(self)")
+            return false
         }
         return true
     }

@@ -11,7 +11,7 @@ let msgDep: [Target.Dependency] = ["StdMsgs","msgbuilderLib"]
 
 let package = Package(
     name: "RosSwift",
-    platforms: [.macOS(.v10_14), .iOS(.v10), .tvOS(.v10)],
+    platforms: [.macOS(.v10_14), .iOS(.v10), .tvOS(.v10), .watchOS(.v3)],
     products: [
         .library(name: "RosSwift", targets: ["RosSwift"]),
         .executable(name: "publisher", targets: ["publisher"]),

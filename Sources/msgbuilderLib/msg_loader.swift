@@ -149,9 +149,9 @@ public final class MsgContext {
             }
             var depspec: MsgSpec?
             if is_registered(resolved_type) {
-                depspec = get_registered(msg_type: resolved_type)!
+                depspec = get_registered(msg_type: resolved_type)
             } else {
-                depspec = load_msg_by_type(msg_type: resolved_type, search_path: search_path)!
+                depspec = load_msg_by_type(msg_type: resolved_type, search_path: search_path)
             }
 
             if let depspec = depspec {
@@ -159,6 +159,8 @@ public final class MsgContext {
                 if !dependencies.keys.contains(resolved_type) {
                     _ = load_msg_depends(spec: depspec, search_path: search_path)
                 }
+            } else {
+                print("Could not load resolved_type: \(resolved_type)")
             }
 
         }

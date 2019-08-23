@@ -21,16 +21,14 @@ extension Data {
         #endif
 
         var digest = Data(count: Int(length))
-
-        // generate md5 hash
-
-        _ = digest.withUnsafeMutableBytes { (digestBytes: UnsafeMutablePointer<UInt8>) in
-            self.withUnsafeBytes { (messageBytes: UnsafePointer<UInt8>) in
+        
+        _ = digest.withUnsafeMutableBytes { (digestBytes) in
+            self.withUnsafeBytes { (messageBytes) in
                 let length = CC_LONG(self.count)
                 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-                CC_MD5(messageBytes, length, digestBytes)
+                CC_MD5(messageBytes.baseAddress!, length, digestBytes.bindMemory(to: UInt8.self).baseAddress!)
                 #elseif os(Linux)
-                MD5(messageBytes, length, digestBytes)
+                MD5(messageBytes.baseAddress!, length, digestBytes.bindMemory(to: UInt8.self).baseAddress!)
                 #endif
             }
         }

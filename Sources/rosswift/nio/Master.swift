@@ -329,7 +329,7 @@ final class Master {
         let eventLoop = group.next()
         let promise: EventLoopPromise<XmlRpcValue> = eventLoop.makePromise()
 
-//        ROS_DEBUG("trying to connect to \(host):\(port) for method \(method)")
+        ROS_DEBUG("trying to connect to \(host):\(port) for method \(method), request \(request)")
 
         bootstrap?.connect(host: host, port: Int(port)).map { channel -> Void in
             var buffer = channel.allocator.buffer(capacity: xml.utf8.count)
@@ -339,7 +339,7 @@ final class Master {
                 promise.fail(MasterError.writeError("write failed to \(channel.remoteAddress!) [\(error)]"))
             }
 
-            channel.closeFuture.whenComplete { result in
+            channel.closeFuture.whenComplete { res in
                 // FIXME: check result
 
                 let result = self.lock.withLock { () -> XmlRpcValue? in
