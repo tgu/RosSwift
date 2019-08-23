@@ -217,10 +217,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
     }
 
     public func valid() -> Bool {
-        if case .invalid = self {
-            return false
-        }
-        return true
+        return !(self == .invalid)
     }
 
     public func toXml() -> String {
