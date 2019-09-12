@@ -85,6 +85,7 @@ public final class NodeHandle {
     /// ros::start() and sets the reference count to 1.
     ///
     /// - Parameters:
+    ///     - ros:  Parent ros
     ///     - ns:    Namespace for this NodeHandle. This acts in addition to any namespace assigned to
     /// this ROS node. eg. If the node's namespace is "/a" and the namespace passed in here is "b",
     /// all topics/services/parameters will be prefixed with "/a/b/"
@@ -411,7 +412,7 @@ public final class NodeHandle {
     /// - Returns: `true` if the parameter value was retrieved, `false` otherwise
 
     func getCached<T>(parameter: String, value: inout T) -> Bool {
-        return ros.param.getCached(parameter, &value)
+        return ros.param.getCached(parameter, &value) {_ in }
     }
 
     /// Check whether a parameter exists on the parameter server.

@@ -35,7 +35,7 @@ guard let chatter_pub = n.advertise(topic: "/chatter", message: String.self) els
 var rate = Rate(frequency: 10.0)
 
 var j : Int32 = 0
-while Ros.ok {
+while ros.ok {
     chatter_pub.publish(message: "Hello \(j)")
     j += 1
     rate.sleep()

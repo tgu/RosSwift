@@ -57,6 +57,11 @@ class XmlRpcValueTest: XCTestCase {
         XCTAssertEqual([1,20,3], sa)
     }
 
+    func testInvalid() {
+        let x = XmlRpcValue()
+        XCTAssertFalse(x.valid())
+    }
+
     func testStringMap() {
         let map_s = ["a": "apple", "b": "blueberry", "c": "carrot"]
         let a = XmlRpcValue(any: map_s)

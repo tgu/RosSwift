@@ -10,10 +10,10 @@ import Foundation
 public typealias SubscriberStatusCallback = (SingleSubscriberPublisher) -> Void
 
 final class SubscriberCallbacks {
-    var connect: SubscriberStatusCallback?
-    var disconnect: SubscriberStatusCallback?
-    var hasTrackedObject: Bool = false
-    var trackedObject: AnyObject?
+    let connect: SubscriberStatusCallback?
+    let disconnect: SubscriberStatusCallback?
+    let hasTrackedObject: Bool
+    let trackedObject: AnyObject?
 
     init(connect: SubscriberStatusCallback?,
          disconnect: SubscriberStatusCallback?,

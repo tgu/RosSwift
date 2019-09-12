@@ -37,8 +37,4 @@ public final class ServiceServer {
         unadvertise()
     }
 
-    func getService() -> String {
-        return service
-    }
-
 }

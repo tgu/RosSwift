@@ -7,6 +7,7 @@
 
 import Foundation
 import rpcobject
+import NIO
 
 typealias ParameterStorage = [String: XmlRpcValue]
 
@@ -15,6 +16,31 @@ public typealias SubscribedParameterHandler = (XmlRpcValue) -> Void
 struct SubscribedParameter {
     let name: String
     let handler: SubscribedParameterHandler?
+}
+
+@available(swift 5.1)
+@propertyWrapper
+public struct RosParameter<Value> {
+    public let name: String
+    private unowned var ros: Ros!
+    private var cachedValue: Value?
+
+    public init(name: String, ros: Ros) {
+        self.name = name
+        self.ros = ros
+    }
+
+    public var wrappedValue: Value {
+        mutating get {
+            _ = ros.param.get(name, &cachedValue)
+            return cachedValue!
+        }
+
+        set {
+            cachedValue = newValue
+            ros.param.set(key: name, value: newValue)
+        }
+    }
 }
 
 public final class Param {
@@ -75,9 +101,7 @@ public final class Param {
                 value = v as! T
                 return true
             }
-            if v.get(val: &value) {
-                return true
-            }
+            return v.get(val: &value)
         }
         return false
     }
@@ -118,35 +142,6 @@ public final class Param {
         return false
     }
 
-    /// Get a value from the parameter server, with local caching.
-    ///
-    /// This function will cache parameters locally, and subscribe for updates from the
-    /// parameter server. Once the parameter is retrieved for the first time no subsequent
-    /// getCached() calls with the same key will query the master – they will instead look up
-    /// in the local cache.
-    ///
-    /// - Parameters:
-    ///     - key:    The key to be used in the parameter server's dictionary.
-    ///     - value:  Storage for the retrieved value
-    /// - Returns:
-    ///    - true: if the parameter value was retrieved
-    ///    - false: otherwise.
-    /// - Throws:
-    ///     - invalidName    if the key is not a valid graph resource name
-
-//
-//    public func getCached<T>(_ key: String, _ value: inout T) -> Bool {
-//        if let v = getImpl(key: key, useCache: true) {
-//            if T.self == XmlRpcValue.self {
-//                value = v as! T
-//                return true
-//            }
-//            if v.get(val: &value) {
-//                return true
-//            }
-//        }
-//        return false
-//    }
 
     /// Get a value from the parameter server, with local caching.
     ///
@@ -171,9 +166,7 @@ public final class Param {
                 value = v as! T
                 return true
             }
-            if v.get(val: &value) {
-                return true
-            }
+            return v.get(val: &value)
         }
         return false
     }
@@ -205,7 +198,24 @@ public final class Param {
             ROS_ERROR("error during getParamNames \(error)")
         }
         return false
+    }
 
+    public func getParameterNames() -> EventLoopFuture<[String]> {
+        let params = XmlRpcValue(str: ros.name)
+        return ros.master.execute(method: "getParamNames", request: params).map { (res) -> [String] in
+            if !res.isArray {
+                return []
+            }
+
+            var ret = [String]()
+            for i in 0..<res.size() {
+                guard res[i].isString else {
+                    return []
+                }
+                ret.append(res[i].string)
+            }
+            return ret
+        }
     }
 
     /// Check whether a parameter exists on the parameter server.

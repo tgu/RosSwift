@@ -71,10 +71,8 @@ final class InboundConnection {
 
     func write(buffer: [UInt8]) -> EventLoopFuture<Void> {
         guard let channel = channel else {
-            ROS_ERROR("connection dropped")
-            let promise: EventLoopPromise<Void> = threadGroup.next().makePromise()
-            promise.fail(ConnectionError.connectionDropped)
-            return promise.futureResult
+            ROS_ERROR("no channel, connection dropped")
+            return threadGroup.next().makeFailedFuture(ConnectionError.connectionDropped)
         }
         var buf = channel.allocator.buffer(capacity: buffer.count)
         buf.writeBytes(buffer)
@@ -89,6 +87,7 @@ final class InboundConnection {
 
     func drop(reason: DropReason) {
         if dropped.compareAndExchange(expected: false, desired: true) {
+            // capture the address before closing the channel
             let remote = self.remoteAddress
             ROS_DEBUG("Connection::drop - \(reason)")
             channel?.close().whenComplete { res in
@@ -134,13 +133,6 @@ final class InboundConnection {
         func channelRead(context: ChannelHandlerContext, data: NIOAny) {
 
             var buffer = self.unwrapInboundIn(data)
-//            guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
-//                fatalError()
-//            }
-//            if len > buffer.readableBytes {
-//                ROS_ERROR("Received length \(buffer.readableBytes) < \(len) [\(self.parent?.remoteAddress ?? "uknown host")]")
-//                _ = context.close()
-//            }
 
             guard let p = parent, let link = parent?.link else {
                 return

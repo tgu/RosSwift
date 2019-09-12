@@ -10,10 +10,13 @@ import XCTest
 @testable import RosTime
 @testable import rpcobject
 
+let ros = Ros(argv: &CommandLine.arguments, name: "paramTests")
+
 class paramTests: XCTestCase {
 
     static var allTests = [
         ("testAllParamTypes",testAllParamTypes),
+        ("testPropertyWrapper",testPropertyWrapper),
         ("testSetThenGetString",testSetThenGetString),
         ("testSetThenGetStringCached",testSetThenGetStringCached),
         ("testSetThenGetNamespaceCached", testSetThenGetNamespaceCached),
@@ -47,17 +50,17 @@ class paramTests: XCTestCase {
     ]
 
 
-    var ros: Ros!
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
 
-        ros = Ros(argv: &CommandLine.arguments, name: "paramTests")
+
         ros.param.set(key: "string", value: "test")
         ros.param.set(key: "int", value: Int(10))
         ros.param.set(key: "double", value: Double(10.5))
         ros.param.set(key: "bool", value: false)
         _ = ros.param.del(key: "/test_set_param_setThenGetStringCached")
+        _ = ros.param.del(key: "/test_create_parameter")
 
     }
 
@@ -83,6 +86,34 @@ class paramTests: XCTestCase {
         XCTAssert( ros.param.get( "bool", &bool_param ) )
         XCTAssertFalse( bool_param )
     }
+
+
+    @RosParameter(name: "string", ros: ros) var string_param: String
+    @RosParameter(name: "string", ros: ros) var string_param2: String
+    @RosParameter(name: "test_create_parameter", ros: ros) var param3: String
+
+    func testPropertyWrapper() {
+        XCTAssertEqual( string_param, "test" )
+        XCTAssertEqual( string_param2,"test" )
+
+        string_param = "testing"
+        XCTAssertEqual( string_param, "testing" )
+        XCTAssertEqual( string_param2, "testing" )
+
+        XCTAssertFalse( ros.param.has(key: "test_create_parameter"))
+        param3 = "param"
+        XCTAssert( ros.param.has(key: "test_create_parameter"))
+        XCTAssertEqual( param3, "param" )
+
+        var param = ""
+        XCTAssert( ros.param.get( "test_create_parameter", &param ) )
+        XCTAssertEqual( "param", param )
+
+        ros.param.set(key: "test_create_parameter", value: "new value")
+        XCTAssertEqual( param3, "new value" )
+    }
+
+
 
     func testSetThenGetString() {
         ros.param.set( key: "test_set_param", value: "asdf" )
@@ -575,7 +606,11 @@ class paramTests: XCTestCase {
 
         XCTAssert(b)
         XCTAssertLessThan(10, test_params.count)
-    }
+
+        let h = try! ros.param.getParameterNames().wait()
+        XCTAssertLessThan(10, h.count)
+        print(h)
+}
 
 
 }
