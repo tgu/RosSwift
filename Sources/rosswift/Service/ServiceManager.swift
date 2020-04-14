@@ -14,7 +14,7 @@ import rpcobject
     internal final class ServiceManager {
 //        static let instance = ServiceManager()
 
-        var isShuttingDown = Atomic<Bool>(value: false)
+        var isShuttingDown = NIOAtomic.makeAtomic(value: false)
         var servicePublications = SynchronizedArray<ServiceProtocol>()
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 

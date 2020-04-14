@@ -11,7 +11,7 @@ import NIOConcurrencyHelpers
 public final class ServiceServer {
     public let service: String
     unowned var node: NodeHandle
-    var isUnadvertised = Atomic<Bool>(value: false)
+    var isUnadvertised = NIOAtomic.makeAtomic(value: false)
 
     internal init(service: String, node: NodeHandle) {
         self.service = service

@@ -56,13 +56,13 @@ final class Publication {
     let datatype: String
     let md5sum: String
     let messageDefinition: String
-    var sequenceNr = Atomic<UInt32>(value: 0)
+    var sequenceNr = NIOAtomic.makeAtomic(value: UInt32(0))
     var intraprocessSubscriberCount = 0
     var pubCallbacks = [SubscriberCallbacks]()
     var subscriberLinks = [SubscriberLink]()
     let latch: Bool
     let hasHeader: Bool
-    var isDropped = Atomic<Bool>(value: false)
+    var isDropped = NIOAtomic.makeAtomic(value: false)
     var lastMessage: SerializedMessage?
 
     let callbacksQueue = DispatchQueue(label: "callbacksQueue")

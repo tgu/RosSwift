@@ -1,4 +1,4 @@
-// swift-tools-version:5.0
+// swift-tools-version:5.1
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -25,11 +25,11 @@ let package = Package(
         .library(name: "RosTime", targets: ["RosTime"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.3.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.16.0"),
         .package(url: "https://github.com/tgu/BinaryCoder.git", from: "1.1.0"),
-        .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.8.1"),
+        .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.0"),
         .package(url: "https://github.com/attaswift/Deque.git", from: "3.1.1"),
-        .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.1.0"),
+        .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.4.0"),
     ],
     targets: [
         .target( name: "RosSwift",

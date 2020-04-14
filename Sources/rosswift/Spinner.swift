@@ -60,7 +60,7 @@ final class AsyncSpinnner {
     private var threads = [Thread]()
     private let threadCount: Int
     private let callbackQueue: CallbackQueue
-    private var running = Atomic<Bool>(value: false)
+    private var running = NIOAtomic.makeAtomic(value: false)
     private let ros: Ros
 
     init(ros: Ros, threadCount: Int, queue: CallbackQueue? = nil) {

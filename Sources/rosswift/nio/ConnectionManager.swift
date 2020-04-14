@@ -160,7 +160,7 @@ internal final class ConnectionManager {
 
     // The connection ID counter, used to assign unique ID to each inbound or
     // outbound connection.  Access via getNewConnectionID()
-    private var connectionIdCounter = Atomic<Int>(value: 0)
+    private var connectionIdCounter = NIOAtomic.makeAtomic(value: 0)
 
     func getNewConnectionID() -> Int {
         return connectionIdCounter.add(1)

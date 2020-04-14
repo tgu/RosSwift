@@ -18,7 +18,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
     var timers: [TimerHandle: TimerInfo] = [:]
     let timersMutex = DispatchQueue(label: "TimerManager", attributes: .concurrent)
     let timersCond = NSCondition()
-    var newTimer = Atomic<Bool>(value: false)
+    var newTimer = NIOAtomic.makeAtomic(value: false)
     let waitingMutex = DispatchQueue(label: "waitingMutex")
     var waiting = Set<TimerHandle>()
 
@@ -256,7 +256,7 @@ extension TimerManager {
         var removed: Bool = false
         let trackedObject: AnyObject?
         var hasTrackedObject: Bool { return trackedObject != nil }
-        var waitingCallbacks = Atomic<UInt32>(value: 0)
+        var waitingCallbacks = NIOAtomic.makeAtomic(value: 0)
 
         let oneshot: Bool
 

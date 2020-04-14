@@ -24,7 +24,7 @@ enum TimerHandle: Equatable, Hashable {
         }
     }
 
-    static let id = Atomic<UInt32>(value: 0)
+    static let id = NIOAtomic.makeAtomic(value: UInt32(0))
 
     static func getNextHandler() -> TimerHandle {
         return TimerHandle.some(TimerHandle.id.add(1))

@@ -18,7 +18,7 @@ final class IntraProcessSubscriberLink: SubscriberLink {
     let transportInfo = "INTRAPROCESS"
 
     weak var subscriber: IntraProcessPublisherLink?
-    var isDropped = Atomic<Bool>(value: false)
+    var isDropped = NIOAtomic.makeAtomic(value: false)
 
     init(parent: Publication) {
         self.parent = parent

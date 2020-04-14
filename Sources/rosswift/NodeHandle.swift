@@ -137,7 +137,9 @@ public final class NodeHandle {
     }
 
     deinit {
-        destruct()
+        if ros.nodeReferenceCount.sub(1) == 1 && gNodeStartedByNodeHandle {
+            ros.shutdown()
+        }
     }
 
     private func construct(ns: String) {
@@ -676,12 +678,6 @@ public final class NodeHandle {
 
 
     // MARK: private functions
-
-    private func destruct() {
-        if ros.nodeReferenceCount.sub(1) == 1 && gNodeStartedByNodeHandle {
-            ros.shutdown()
-        }
-    }
 
     private func initRemappings(remappings: StringStringMap) {
         remappings.forEach {

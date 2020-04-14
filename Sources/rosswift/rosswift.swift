@@ -61,7 +61,7 @@ public final class Ros: Hashable {
     var rosoutAppender: ROSOutAppender?
     var fileLog: FileLog?
     var isShutdownRequested = false
-    var isShuttingDown = Atomic<Bool>(value: false)
+    var isShuttingDown = NIOAtomic.makeAtomic(value: false)
     public private(set) var isRunning = false
     var isStarted = false
     let logg = HeliumLogger(.debug)
@@ -79,7 +79,7 @@ public final class Ros: Hashable {
     // has currently no function
     var useKeepAlive: Bool = true
 
-    internal var nodeReferenceCount = Atomic<UInt>(value: 0)
+    internal var nodeReferenceCount = NIOAtomic.makeAtomic(value: UInt(0))
     internal var globalRemappings = StringStringMap()
     internal var globalUnresolvedRemappings = StringStringMap()
 

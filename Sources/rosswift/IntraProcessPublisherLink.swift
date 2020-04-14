@@ -21,7 +21,7 @@ final class IntraProcessPublisherLink: PublisherLink {
     var md5sum: String = ""
 
     var publisher: IntraProcessSubscriberLink?
-    let isDropped = Atomic<Bool>(value: false)
+    let isDropped = NIOAtomic.makeAtomic(value: false)
 
     init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
         self.parent = parent

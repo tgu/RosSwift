@@ -45,8 +45,8 @@ internal final class Subscription {
     var md5sum: String
     let name: String
     var callbacks = [CallBackInfo]()
-    let dropped = Atomic<Bool>(value: false)
-    let isShuttingDown = Atomic<Bool>(value: false)
+    let dropped = NIOAtomic.makeAtomic(value: false)
+    let isShuttingDown = NIOAtomic.makeAtomic(value: false)
     let publisherLinks = SynchronizedArray<PublisherLink>()
     let transportHints: TransportHints
     let statistics: StatisticLogger?
