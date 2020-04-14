@@ -49,16 +49,17 @@ let package = Package(
                  dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),
         .target( name: "msgbuilder",
                  dependencies: msgDep),
-        .target( name: "msgbuilderLib",
-                 dependencies: ["StdMsgs"]),
         .target( name: "geometry_msgs",
                  dependencies: ["StdMsgs","RosTime"],
                  path: "Sources/msgs/geometry_msgs"),
         .target( name: "sensor_msgs",
                  dependencies: ["StdMsgs","geometry_msgs","RosTime"],
                  path: "Sources/msgs/sensor_msgs"),
+        .target( name: "actionlib_msgs",
+                 dependencies: ["StdMsgs","RosTime"],
+                 path: "Sources/msgs/actionlib_msgs"),
         .target( name: "nav_msgs",
-                 dependencies: ["StdMsgs","geometry_msgs","RosTime"],
+                 dependencies: ["StdMsgs","actionlib_msgs","geometry_msgs","RosTime"],
                  path: "Sources/msgs/nav_msgs"),
         .target( name: "diagnostic_msgs",
                  dependencies: ["StdMsgs","RosTime"],
@@ -80,4 +81,11 @@ let package = Package(
 #if os(Linux)
 package.dependencies.append(
     .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "2.2.2"))
+package.targets.append(
+    .target( name: "msgbuilderLib",
+             dependencies: ["StdMsgs","OpenSSL"]))
+#else
+package.targets.append(
+    .target( name: "msgbuilderLib",
+             dependencies: ["StdMsgs"]))
 #endif

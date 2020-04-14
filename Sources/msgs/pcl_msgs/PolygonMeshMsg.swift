@@ -20,18 +20,18 @@ Vertices[] polygons
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var cloud: sensor_msgs.PointCloud2
 public var polygons: [Vertices]
 
-public init(header: std_msgs.header, cloud: sensor_msgs.PointCloud2, polygons: [Vertices]) {
+public init(header: std_msgs.Header, cloud: sensor_msgs.PointCloud2, polygons: [Vertices]) {
 self.header = header
 self.cloud = cloud
 self.polygons = polygons
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 cloud = sensor_msgs.PointCloud2()
 polygons = [Vertices]()
 }

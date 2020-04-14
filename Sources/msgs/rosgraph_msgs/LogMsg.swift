@@ -42,7 +42,7 @@ extension rosgraph_msgs {
 		public static let WARN: Int8 = 4
 		public static let ERROR: Int8 = 8
 		public static let FATAL: Int8 = 16
-		public var header: std_msgs.header
+		public var header: std_msgs.Header
 		public var level: Int8
 		public var name: String
 		public var msg: String
@@ -51,7 +51,7 @@ extension rosgraph_msgs {
 		public var line: UInt32
 		public var topics: [String]
 
-		public init(header: std_msgs.header, level: Int8, name: String, msg: String, file: String, function: String, line: UInt32, topics: [String]) {
+		public init(header: std_msgs.Header, level: Int8, name: String, msg: String, file: String, function: String, line: UInt32, topics: [String]) {
 			self.header = header
 			self.level = level
 			self.name = name
@@ -63,7 +63,7 @@ extension rosgraph_msgs {
 		}
 
 		public init() {
-			header = std_msgs.header()
+			header = std_msgs.Header()
 			level = Int8()
 			name = String()
 			msg = String()

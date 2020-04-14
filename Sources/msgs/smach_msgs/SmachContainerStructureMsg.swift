@@ -32,7 +32,7 @@ string[] container_outcomes
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var path: String
 public var children: [String]
 public var internal_outcomes: [String]
@@ -40,7 +40,7 @@ public var outcomes_from: [String]
 public var outcomes_to: [String]
 public var container_outcomes: [String]
 
-public init(header: std_msgs.header, path: String, children: [String], internal_outcomes: [String], outcomes_from: [String], outcomes_to: [String], container_outcomes: [String]) {
+public init(header: std_msgs.Header, path: String, children: [String], internal_outcomes: [String], outcomes_from: [String], outcomes_to: [String], container_outcomes: [String]) {
 self.header = header
 self.path = path
 self.children = children
@@ -51,7 +51,7 @@ self.container_outcomes = container_outcomes
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 path = String()
 children = [String]()
 internal_outcomes = [String]()

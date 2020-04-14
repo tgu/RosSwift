@@ -18,14 +18,14 @@ int8[] data
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var x: Int32
 public var y: Int32
 public var width: UInt32
 public var height: UInt32
 public var data: [Int8]
 
-public init(header: std_msgs.header, x: Int32, y: Int32, width: UInt32, height: UInt32, data: [Int8]) {
+public init(header: std_msgs.Header, x: Int32, y: Int32, width: UInt32, height: UInt32, data: [Int8]) {
 self.header = header
 self.x = x
 self.y = y
@@ -35,7 +35,7 @@ self.data = data
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 x = Int32()
 y = Int32()
 width = UInt32()

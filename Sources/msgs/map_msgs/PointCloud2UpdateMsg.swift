@@ -19,11 +19,11 @@ public static var hasHeader = false
 
 public var ADD=0: UInt32
 public var DELETE=1: UInt32
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var type: UInt32
 public var points: sensor_msgs.PointCloud2
 
-public init(ADD=0: UInt32, DELETE=1: UInt32, header: std_msgs.header, type: UInt32, points: sensor_msgs.PointCloud2) {
+public init(ADD=0: UInt32, DELETE=1: UInt32, header: std_msgs.Header, type: UInt32, points: sensor_msgs.PointCloud2) {
 self.ADD=0 = ADD=0
 self.DELETE=1 = DELETE=1
 self.header = header
@@ -34,7 +34,7 @@ self.points = points
 public init() {
     ADD=0 = UInt32()
 DELETE=1 = UInt32()
-header = std_msgs.header()
+header = std_msgs.Header()
 type = UInt32()
 points = sensor_msgs.PointCloud2()
 }

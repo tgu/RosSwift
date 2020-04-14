@@ -88,13 +88,13 @@ geometry_msgs/Wrench[] wrench
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var name: [String]
 public var pose: geometry_msgs.[Pose]
 public var twist: geometry_msgs.[Twist]
 public var wrench: geometry_msgs.[Wrench]
 
-public init(header: std_msgs.header, name: [String], pose: geometry_msgs.[Pose], twist: geometry_msgs.[Twist], wrench: geometry_msgs.[Wrench]) {
+public init(header: std_msgs.Header, name: [String], pose: geometry_msgs.[Pose], twist: geometry_msgs.[Twist], wrench: geometry_msgs.[Wrench]) {
 self.header = header
 self.name = name
 self.pose = pose
@@ -103,7 +103,7 @@ self.wrench = wrench
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 name = [String]()
 pose = geometry_msgs.[Pose]()
 twist = geometry_msgs.[Twist]()

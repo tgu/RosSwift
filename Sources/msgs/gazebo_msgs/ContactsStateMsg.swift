@@ -14,16 +14,16 @@ gazebo_msgs/ContactState[] states            # array of geom pairs in contact
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var states: gazebo_msgs.[ContactState]
 
-public init(header: std_msgs.header, states: gazebo_msgs.[ContactState]) {
+public init(header: std_msgs.Header, states: gazebo_msgs.[ContactState]) {
 self.header = header
 self.states = states
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 states = gazebo_msgs.[ContactState]()
 }
 

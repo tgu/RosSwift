@@ -17,18 +17,18 @@ FibonacciGoal goal
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var goal_id: actionlib_msgs.GoalID
 public var goal: FibonacciGoal
 
-public init(header: std_msgs.header, goal_id: actionlib_msgs.GoalID, goal: FibonacciGoal) {
+public init(header: std_msgs.Header, goal_id: actionlib_msgs.GoalID, goal: FibonacciGoal) {
 self.header = header
 self.goal_id = goal_id
 self.goal = goal
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 goal_id = actionlib_msgs.GoalID()
 goal = FibonacciGoal()
 }

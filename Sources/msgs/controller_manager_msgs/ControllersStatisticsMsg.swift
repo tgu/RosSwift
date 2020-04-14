@@ -15,16 +15,16 @@ controller_manager_msgs/ControllerStatistics[] controller
 """
 public static var hasHeader = false
 
-public var header: std_msgs.std_msgs.header
+public var header: std_msgs.std_msgs.Header
 public var controller: controller_manager_msgs.[ControllerStatistics]
 
-public init(header: std_msgs.std_msgs.header, controller: controller_manager_msgs.[ControllerStatistics]) {
+public init(header: std_msgs.std_msgs.Header, controller: controller_manager_msgs.[ControllerStatistics]) {
 self.header = header
 self.controller = controller
 }
 
 public init() {
-    header = std_msgs.std_msgs.header()
+    header = std_msgs.std_msgs.Header()
 controller = controller_manager_msgs.[ControllerStatistics]()
 }
 

@@ -17,12 +17,12 @@ float64 error
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var position: Float64
 public var velocity: Float64
 public var error: Float64
 
-public init(header: std_msgs.header, position: Float64, velocity: Float64, error: Float64) {
+public init(header: std_msgs.Header, position: Float64, velocity: Float64, error: Float64) {
 self.header = header
 self.position = position
 self.velocity = velocity
@@ -30,7 +30,7 @@ self.error = error
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 position = Float64()
 velocity = Float64()
 error = Float64()

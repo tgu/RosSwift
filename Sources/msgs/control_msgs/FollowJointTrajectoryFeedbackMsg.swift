@@ -18,13 +18,13 @@ trajectory_msgs/JointTrajectoryPoint error
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var joint_names: [String]
 public var desired: trajectory_msgs.JointTrajectoryPoint
 public var actual: trajectory_msgs.JointTrajectoryPoint
 public var error: trajectory_msgs.JointTrajectoryPoint
 
-public init(header: std_msgs.header, joint_names: [String], desired: trajectory_msgs.JointTrajectoryPoint, actual: trajectory_msgs.JointTrajectoryPoint, error: trajectory_msgs.JointTrajectoryPoint) {
+public init(header: std_msgs.Header, joint_names: [String], desired: trajectory_msgs.JointTrajectoryPoint, actual: trajectory_msgs.JointTrajectoryPoint, error: trajectory_msgs.JointTrajectoryPoint) {
 self.header = header
 self.joint_names = joint_names
 self.desired = desired
@@ -33,7 +33,7 @@ self.error = error
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 joint_names = [String]()
 desired = trajectory_msgs.JointTrajectoryPoint()
 actual = trajectory_msgs.JointTrajectoryPoint()

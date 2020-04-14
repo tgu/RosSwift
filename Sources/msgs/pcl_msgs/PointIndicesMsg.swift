@@ -14,16 +14,16 @@ int32[] indices
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var indices: [Int32]
 
-public init(header: std_msgs.header, indices: [Int32]) {
+public init(header: std_msgs.Header, indices: [Int32]) {
 self.header = header
 self.indices = indices
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 indices = [Int32]()
 }
 

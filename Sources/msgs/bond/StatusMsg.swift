@@ -22,14 +22,14 @@ float32 heartbeat_period
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var id: String
 public var instance_id: String
 public var active: Bool
 public var heartbeat_timeout: Float32
 public var heartbeat_period: Float32
 
-public init(header: std_msgs.header, id: String, instance_id: String, active: Bool, heartbeat_timeout: Float32, heartbeat_period: Float32) {
+public init(header: std_msgs.Header, id: String, instance_id: String, active: Bool, heartbeat_timeout: Float32, heartbeat_period: Float32) {
 self.header = header
 self.id = id
 self.instance_id = instance_id
@@ -39,7 +39,7 @@ self.heartbeat_period = heartbeat_period
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 id = String()
 instance_id = String()
 active = Bool()

@@ -36,14 +36,14 @@ string info
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var path: String
 public var initial_states: [String]
 public var active_states: [String]
 public var local_data: String
 public var info: String
 
-public init(header: std_msgs.header, path: String, initial_states: [String], active_states: [String], local_data: String, info: String) {
+public init(header: std_msgs.Header, path: String, initial_states: [String], active_states: [String], local_data: String, info: String) {
 self.header = header
 self.path = path
 self.initial_states = initial_states
@@ -53,7 +53,7 @@ self.info = info
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 path = String()
 initial_states = [String]()
 active_states = [String]()
