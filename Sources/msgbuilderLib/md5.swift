@@ -28,7 +28,7 @@ extension Data {
                 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
                 CC_MD5(messageBytes.baseAddress!, length, digestBytes.bindMemory(to: UInt8.self).baseAddress!)
                 #elseif os(Linux)
-                MD5(messageBytes.baseAddress!, length, digestBytes.bindMemory(to: UInt8.self).baseAddress!)
+                MD5(messageBytes.baseAddress?.assumingMemoryBound(to: UInt8.self), length, digestBytes.bindMemory(to: UInt8.self).baseAddress!)
                 #endif
             }
         }

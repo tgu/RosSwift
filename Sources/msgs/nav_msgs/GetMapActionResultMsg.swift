@@ -17,18 +17,18 @@ GetMapResult result
 """
 public static var hasHeader = false
 
-public var header: std_msgs.header
+public var header: std_msgs.Header
 public var status: actionlib_msgs.GoalStatus
 public var result: GetMapResult
 
-public init(header: std_msgs.header, status: actionlib_msgs.GoalStatus, result: GetMapResult) {
+public init(header: std_msgs.Header, status: actionlib_msgs.GoalStatus, result: GetMapResult) {
 self.header = header
 self.status = status
 self.result = result
 }
 
 public init() {
-    header = std_msgs.header()
+    header = std_msgs.Header()
 status = actionlib_msgs.GoalStatus()
 result = GetMapResult()
 }
