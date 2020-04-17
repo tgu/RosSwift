@@ -30,15 +30,16 @@ let package = Package(
         .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.0"),
         .package(url: "https://github.com/attaswift/Deque.git", from: "3.1.1"),
         .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.4.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.2.0"),
     ],
     targets: [
         .target( name: "RosSwift",
                  dependencies: ["StdMsgs",
                                 "RosTime",
                                 "BinaryCoder",
-                                "NIO",
-                                "NIOHTTP1",
-                                "NIOExtras",
+                                .product(name: "NIO", package: "swift-nio"),
+                                .product(name: "NIOHTTP1", package: "swift-nio"),
+                                .product(name: "NIOExtras", package: "swift-nio-extras"),
                                 "HeliumLogger",
                                 "Deque",
                                 "rpcobject"],
@@ -74,7 +75,22 @@ let package = Package(
                      dependencies: ["RosSwift","StdMsgs","BinaryCoder","rpcobject"]),
         .testTarget( name: "msgBuilderTests",
                      dependencies: ["msgbuilder"]),
-        ]
+
+        .target(name: "roscore", dependencies: [
+            "rosmaster",
+            .product(name: "Logging", package: "swift-log")]),
+        .target(name: "rosmaster", dependencies: [
+            "rpcclient",
+            .product(name: "NIOHTTP1", package: "swift-nio"),
+            .product(name: "Logging", package: "swift-log")]),
+        .target(name: "rpcclient", dependencies: [
+            .product(name: "NIO", package: "swift-nio"),
+            .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
+            .target(name: "rpcobject")]),
+        .target(name: "rosparam", dependencies: ["rpcclient"]),
+        .testTarget(name: "rosmasterTests", dependencies: ["rosmaster"]),
+
+    ]
 )
 
 
