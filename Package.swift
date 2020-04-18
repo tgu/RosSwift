@@ -86,6 +86,7 @@ let package = Package(
         .target(name: "rpcclient", dependencies: [
             .product(name: "NIO", package: "swift-nio"),
             .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
+            .product(name: "Logging", package: "swift-log"),
             .target(name: "rpcobject")]),
         .target(name: "rosparam", dependencies: ["rpcclient"]),
         .testTarget(name: "rosmasterTests", dependencies: ["rosmaster"]),
