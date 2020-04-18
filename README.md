@@ -7,13 +7,17 @@ This is the first version and there are some unimplemented features, basic publi
 
 ## Compability
 
-Minimum SDK10.12 on OSX
+Minimum SDK10.14 on OSX, also works on iOS 
 
 Swift 5 on Raspberry, https://swift-arm.com/2019/01/07/official-swift-arm-community-releases/
 
 ## Messages
 
 The package include ``msgbuilder`` that uses calls to ``rosmsg`` to find all defined messages and generate Swift code.
+
+## Master
+
+The package include ``roscore``  that is a swift implementation of the ros master
 
 ## Example
 
