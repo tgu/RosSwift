@@ -8,6 +8,8 @@
 import XCTest
 import NIO
 @testable import RosSwift
+@testable import RosTime
+import BinaryCoder
 
 private let standardDataString = "abcde"
 
@@ -135,6 +137,21 @@ class DecoderTest: XCTestCase {
         XCTAssertTrue(try self.channel.writeInbound(buffer).isEmpty)
         XCTAssertTrue(try self.channel.finish().isClean)
     }
+
+    func testTime() throws {
+        let time = Time(sec: 1, nsec: 2)
+        let data = try BinaryEncoder.encode(time)
+        let t2 = try BinaryDecoder.decode(Time.self, data: data)
+        XCTAssertEqual(time, t2)
+    }
+
+    func testTime2() throws {
+        let time = Time(sec: 91223, nsec: UInt32.max)
+        let data = try BinaryEncoder.encode(time)
+        let t2 = try BinaryDecoder.decode(Time.self, data: data)
+        XCTAssertEqual(time, t2)
+    }
+
 
 
 

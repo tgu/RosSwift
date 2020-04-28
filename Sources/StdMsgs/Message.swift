@@ -16,6 +16,18 @@ public protocol Message: BinaryCodable {
     static var definition: String { get }
 }
 
+public protocol MessageWithHeader: Message {
+    var header: std_msgs.Header { get set }
+}
+
+
+
+extension Message {
+    public var hasMessageHeader: Bool {
+        return Self.hasHeader
+    }
+}
+
 
 // Builtin native types
 

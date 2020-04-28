@@ -32,6 +32,17 @@ public extension TimeBase {
         return UInt32(nanoseconds % 1_000_000_000)
     }
 
+    func binaryEncode(to encoder: BinaryEncoder) throws {
+        sec.binaryEncode(to: encoder)
+        nsec.binaryEncode(to: encoder)
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        let s = try decoder.decode(UInt32.self)
+        let n = try decoder.decode(UInt32.self)
+        self = .init(sec: s, nsec: n)
+    }
+
     init() {
         self.init(nanosec: 0)
     }

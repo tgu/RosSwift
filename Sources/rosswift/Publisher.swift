@@ -57,16 +57,12 @@ public final class SpecializedPublisher<M: Message>: Publisher {
             fatalError("Trying to publish message of type [\(datatype)/\(md5sum)]" +
                 " on a publisher with type [\(self.datatype)/\(self.md5sum)]")
         }
-
-        let msg = SerializedMessage(msg: message)
-        topicManager.publish(topic: topic, serMsg: msg)
+        topicManager.publish(topic: topic, message: message)
     }
 
-    func incrementSequence() {
-        if isValid {
-            topicManager.incrementSequence(topic: topic)
-        }
-    }
+//    func incrementSequence() -> UInt32 {
+//        return isValid ? topicManager.incrementSequence(topic: topic) : 0
+//    }
 
     func shutdown() {
         unadvertise()

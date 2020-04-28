@@ -9,6 +9,7 @@ import BinaryCoder
 import Foundation
 import StdMsgs
 import rpcobject
+import RosTime
 
 enum InvalidParameterError: Error {
     case invalidParameter(String)
@@ -568,30 +569,35 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
             return true
         }
 
-        func publish(topic: String, serMsg: SerializedMessage) {
+        func publish(topic: String, message: Message) {
             if shuttingDown {
                 return
             }
 
             advertisedTopicsMutex.sync {
-
                 if let p = lookupPublicationWithoutLock(topic: topic) {
-
-                    if p.hasSubscribers() || p.isLatching() {
-//                        ROS_DEBUG("Publishing message on topic [\(p.name)] " +
-//                            "with sequence number [\(p.sequenceNr.load())]")
-
-                        p.publish(msg: serMsg)
-
+                    let seq = p.incrementSequence()
+                    if var msgWithHeader = message as? MessageWithHeader {
+                        msgWithHeader.header.seq = seq
+                        msgWithHeader.header.stamp = Time.now
+                        let msg = SerializedMessage(msg: msgWithHeader)
+                        publishSerialized(pub: p, serMsg: msg)
                     } else {
-                        _ = p.incrementSequence()
+                        let msg = SerializedMessage(msg: message)
+                        publishSerialized(pub: p, serMsg: msg)
                     }
                 }
             }
         }
 
-        func incrementSequence(topic: String) {
-            _ = lookupPublication(topic: topic)?.incrementSequence()
+        private func publishSerialized(pub: Publication, serMsg: SerializedMessage) {
+            if pub.hasSubscribers() || pub.isLatching() {
+                pub.publish(msg: serMsg)
+            }
+        }
+
+        private func incrementSequence(topic: String) -> UInt32 {
+            return lookupPublication(topic: topic)?.incrementSequence() ?? 0
         }
 
         func isLatched(topic: String) -> Bool {

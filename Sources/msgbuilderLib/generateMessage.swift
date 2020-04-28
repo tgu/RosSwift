@@ -61,6 +61,7 @@ extension MsgSpec {
         }
         let importModules = modules.map{"import \($0)"}.joined(separator: "\n")
         let hasHeader = variables.contains { $0.simpleType == "std_msgs.Header" }
+        let messageProtocol = hasHeader ? "MessageWithHeader" : "Message"
 
         let comments = data.filter{ $0.starts(with: "#") }
             .map { "\t///" + $0.dropFirst() }
@@ -81,7 +82,7 @@ extension MsgSpec {
 
             extension \(path.dropLast().joined(separator: ".")) {
             \(comments)
-            \tpublic struct \(path.last!): Message {
+            \tpublic struct \(path.last!): \(messageProtocol) {
             \t\tpublic static let md5sum: String = "\(md5sum)"
             \t\tpublic static let datatype = "\(full_name)"
             \t\tpublic static let definition = \"\"\"

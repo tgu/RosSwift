@@ -133,31 +133,6 @@ final class Publication {
         }
     }
 
-    func enqueueMessage(m: SerializedMessage) -> Bool {
-        if isDropped.load() {
-            return false
-        }
-
-        precondition(!m.buf.isEmpty)
-
-        subscriberLinksQueue.sync {
-            _ = incrementSequence()
-
-            if hasHeader {
-                ROS_ERROR("header not handled")
-            }
-            subscriberLinks.forEach {
-                $0.enqueueMessage(m: m)
-            }
-
-            if latch {
-                lastMessage = m
-            }
-        }
-        return true
-
-    }
-
     func addSubscriberLink(_ link: SubscriberLink) {
         if isDropped.load() {
             return
@@ -278,7 +253,6 @@ final class Publication {
     func publish(msg: SerializedMessage) {
         precondition(msg.message != nil)
 
-        incrementSequence()
         subscriberLinksQueue.sync {
             subscriberLinks.forEach {
                 $0.enqueueMessage(m: msg)
