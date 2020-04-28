@@ -28,10 +28,6 @@ struct AddTwoIntsRequest: ServiceMessage {
 }
 
 struct AddTwoIntsResponse: ServiceMessage {
-    init() {
-        sum = 0
-    }
-
     static var srvMd5sum: String = AddTwoInts.md5sum
     static var srvDatatype: String = AddTwoInts.datatype
     static var md5sum: String = "b88405221c77b1878a3cbbfff53428d7"
@@ -73,6 +69,11 @@ var keys = [String]()
 guard let n = ros.createNode(ns: "") else {
     exit(1)
 }
+
+let srv_add_two_ints = n.advertise(service: "/add_two_ints") { (req: AddTwoIntsRequest) -> AddTwoIntsResponse in
+    AddTwoIntsResponse(sum: req.a + req.b)
+}
+
 
 let req = AddTwoIntsRequest(a: 34, b: 22)
 if let res : AddTwoIntsResponse = try? Service.call(node: n, serviceName: "/add_two_ints", req: req).wait() {

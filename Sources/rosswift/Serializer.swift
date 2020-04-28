@@ -4,7 +4,7 @@
 //
 //  Created by Thomas Gustafsson on 2018-03-09.
 //
-
+//
 import Foundation
 import BinaryCoder
 

@@ -102,3 +102,37 @@ extension String: Message {
     public static let hasHeader = false
     public static let definition = std_msgs.string.definition
 }
+
+
+// Fixed arrays has no extra length code
+
+public struct FixedLengthArray<T: BinaryCodable>: BinaryCodable, Codable {
+    let length: Int
+    private var _array: [T]
+    public var array: [T] {
+        get {
+            return _array
+        }
+        set {
+            precondition(newValue.count == length)
+            _array = newValue
+        }
+    }
+
+    public init(length: Int, array: [T]) {
+        precondition(array.count == length)
+        self.length = length
+        self._array = array
+    }
+
+    public subscript(i: Int) -> T {
+        return _array[i]
+    }
+
+    public func binaryEncode(to encoder: BinaryEncoder) throws {
+        precondition(_array.count == length)
+        for a in _array {
+            try a.binaryEncode(to: encoder)
+        }
+    }
+}

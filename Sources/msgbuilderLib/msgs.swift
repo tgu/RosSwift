@@ -19,11 +19,11 @@ let BUILTIN_TYPES = PRIMITIVE_TYPES + [TIME, DURATION]
 protocol FullType {
     var field_type: String { get }
     var isArray: Bool { get }
-    func fullType(in package: String) -> String
+    func fullType(in package: String, replaceFixedArray: Bool) -> String
 }
 
 extension FullType {
-    func fullType(in package: String) -> String {
+    func fullType(in package: String, replaceFixedArray: Bool) -> String {
         let msg_type = bare_msg_type(field_type)
 
         var type = ""
@@ -38,7 +38,7 @@ extension FullType {
         } else {
             type = msg_type.replacingOccurrences(of: "/", with: ".")
         }
-        return isArray ? "[\(type)]" : type
+        return isArray ? (replaceFixedArray ? "FixedLengthArray<\(type)>" : "[\(type)]") : type
     }
 }
 
@@ -88,7 +88,7 @@ struct Constant: FullType {
     }
 
     func declaration(in package: String) -> String {
-        return "\tpublic static let \(name): \(fullType(in: package)) = \(val)"
+        return "\tpublic static let \(name): \(fullType(in: package, replaceFixedArray: true)) = \(val)"
     }
 }
 
@@ -139,11 +139,11 @@ struct Variable: FullType {
 
 
     func declaration(in package: String) -> String {
-        return "\tpublic var \(name): \(fullType(in: package))"
+        return "\tpublic var \(name): \(fullType(in: package, replaceFixedArray: size != nil))"
     }
 
     func argument(in package: String) -> String {
-        return "\(name): \(fullType(in: package))"
+        return "\(name): \(fullType(in: package, replaceFixedArray: false))"
     }
 
     var isArray: Bool {
@@ -163,16 +163,16 @@ struct Variable: FullType {
 
     var initCode: String {
         if let size = size {
-            return "\t\tassert(\(name).count == \(size))\n\t\t\tself.\(name) = \(name)"
+            return "\t\tself.\(name) = FixedLengthArray(length: \(size), array: \(name))"
         }
         return "\t\tself.\(name) = \(name)"
     }
 
     func codeInit(in package: String) -> String {
         if let size = size {
-            return "\t\t\(name) = \(fullType(in: package))(repeating: 0, count: \(size))"
+            return "\t\t\(name) = FixedLengthArray(length: \(size), array: \(fullType(in: package, replaceFixedArray: false))(repeating: 0, count: \(size)))"
         } else {
-            return "\t\t\(name) = \(fullType(in: package))()"
+            return "\t\t\(name) = \(fullType(in: package, replaceFixedArray: false))()"
         }
     }
 

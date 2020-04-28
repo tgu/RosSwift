@@ -213,6 +213,7 @@ final class XMLRPCServer {
     var channel: Channel?
     var boot: ServerBootstrap?
     var methods = [String: XmlRpcServerMethod]()
+    let methodsQueue = DispatchQueue(label: "methodsQueue")
 
     init(group: EventLoopGroup) {
 
@@ -247,22 +248,25 @@ final class XMLRPCServer {
     }
 
     func addMethod(method: XmlRpcServerMethod) {
-        if methods[method.name] != nil {
-            methods.removeValue(forKey: method.name)
+        methodsQueue.sync {
+            methods[method.name] = method
         }
-        methods[method.name] = method
     }
 
     func removeMethod(method: XmlRpcServerMethod) {
-        methods.removeValue(forKey: method.name)
+        removeMethod(methodName: method.name)
     }
 
     func removeMethod(methodName: String) {
-        methods.removeValue(forKey: methodName)
+        methodsQueue.sync {
+            _ = methods.removeValue(forKey: methodName)
+        }
     }
 
     func findMethod(name: String) -> XmlRpcServerMethod? {
-        return methods[name]
+        return methodsQueue.sync {
+            return methods[name]
+        }
     }
 
 }

@@ -10,10 +10,6 @@ import XCTest
 
 class NameRemappingWithNamespace: XCTestCase {
 
-    static var allTests = [
-        ("testParameterRemapping",testParameterRemapping)
-    ]
-
     override func setUp() {
     }
 

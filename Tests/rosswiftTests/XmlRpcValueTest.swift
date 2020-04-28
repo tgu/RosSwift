@@ -10,15 +10,6 @@ import XCTest
 
 class XmlRpcValueTest: XCTestCase {
 
-    static var allTests = [
-        ("testStringArray",testStringArray),
-        ("testDoubleArray",testDoubleArray),
-        ("testDoubleAsIntArray",testDoubleAsIntArray),
-        ("testStringMap", testStringMap)
-    ]
-
-
-
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
     }

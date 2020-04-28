@@ -170,7 +170,7 @@ internal final class ConnectionManager {
         self.ros = ros
         initialize(group: threadGroup)
         do {
-            channel = try boot?.bind(host: ros.network.getHost(), port: 0).wait()
+            channel = try boot?.bind(host: ros.network.gHost, port: 0).wait()
             ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host ?? "unknown host"):\(getTCPPort())]")
 
         } catch {

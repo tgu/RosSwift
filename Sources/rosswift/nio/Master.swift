@@ -9,6 +9,7 @@ import Foundation
 import NIO
 import NIOConcurrencyHelpers
 import rpcobject
+import Network
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
@@ -126,9 +127,6 @@ struct XMLRPCClient {
     static let requestBegin = "<?xml version=\"1.0\"?>\r\n<methodCall>\r\n<methodName>"
     static let requestEnd = "</methodCall>\r\n"
     static let methodresponseTag = "<methodResponse>"
-}
-
-extension XMLRPCClient {
 
     static func parseResponse(xml: String) -> XmlRpcValue? {
         guard let tagIndex = xml.range(of: methodresponseTag) else {

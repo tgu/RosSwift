@@ -11,10 +11,23 @@ import Logging
 
 fileprivate let logger = Logger(label: "network")
 
+extension SocketAddress {
+    var host: String {
+        switch self {
+        case .v4(let addr):
+            return addr.host
+        case .v6(let addr):
+            return addr.host
+        case .unixDomainSocket:
+            return ""
+        }
+    }
+}
+
 public struct Network {
     public let gHost: String
     public let gTcprosServerPort: UInt16
-
+    
     public init(remappings: [String:String]) {
         var host = ""
         if let it = remappings["__hostname"] {
@@ -30,14 +43,14 @@ public struct Network {
         } else {
             gTcprosServerPort = 0
         }
-
+        
         if host.isEmpty {
             host = Network.determineHost()
         }
         gHost = host
     }
 
-    static func splitURI(uri: String, host: inout String, port: inout UInt16) -> Bool {
+    public static func splitURI(uri: String) -> (host: String, port: UInt16)? {
         var uri = uri
         if uri.hasPrefix("http://") {
             uri = String(uri.dropFirst(7))
@@ -47,7 +60,7 @@ public struct Network {
 
         let parts = uri.components(separatedBy: ":")
         guard parts.count == 2 else {
-            return false
+            return nil
         }
         var portString = parts[1]
 
@@ -55,16 +68,40 @@ public struct Network {
         portString = segs[0]
 
         guard let portNr = UInt16(portString) else {
-            return false
+            return nil
         }
 
-        port = portNr
-        host = parts[0]
-        return true
+        return (parts[0], portNr)
     }
 
-    static func determineHost() -> String {
-
+    //    static func splitURI(uri: String, host: inout String, port: inout UInt16) -> Bool {
+    //        var uri = uri
+    //        if uri.hasPrefix("http://") {
+    //            uri = String(uri.dropFirst(7))
+    //        } else if uri.hasPrefix("rosrpc://") {
+    //            uri = String(uri.dropFirst(9))
+    //        }
+    //
+    //        let parts = uri.components(separatedBy: ":")
+    //        guard parts.count == 2 else {
+    //            return false
+    //        }
+    //        var portString = parts[1]
+    //
+    //        let segs = portString.components(separatedBy: "/")
+    //        portString = segs[0]
+    //
+    //        guard let portNr = UInt16(portString) else {
+    //            return false
+    //        }
+    //
+    //        port = portNr
+    //        host = parts[0]
+    //        return true
+    //    }
+    
+    public static func determineHost() -> String {
+        
         if let hostname = ProcessInfo.processInfo.environment["ROS_HOSTNAME"] {
             logger.debug("determineIP: using value of ROS_HOSTNAME:\(hostname)")
             if hostname.isEmpty {
@@ -72,7 +109,7 @@ public struct Network {
             }
             return hostname
         }
-
+        
         if let rosIP = ProcessInfo.processInfo.environment["ROS_IP"] {
             logger.debug("determineIP: using value of ROS_IP:\(rosIP)")
             if rosIP.isEmpty {
@@ -80,14 +117,14 @@ public struct Network {
             }
             return rosIP
         }
-
+        
         let host = ProcessInfo.processInfo.hostName
         let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         // We don't want localhost to be our ip
-        if !trimmedHost.isEmpty && host != "localhost" && trimmedHost.contains(".") {
+        if !trimmedHost.isEmpty && host != "localhost" && !trimmedHost.hasSuffix("local") && trimmedHost.contains(".") {
             return trimmedHost
         }
-
+        
         do {
             for i in try System.enumerateInterfaces() {
                 let host = i.address.host
@@ -98,7 +135,8 @@ public struct Network {
         } catch {
             logger.error("\(error)")
         }
-
+        
         return "127.0.0.1"
     }
+    
 }

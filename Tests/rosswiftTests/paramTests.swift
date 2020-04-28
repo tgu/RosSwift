@@ -14,42 +14,6 @@ let ros = Ros(argv: &CommandLine.arguments, name: "paramTests")
 
 class paramTests: XCTestCase {
 
-    static var allTests = [
-        ("testAllParamTypes",testAllParamTypes),
-        ("testPropertyWrapper",testPropertyWrapper),
-        ("testSetThenGetString",testSetThenGetString),
-        ("testSetThenGetStringCached",testSetThenGetStringCached),
-        ("testSetThenGetNamespaceCached", testSetThenGetNamespaceCached),
-        ("testSetThenGetCString",testSetThenGetCString),
-        ("testsetThenGetInt",testsetThenGetInt),
-        ("testunknownParam",testunknownParam),
-        ("testdeleteParam",testdeleteParam),
-        ("testhasParam",testhasParam),
-        ("testsetIntDoubleGetInt", testsetIntDoubleGetInt),
-        ("testgetIntAsDouble",testgetIntAsDouble),
-        ("testgetDoubleAsInt",testgetDoubleAsInt),
-        ("testsearchParam",testsearchParam),
-        ("testsearchParamNodeHandle",testsearchParamNodeHandle),
-        ("testsearchParamNodeHandleWithRemapping",testsearchParamNodeHandleWithRemapping),
-        ("testgetMissingXmlRpcValueParameterCachedTwice", testgetMissingXmlRpcValueParameterCachedTwice),
-        ("testdoublePrecision",testdoublePrecision),
-        ("testvectorStringParam",testvectorStringParam),
-        ("testvectorDoubleParam",testvectorDoubleParam),
-        ("testvectorFloatParam",testvectorFloatParam),
-        ("testvectorIntParam",testvectorIntParam),
-        ("testvectorBoolParam", testvectorBoolParam),
-        ("testmapStringParam",testmapStringParam),
-        ("testmapDoubleParam",testmapDoubleParam),
-        ("testmapFloatParam",testmapFloatParam),
-        ("testmapIntParam",testmapIntParam),
-        ("testmapBoolParam",testmapBoolParam),
-        ("testparamTemplateFunction",testparamTemplateFunction),
-        ("testparamNodeHandleTemplateFunction",testparamNodeHandleTemplateFunction),
-        ("testZgetParamNames",testZgetParamNames)
-
-    ]
-
-
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.

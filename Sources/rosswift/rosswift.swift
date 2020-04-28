@@ -7,6 +7,7 @@ import NIOConcurrencyHelpers
 import RosTime
 import StdMsgs
 import rpcobject
+import Network
 
 public typealias StringStringMap = [String: String]
 
@@ -64,7 +65,11 @@ public final class Ros: Hashable {
     var isShuttingDown = NIOAtomic.makeAtomic(value: false)
     public private(set) var isRunning = false
     var isStarted = false
+    #if DEBUG
     let logg = HeliumLogger(.debug)
+    #else
+    let logg = HeliumLogger(.info)
+    #endif
     public let param: Param
     let serviceManager: ServiceManager
     let topicManager: TopicManager
@@ -168,7 +173,7 @@ public final class Ros: Hashable {
         self.namespace = ns
         self.name = node_name
 
-        xmlrpcManager = XMLRPCManager(host: network.getHost())
+        xmlrpcManager = XMLRPCManager(host: network.gHost)
 
         serviceManager = ServiceManager()
         topicManager = TopicManager()
@@ -351,12 +356,10 @@ public final class Ros: Hashable {
 
         xmlrpcManager.bind(function: "shutdown", cb: shutdownCallback)
 
-        initInternalTimerManager()
-
         topicManager.start(ros: self)
         serviceManager.start(ros: self)
         connectionManager.start(ros: self)
-        xmlrpcManager.start(host: network.getHost())
+        xmlrpcManager.start(host: network.gHost)
 
         if !initOptions.contains(.noSigintHandler) {
             signal(SIGINT, basicSigintHandler)
@@ -404,7 +407,7 @@ public final class Ros: Hashable {
         }
 
         ROS_INFO("Started node [\(name)], " +
-            "pid [\(getpid())], bound on [\(network.getHost())], " +
+            "pid [\(getpid())], bound on [\(network.gHost)], " +
             "xmlrpc port [\(xmlrpcManager.serverPort)], " +
             "tcpros port [\(connectionManager.getTCPPort())], using [\(Time.isSimTime() ? "sim":"real")] time")
 

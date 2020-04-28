@@ -121,7 +121,7 @@ internal struct Console {
     }
 
     static func registerAppender(appender: LogAppender) {
-        Log.error("register_appender not implemnted")
+        Log.debug("register_appender not implemnted")
     }
 
     static func printDebug(_ text: String) {

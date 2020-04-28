@@ -132,9 +132,6 @@ class Edge<T: ArrayContructable>: Root<T> {
             self.value = T()
         }
     }
-    deinit {
-        print("edge \(label) removed")
-    }
 
     override var fullName: String {
         return parent.fullName + "/" + label

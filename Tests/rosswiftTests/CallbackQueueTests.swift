@@ -237,7 +237,6 @@ class CallbackQueueTests: XCTestCase {
         let cb = CountingCallback()
         let i = runThreadedTest(cb: cb, threadFunc: callAvailableThread )
         XCTAssertEqual(cb.count, i)
-        print(i)
     }
 
     func callOneThread(queue: CallbackQueue, done: inout Bool) {
@@ -249,7 +248,6 @@ class CallbackQueueTests: XCTestCase {
     func testThreadedCallOne() {
         let cb = CountingCallback()
         let i = runThreadedTest(cb: cb, threadFunc: callOneThread )
-        print(i)
         XCTAssertEqual(cb.count, i)
     }
 

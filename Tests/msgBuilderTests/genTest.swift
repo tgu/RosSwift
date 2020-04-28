@@ -7,10 +7,6 @@ let rosDistSource = "/Users/tgu/ros-install-osx/melodic_desktop_full_ws"
 
 class GenTest: XCTestCase {
 
-    static var allTests = [
-        ("testGenMD5",testGenMD5)
-    ]
-
     override func setUp() {
     }
 
@@ -115,13 +111,6 @@ class GenTest: XCTestCase {
             XCTAssertNotNil(md5)
             XCTAssertEqual(md5, "acffd30cd6b6de30f120938c17c593fb")
         }
-
-
-
-        let transfOrg = """
-            Vector3 translation
-            Quaternion rotation
-            """
 
         let transf = """
             4a842b65f413084dc2b10fb484ea7f17 translation

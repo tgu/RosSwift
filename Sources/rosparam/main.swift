@@ -1,10 +1,11 @@
 import rpcclient
 import rpcobject
 import NIO
+import Network
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-let host = determineHost()
+let host = Network.determineHost()
 let port = 11311
 
 let msg = XmlRpcValue(str: "/rosparam-\(getpid())")

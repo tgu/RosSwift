@@ -298,11 +298,6 @@ struct XMLRPCClient {
             self.group = group
         }
 
-        deinit {
-            print("deinit with state \(state)")
-//            assert(.disconnected == self.state)
-        }
-
         public func connect(host: String, port: Int) -> EventLoopFuture<Master> {
             assert(.initializing == self.state)
 
@@ -455,44 +450,4 @@ extension SocketAddress {
             return ""
         }
     }
-}
-
-
-public func determineHost() -> String {
-
-    if let hostname = ProcessInfo.processInfo.environment["ROS_HOSTNAME"] {
-        logger.debug("determineIP: using value of ROS_HOSTNAME:\(hostname)")
-        if hostname.isEmpty {
-            logger.warning("invalid ROS_HOSTNAME (an empty string)")
-        }
-        return hostname
-    }
-
-    if let rosIP = ProcessInfo.processInfo.environment["ROS_IP"] {
-        logger.debug("determineIP: using value of ROS_IP:\(rosIP)")
-        if rosIP.isEmpty {
-            logger.warning("invalid ROS_IP (an empty string)")
-        }
-        return rosIP
-    }
-
-    let host = ProcessInfo.processInfo.hostName
-    let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
-    // We don't want localhost to be our ip
-    if !trimmedHost.isEmpty && host != "localhost" && trimmedHost.contains(".") {
-        return trimmedHost
-    }
-
-    do {
-        for i in try System.enumerateInterfaces() {
-            let host = i.address.host
-            if host != "127.0.0.1" && i.address.protocolFamily == PF_INET {
-                return host
-            }
-        }
-    } catch {
-        logger.error("\(error)")
-    }
-
-    return "127.0.0.1"
 }

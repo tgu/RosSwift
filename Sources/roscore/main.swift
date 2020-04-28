@@ -1,6 +1,7 @@
 import Foundation
 import Logging
 import rosmaster
+import Network
 
 public class MyLog: LogHandler {
     let label: String

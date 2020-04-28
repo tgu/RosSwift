@@ -1,5 +1,4 @@
-// swift-tools-version:5.1
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version:5.2
 
 import PackageDescription
 
@@ -40,6 +39,7 @@ let package = Package(
                                 .product(name: "NIO", package: "swift-nio"),
                                 .product(name: "NIOHTTP1", package: "swift-nio"),
                                 .product(name: "NIOExtras", package: "swift-nio-extras"),
+                                "Network",
                                 "HeliumLogger",
                                 "Deque",
                                 "rpcobject"],
@@ -74,10 +74,13 @@ let package = Package(
         .testTarget( name: "rosswiftTests",
                      dependencies: ["RosSwift","StdMsgs","BinaryCoder","rpcobject"]),
         .testTarget( name: "msgBuilderTests",
-                     dependencies: ["msgbuilder"]),
-
+                     dependencies: ["msgbuilderLib"]),
+        .target(name: "Network", dependencies: [
+            .product(name: "Logging", package: "swift-log"),
+            .product(name: "NIO", package: "swift-nio")
+        ]),
         .target(name: "roscore", dependencies: [
-            "rosmaster",
+            "rosmaster", "Network",
             .product(name: "Logging", package: "swift-log")]),
         .target(name: "rosmaster", dependencies: [
             "rpcclient",
@@ -88,8 +91,8 @@ let package = Package(
             .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .target(name: "rpcobject")]),
-        .target(name: "rosparam", dependencies: ["rpcclient"]),
-        .testTarget(name: "rosmasterTests", dependencies: ["rosmaster"]),
+        .target(name: "rosparam", dependencies: ["rpcclient","Network"]),
+        .testTarget(name: "rosmasterTests", dependencies: ["roscore"]),
 
     ]
 )

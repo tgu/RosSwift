@@ -28,8 +28,7 @@ public final class SerializedMessage {
 
         do {
             let code = try BinaryEncoder.encode(msg)
-            buf = try BinaryEncoder.encode(UInt32(code.count))
-            buf.append(contentsOf: code)
+            buf = try BinaryEncoder.encode(UInt32(code.count)) + code
         }
         catch {
             Log.error("failed to serialize \(msg)")

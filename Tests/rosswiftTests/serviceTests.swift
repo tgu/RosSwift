@@ -13,15 +13,6 @@ import XCTest
 
 class serviceTests: XCTestCase {
 
-    static var allTests = [
-        ("testCallService",testCallService),
-        ("testCallEcho",testCallEcho),
-        ("testCallInternalService",testCallInternalService),
-        ("testServiceAdvCopy", testServiceAdvCopy),
-        ("testServiceAdvMultiple",testServiceAdvMultiple),
-        ("testCallSrvMultipleTimes",testCallSrvMultipleTimes)
-    ]
-
     override func setUp() {
     }
 
@@ -30,15 +21,18 @@ class serviceTests: XCTestCase {
 
     func testCallService() {
         func srvCallback(req: TestStringString.Request) -> TestStringString.Response? {
-            return TestStringString.Response("A")
+            return TestStringString.Response("A" + req.data)
+        }
+
+        let rosProvider = Ros(name: "testCallServiceProvider")
+        let serviceNode = rosProvider.createNode()
+        guard let serv = serviceNode.advertise(service: "service_adv", srvFunc: srvCallback) else {
+            XCTFail()
+            return
         }
 
         let ros = Ros(name: "testCallService")
         let node = ros.createNode()
-        guard let serv = node.advertise(service: "service_adv", srvFunc: srvCallback) else {
-            XCTFail()
-            return
-        }
 
         var req = TestStringString.Request()
         var res = TestStringString.Response()
@@ -49,7 +43,7 @@ class serviceTests: XCTestCase {
             print(res)
         }
         XCTAssert(Service.call(node: node, serviceName: "/service_adv", req: req, response: &res))
-        XCTAssertEqual(res.data, "A")
+        XCTAssertEqual(res.data, "Acase_FLIP")
 
         serv.shutdown()  // Just in case the ARC throws us away
     }

@@ -43,19 +43,6 @@ extension Int: ArrayContructable, Collection {
 }
 
 class RosmasterTests: XCTestCase {
-    static var allTests = [
-        ("testLongName", testLongName),
-        ("testGetLongName", testGetLongName),
-        ("testParameters", testParameters),
-        ("testMultiMap", testMultiMap),
-        ("testXmlRpcIteration", testXmlRpcIteration),
-        ("testChangeSibling", testChangeSibling),
-        ("testComputeAllKeys", testComputeAllKeys),
-        ("testUpdates2", testUpdates2),
-        ("testUpdates", testUpdates),
-        ("testParameterServer", testParameterServer),
-        ("testResolveNames", testResolveNames),
-    ]
 
     func testLongName() {
         let r = RadixTree<Int>()
@@ -104,7 +91,6 @@ class RosmasterTests: XCTestCase {
         XCTAssertEqual(g1?.children.count, 1)
         XCTAssertEqual(g2?.children.count, 2)
         XCTAssertEqual(g4?.children.count, 2)
-        r.printTree()
     }
 
 
@@ -265,7 +251,6 @@ class RosmasterTests: XCTestCase {
 
         let updates3 = ps.computeUpdates(key: par3, param_value: 0)
         let u3 = updates3.map { $0.subscriber.id }
-        print(updates3)
         XCTAssertEqual(u3.sorted(), ["/node1","/node2"])
 
     }
@@ -320,7 +305,6 @@ class RosmasterTests: XCTestCase {
         let val = XmlRpcValue(any: ["g": 4, "k" : 7, "level": ["one": 1, "two": 2]])
         let _ = ps.set(param: "/foo/web/t", value: val)
         let _ = ps.set(param: "/foo/bew/t", value: val)
-        print(ps.getAllNames())
         let t = ps.getValueFor(param: "/foo/web/t")
         XCTAssertNotNil(t)
         XCTAssertEqual(t?.values, val)

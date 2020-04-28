@@ -10,10 +10,6 @@ func getInternalTimerManager() -> InternalTimerManager {
 
 typealias InternalTimerManager = TimerManager<SteadyTime, WallDuration, SteadyTimerEvent>
 
-func initInternalTimerManager() {
-    ROS_ERROR("initInternalTimerManager not implemented")
-}
-
 final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime == T {
     var timers: [TimerHandle: TimerInfo] = [:]
     let timersMutex = DispatchQueue(label: "TimerManager", attributes: .concurrent)
@@ -223,12 +219,12 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                 // If we're on simulation time we need to check now() against sleep_end more often than on system time,
                 // since simulation time may be running faster than real time.
                 if !T.isSystemTime() {
-                    timersCond.wait(until: Date(timeIntervalSinceNow: 0.1))
+                    _ = timersCond.wait(until: Date(timeIntervalSinceNow: 0.1))
                 } else {
                     // On system time we can simply sleep for the rest of the wait time, since anything else requiring processing will
                     // signal the condition variable
                     let remainingTime = max((sleep_end-current).toSec(), 0.001)
-                    timersCond.wait(until: Date(timeIntervalSinceNow: remainingTime))
+                    _ = timersCond.wait(until: Date(timeIntervalSinceNow: remainingTime))
                 }
             }
             newTimer.store(false)

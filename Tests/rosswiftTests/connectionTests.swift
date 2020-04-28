@@ -21,16 +21,6 @@ class connectionTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
-    static var allTests = [
-        ("testNodeHandleConstructionDestruction",testNodeHandleConstructionDestruction),
-        ("testIntraprocess",testIntraprocess),
-        ("testgetPublishedTopics",testgetPublishedTopics),
-        ("testnodeHandleParentWithRemappings", testnodeHandleParentWithRemappings),
-        ("testSubscriberDestructionMultipleCallbacks",testSubscriberDestructionMultipleCallbacks),
-        ("testPublisherMultiple",testPublisherMultiple)
-    ]
-
-
     func testNodeHandleConstructionDestruction() {
 
         let ros = Ros(name: "testNodeHandleConstructionDestruction")

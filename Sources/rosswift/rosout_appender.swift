@@ -11,7 +11,7 @@ import Foundation
 final class ROSOutAppender: LogAppender {
     
     init() {
-        ROS_ERROR("ROSOutAppender not implemented")
+        ROS_DEBUG("ROSOutAppender not implemented")
     }
 }
 

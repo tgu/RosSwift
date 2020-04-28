@@ -177,13 +177,4 @@ class rosswiftTests: XCTestCase {
 
     }
 
-
-    static var allTests = [
-        ("testResp",testResp),
-        ("testResponse",testResponse),
-        ("testSerialization",testSerialization),
-        ("testExample", testExample),
-        ("testXmlValue",testXmlValue),
-        ("testSerMess",testSerMess)
-    ]
 }
