@@ -19,13 +19,13 @@ let BUILTIN_TYPES = PRIMITIVE_TYPES + [TIME, DURATION]
 protocol FullType {
     var field_type: String { get }
     var isArray: Bool { get }
+    var arraySize: Int { get }
     func fullType(in package: String, replaceFixedArray: Bool) -> String
 }
 
 extension FullType {
-    func fullType(in package: String, replaceFixedArray: Bool) -> String {
+    func elementType(in package: String) -> String {
         let msg_type = bare_msg_type(field_type)
-
         var type = ""
         if let (pack,base) = package_resource_name(name: msg_type) {
             if pack == package {
@@ -38,7 +38,13 @@ extension FullType {
         } else {
             type = msg_type.replacingOccurrences(of: "/", with: ".")
         }
-        return isArray ? (replaceFixedArray ? "FixedLengthArray<\(type)>" : "[\(type)]") : type
+        return type
+    }
+
+
+    func fullType(in package: String, replaceFixedArray: Bool) -> String {
+        let type = elementType(in: package)
+        return isArray ? (replaceFixedArray ? "FixedLength\(type)Array\(arraySize)" : "[\(type)]") : type
     }
 }
 
@@ -48,6 +54,7 @@ struct Constant: FullType {
     let val_converted: Any
     let val: String
     let isArray: Bool = false
+    let arraySize: Int = 1
 
     init?(line: String) {
         let clean_line = strip_comments(line)
@@ -150,6 +157,14 @@ struct Variable: FullType {
         return field_type.contains("[")
     }
 
+    var arraySize: Int {
+        if let s = size, let i = Int(s) {
+            return i
+        }
+
+        return 1
+    }
+
     var size: String? {
         if let fb = field_type.firstIndex(of: "["), let _ = field_type.firstIndex(of: "]") {
             let size = String(field_type.suffix(from: fb).dropFirst().dropLast()).trimmingCharacters(in: .whitespaces)
@@ -161,16 +176,16 @@ struct Variable: FullType {
         return nil
     }
 
-    var initCode: String {
+    func initCode(in package: String) -> String {
         if let size = size {
-            return "\t\tself.\(name) = FixedLengthArray(length: \(size), array: \(name))"
+            return "\t\tself.\(name) = FixedLength\(elementType(in: package))Array\(size)(\(name))"
         }
         return "\t\tself.\(name) = \(name)"
     }
 
     func codeInit(in package: String) -> String {
         if let size = size {
-            return "\t\t\(name) = FixedLengthArray(length: \(size), array: \(fullType(in: package, replaceFixedArray: false))(repeating: 0, count: \(size)))"
+            return "\t\t\(name) = FixedLength\(elementType(in: package))Array\(size)()"
         } else {
             return "\t\t\(name) = \(fullType(in: package, replaceFixedArray: false))()"
         }

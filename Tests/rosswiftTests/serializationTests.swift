@@ -10,7 +10,14 @@ import XCTest
 @testable import RosSwift
 @testable import RosTime
 @testable import BinaryCoder
+@testable import sensor_msgs
 
+
+extension sensor_msgs.Imu: Equatable {
+    public static func == (lhs: sensor_msgs.Imu, rhs: sensor_msgs.Imu) -> Bool {
+        return lhs.angular_velocity_covariance == rhs.angular_velocity_covariance
+    }
+}
 
 func serializeAndDeserialize<T : BinaryCodable>(_ ser_val: T) -> T {
     let buffer = serialize(ser_val)
@@ -58,6 +65,13 @@ class serializationTests: XCTestCase {
         str.append("hello world55555")
         XCTAssertEqual(str, serializeAndDeserialize(str))
 
+    }
+
+
+    func testFixedArray() {
+        var msg = sensor_msgs.Imu()
+        msg.angular_velocity_covariance.array = [1,2,3,4,5,6,7,8,9]
+        XCTAssertEqual(msg, serializeAndDeserialize(msg))
     }
 
 

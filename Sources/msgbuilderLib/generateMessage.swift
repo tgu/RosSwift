@@ -46,7 +46,7 @@ extension MsgSpec {
         }
 
         let arguments = variables.compactMap{$0.argument(in: package)}.joined(separator: ", ")
-        let initCode = variables.compactMap{$0.initCode}.joined(separator: "\n\t")
+        let initCode = variables.compactMap{$0.initCode(in: package)}.joined(separator: "\n\t")
         let codeInit = variables.compactMap{$0.codeInit(in: package)}.joined(separator: "\n\t")
         let path = swiftMessageType.components(separatedBy: ".")
         var modules = Set(variables.compactMap{$0.module})
@@ -59,7 +59,7 @@ extension MsgSpec {
         if varTypes.contains(TIME) || varTypes.contains(DURATION) {
             modules.insert("RosTime")
         }
-        let importModules = modules.map{"import \($0)"}.joined(separator: "\n")
+        let importModules = modules.sorted().map{"import \($0)"}.joined(separator: "\n")
         let hasHeader = variables.contains { $0.simpleType == "std_msgs.Header" }
         let messageProtocol = hasHeader ? "MessageWithHeader" : "Message"
 

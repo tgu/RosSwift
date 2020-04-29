@@ -80,7 +80,6 @@ public final class MsgContext {
 
         let packages = content.filter { $0.hasSuffix("_msgs")}
         let files = content.filter { $0.hasSuffix(".msg") }
-//        let other = content.filter { !$0.hasSuffix("_msgs") && !$0.hasSuffix(".msg")}
 
         for file in files {
             let name = String(URL(fileURLWithPath: file).lastPathComponent.dropLast(4))
@@ -186,8 +185,12 @@ public final class MsgContext {
             for (_,spec) in element.value {
                 if let code = spec.generateSwiftCode(context: self) {
                     let file = "\(destination.path)/\(spec.package)/\(spec.short_name)Msg.swift"
-//                    let url = URL(fileURLWithPath: file)
-//                    try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    if let oldContent = try? String(contentsOfFile: file, encoding: .utf8) {
+                        // The date in the first row will always change
+                        if oldContent.components(separatedBy: .newlines).dropFirst() == code.components(separatedBy: .newlines).dropFirst() {
+                            continue
+                        }
+                    }
                     try? code.write(toFile: file, atomically: false, encoding: .utf8)
                     print("generated \(spec.full_name)")
                 }

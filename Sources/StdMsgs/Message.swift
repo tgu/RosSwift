@@ -116,35 +116,95 @@ extension String: Message {
 }
 
 
-// Fixed arrays has no extra length code
+// Ugly hack for fixed length arrays. The serialized message contains no length for
+// fixed array. This is a workaround until Swift gets support for fixed array types
 
-public struct FixedLengthArray<T: BinaryCodable>: BinaryCodable, Codable {
-    let length: Int
-    private var _array: [T]
-    public var array: [T] {
+protocol FixedLengthFloatArray: BinaryCodable {
+    static var length: Int { get }
+    var _array: [Float64] { get set }
+}
+
+extension FixedLengthFloatArray {
+    public var array: [Float64] {
         get {
             return _array
         }
         set {
-            precondition(newValue.count == length)
+            precondition(newValue.count == Self.length)
             _array = newValue
         }
     }
 
-    public init(length: Int, array: [T]) {
-        precondition(array.count == length)
-        self.length = length
-        self._array = array
-    }
-
-    public subscript(i: Int) -> T {
+    public subscript(i: Int) -> Float64 {
         return _array[i]
     }
 
+    // Fixed arrays has no extra length code
+
     public func binaryEncode(to encoder: BinaryEncoder) throws {
-        precondition(_array.count == length)
+        precondition(_array.count == Self.length)
         for a in _array {
             try a.binaryEncode(to: encoder)
         }
     }
 }
+
+
+public struct FixedLengthFloat64Array9: FixedLengthFloatArray, Equatable {
+    public static let length: Int = 9
+    var _array: [Float64]
+
+    public init() {
+        _array = [Float64](repeating: 0, count: 9)
+    }
+
+    public init(_ arr: [Float64]) {
+        precondition(arr.count == 9)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 9).map { _ in try Float64(from: decoder) }
+    }
+
+}
+
+public struct FixedLengthFloat64Array12: FixedLengthFloatArray, Equatable {
+    public static let length: Int = 12
+    var _array: [Float64]
+
+    public init() {
+        _array = [Float64](repeating: 0, count: 12)
+    }
+
+    public init(_ arr: [Float64]) {
+        precondition(arr.count == 12)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 12).map { _ in try Float64(from: decoder) }
+    }
+
+}
+
+public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable {
+    public static let length: Int = 36
+    var _array: [Float64]
+
+    public init() {
+        _array = [Float64](repeating: 0, count: 36)
+    }
+
+    public init(_ arr: [Float64]) {
+        precondition(arr.count == 36)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 36).map { _ in try Float64(from: decoder) }
+    }
+
+}
+
+
