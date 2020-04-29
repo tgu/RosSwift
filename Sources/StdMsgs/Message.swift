@@ -119,13 +119,13 @@ extension String: Message {
 // Ugly hack for fixed length arrays. The serialized message contains no length for
 // fixed array. This is a workaround until Swift gets support for fixed array types
 
-protocol FixedLengthFloatArray: BinaryCodable {
+public protocol FixedLengthFloatArray: BinaryCodable {
     static var length: Int { get }
     var _array: [Float64] { get set }
 }
 
-extension FixedLengthFloatArray {
-    public var array: [Float64] {
+public extension FixedLengthFloatArray {
+    var array: [Float64] {
         get {
             return _array
         }
@@ -135,13 +135,13 @@ extension FixedLengthFloatArray {
         }
     }
 
-    public subscript(i: Int) -> Float64 {
+    subscript(i: Int) -> Float64 {
         return _array[i]
     }
 
     // Fixed arrays has no extra length code
 
-    public func binaryEncode(to encoder: BinaryEncoder) throws {
+    func binaryEncode(to encoder: BinaryEncoder) throws {
         precondition(_array.count == Self.length)
         for a in _array {
             try a.binaryEncode(to: encoder)
@@ -152,7 +152,7 @@ extension FixedLengthFloatArray {
 
 public struct FixedLengthFloat64Array9: FixedLengthFloatArray, Equatable {
     public static let length: Int = 9
-    var _array: [Float64]
+    public var _array: [Float64]
 
     public init() {
         _array = [Float64](repeating: 0, count: 9)
@@ -171,7 +171,7 @@ public struct FixedLengthFloat64Array9: FixedLengthFloatArray, Equatable {
 
 public struct FixedLengthFloat64Array12: FixedLengthFloatArray, Equatable {
     public static let length: Int = 12
-    var _array: [Float64]
+    public var _array: [Float64]
 
     public init() {
         _array = [Float64](repeating: 0, count: 12)
@@ -190,7 +190,7 @@ public struct FixedLengthFloat64Array12: FixedLengthFloatArray, Equatable {
 
 public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable {
     public static let length: Int = 36
-    var _array: [Float64]
+    public var _array: [Float64]
 
     public init() {
         _array = [Float64](repeating: 0, count: 36)

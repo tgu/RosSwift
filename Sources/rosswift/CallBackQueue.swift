@@ -166,7 +166,7 @@ public final class CallbackQueue: CallbackQueueInterface {
             }
             if callbacks.isEmpty {
                 if !timeout.isZero() {
-                    condition.wait(until: Date(timeIntervalSinceNow: timeout.toSec()))
+                    _ = condition.wait(until: Date(timeIntervalSinceNow: timeout.toSec()))
                 }
                 if callbacks.isEmpty {
                     res = .empty
@@ -240,7 +240,7 @@ public final class CallbackQueue: CallbackQueueInterface {
             }
             if callbacks.isEmpty {
                 if !timeout.isZero() {
-                    condition.wait(until: Date(timeIntervalSinceNow: timeout.toSec()))
+                    _ = condition.wait(until: Date(timeIntervalSinceNow: timeout.toSec()))
                 }
                 if callbacks.isEmpty {
                     return
