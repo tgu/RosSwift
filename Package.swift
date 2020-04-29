@@ -54,7 +54,7 @@ let package = Package(
                  dependencies: ["StdMsgs","RosTime","trajectory_msgs"],
                  path: "Sources/msgs/control_msgs"),
         .target( name: "trajectory_msgs",
-                 dependencies: ["StdMsgs","RosTime"],
+                 dependencies: ["StdMsgs","RosTime","geometry_msgs"],
                  path: "Sources/msgs/trajectory_msgs"),
         .target( name: "geometry_msgs",
                  dependencies: ["StdMsgs","RosTime"],
