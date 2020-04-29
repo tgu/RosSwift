@@ -78,7 +78,7 @@ public final class MsgContext {
             exit(1)
         }
 
-        let packages = content.filter { $0.hasSuffix("_msgs")}
+        let packages = content.filter { $0.hasSuffix("_msgs") || $0.hasSuffix("_pkgs")}
         let files = content.filter { $0.hasSuffix(".msg") }
 
         for file in files {
