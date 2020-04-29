@@ -11,11 +11,18 @@ import XCTest
 @testable import RosTime
 @testable import BinaryCoder
 @testable import sensor_msgs
+@testable import shape_msgs
 
 
 extension sensor_msgs.Imu: Equatable {
     public static func == (lhs: sensor_msgs.Imu, rhs: sensor_msgs.Imu) -> Bool {
         return lhs.angular_velocity_covariance == rhs.angular_velocity_covariance
+    }
+}
+
+extension shape_msgs.MeshTriangle: Equatable {
+    public static func == (lhs: shape_msgs.MeshTriangle, rhs: shape_msgs.MeshTriangle) -> Bool {
+        return lhs.vertex_indices == rhs.vertex_indices
     }
 }
 
@@ -73,6 +80,13 @@ class serializationTests: XCTestCase {
         msg.angular_velocity_covariance.array = [1,2,3,4,5,6,7,8,9]
         XCTAssertEqual(msg, serializeAndDeserialize(msg))
     }
+
+    func testFixedUInt32Array() {
+        let msg = shape_msgs.MeshTriangle(vertex_indices: [99,23,1245])
+        XCTAssertEqual(msg, serializeAndDeserialize(msg))
+    }
+
+
 
 
     func callbackB(_ val: Bool) {

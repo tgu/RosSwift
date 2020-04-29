@@ -149,6 +149,26 @@ public extension FixedLengthFloatArray {
     }
 }
 
+public struct FixedLengthFloat64Array4: FixedLengthFloatArray, Equatable {
+    public static let length: Int = 4
+    public var _array: [Float64]
+
+    public init() {
+        _array = [Float64](repeating: 0, count: 4)
+    }
+
+    public init(_ arr: [Float64]) {
+        precondition(arr.count == 4)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 4).map { _ in try Float64(from: decoder) }
+    }
+
+}
+
+
 
 public struct FixedLengthFloat64Array9: FixedLengthFloatArray, Equatable {
     public static let length: Int = 9
@@ -207,4 +227,70 @@ public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable {
 
 }
 
+public protocol FixedLengthUInt32Array: BinaryCodable {
+    static var length: Int { get }
+    var _array: [UInt32] { get set }
+}
 
+public extension FixedLengthUInt32Array {
+    var array: [UInt32] {
+        get {
+            return _array
+        }
+        set {
+            precondition(newValue.count == Self.length)
+            _array = newValue
+        }
+    }
+
+    subscript(i: Int) -> UInt32 {
+        return _array[i]
+    }
+
+    // Fixed arrays has no extra length code
+
+    func binaryEncode(to encoder: BinaryEncoder) throws {
+        precondition(_array.count == Self.length)
+        for a in _array {
+            a.binaryEncode(to: encoder)
+        }
+    }
+}
+
+public struct FixedLengthUInt32Array3: FixedLengthUInt32Array, Equatable {
+    public static let length: Int = 3
+    public var _array: [UInt32]
+
+    public init() {
+        _array = [UInt32](repeating: 0, count: 3)
+    }
+
+    public init(_ arr: [UInt32]) {
+        precondition(arr.count == 3)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 3).map { _ in try UInt32(from: decoder) }
+    }
+
+}
+
+public struct FixedLengthUInt32Array4: FixedLengthUInt32Array, Equatable {
+    public static let length: Int = 4
+    public var _array: [UInt32]
+
+    public init() {
+        _array = [UInt32](repeating: 0, count: 4)
+    }
+
+    public init(_ arr: [UInt32]) {
+        precondition(arr.count == 4)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 4).map { _ in try UInt32(from: decoder) }
+    }
+
+}
