@@ -11,16 +11,15 @@ public static var datatype = "tf2_msgs/TFMessage"
 public static var definition = """
 geometry_msgs/TransformStamped[] transforms
 """
-public static var hasHeader = false
 
-public var transforms: geometry_msgs.[TransformStamped]
+public var transforms: [geometry_msgs.TransformStamped]
 
-public init(transforms: geometry_msgs.[TransformStamped]) {
+public init(transforms: [geometry_msgs.TransformStamped]) {
 self.transforms = transforms
 }
 
 public init() {
-    transforms = geometry_msgs.[TransformStamped]()
+    transforms = [geometry_msgs.TransformStamped]()
 }
 
 }

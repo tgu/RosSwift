@@ -61,7 +61,6 @@ final class Publication {
     var pubCallbacks = [SubscriberCallbacks]()
     var subscriberLinks = [SubscriberLink]()
     let latch: Bool
-    let hasHeader: Bool
     var isDropped = NIOAtomic.makeAtomic(value: false)
     var lastMessage: SerializedMessage?
 
@@ -72,15 +71,13 @@ final class Publication {
          datatype: String,
          md5sum: String,
          messageDefinition: String,
-         latch: Bool,
-         hasHeader: Bool) {
+         latch: Bool) {
 
         self.name = name
         self.datatype = datatype
         self.md5sum = md5sum
         self.messageDefinition = messageDefinition
         self.latch = latch
-        self.hasHeader = hasHeader
     }
 
     deinit {

@@ -14,7 +14,6 @@ struct Logger: Message {
 
     static let md5sum = "a6069a2ff40db7bd32143dd66e1f408e"
     static let datatype = "roscpp/Logger"
-    static let hasHeader = false
     static let definition = "string name\nstring level\n"
 
     let name: String
@@ -32,7 +31,6 @@ struct GetLoggersRequest: ServiceMessage {
     static let srvMd5sum = GetLoggers.md5sum
     static let srvDatatype = GetLoggers.datatype
     static let datatype = "roscpp/GetLoggersRequest"
-    static let hasHeader = false
     static let definition = "\n"
 }
 
@@ -41,7 +39,6 @@ struct GetLoggersResponse: ServiceMessage {
     static let srvMd5sum = GetLoggers.md5sum
     static let srvDatatype = GetLoggers.datatype
     static let datatype = "roscpp/GetLoggersResponse"
-    static let hasHeader = false
     static let definition = """
             Logger[] loggers
 
@@ -73,7 +70,6 @@ func getLoggers(x: GetLoggersRequest, y: inout GetLoggersRequest) -> Bool {
 struct SetLoggerLevelRequest: ServiceMessage {
     static let md5sum = "51da076440d78ca1684d36c868df61ea"
     static let datatype = "roscpp/SetLoggerLevelRequest"
-    static let hasHeader = false
     static let definition = "string logger\nstring level\n"
     static let srvMd5sum = SetLoggerLevel.md5sum
     static let srvDatatype = SetLoggerLevel.datatype
@@ -90,7 +86,6 @@ struct SetLoggerLevelRequest: ServiceMessage {
 struct SetLoggerLevelResponse: ServiceMessage {
     static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
     static let datatype = "roscpp/SetLoggerLevelResponse"
-    static let hasHeader = false
     static let definition = "\n"
     static let srvMd5sum = SetLoggerLevel.md5sum
     static let srvDatatype = SetLoggerLevel.datatype

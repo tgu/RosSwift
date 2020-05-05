@@ -15,8 +15,6 @@ extension std_msgs {
 			byte[]            data          # array of data
 			"""
 
-		public static let hasHeader = false
-
 	
 		public var layout: MultiArrayLayout
 		public var data: [Int8]

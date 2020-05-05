@@ -19,7 +19,6 @@ struct RosgraphMsgs {
                 # For more information, see http://www.ros.org/wiki/Clock\n
                 time clock\n
                 """
-        static let hasHeader = false
 
         var time: Time
     }

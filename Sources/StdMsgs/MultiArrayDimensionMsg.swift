@@ -13,9 +13,6 @@ extension std_msgs {
 			uint32 stride  # stride of given dimension
 			"""
 
-		public static let hasHeader = false
-
-	
 		public var label: String
 		public var size: UInt32
 		public var stride: UInt32

@@ -15,7 +15,6 @@ struct AddTwoIntsRequest: ServiceMessage {
     static var srvDatatype: String = AddTwoInts.datatype
     static var md5sum: String = "36d09b846be0b371c5f190354dd3153e"
     static var datatype: String = "beginner_tutorials/AddTwoIntsRequest"
-    static var hasHeader: Bool = false
     static var definition: String = "int64 a\nint64 b"
 
     var a : Int64
@@ -32,7 +31,6 @@ struct AddTwoIntsResponse: ServiceMessage {
     static var srvDatatype: String = AddTwoInts.datatype
     static var md5sum: String = "b88405221c77b1878a3cbbfff53428d7"
     static var datatype: String = "beginner_tutorials/AddTwoIntsResponse"
-    static var hasHeader: Bool = false
     static var definition: String = "int64 sum"
 
     var sum : Int64

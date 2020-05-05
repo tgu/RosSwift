@@ -15,7 +15,6 @@ LookupTransformActionGoal action_goal
 LookupTransformActionResult action_result
 LookupTransformActionFeedback action_feedback
 """
-public static var hasHeader = false
 
 public var action_goal: LookupTransformActionGoal
 public var action_result: LookupTransformActionResult

@@ -15,9 +15,6 @@ extension std_msgs {
 			uint16[]            data        # array of data
 			"""
 
-		public static let hasHeader = false
-
-	
 		public var layout: MultiArrayLayout
 		public var data: [UInt16]
 

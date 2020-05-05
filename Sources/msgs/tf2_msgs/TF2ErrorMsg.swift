@@ -20,7 +20,6 @@ uint8 TRANSFORM_ERROR = 6
 uint8 error
 string error_string
 """
-public static var hasHeader = false
 
 public let NO_ERROR: UInt8 = 0
 public let LOOKUP_ERROR: UInt8 = 1

@@ -165,7 +165,7 @@ public final class Ros: Hashable {
         node_name = Names.resolve(ns: ns, name: node_name)!
 
         if options.contains(.anonymousName) && !disableAnon {
-            node_name.append("_\(WallTime.now.nanoseconds)")
+            node_name.append("_\(ProcessInfo.processInfo.processIdentifier)")
         }
 
         Console.setFixedFilterToken(key: "node", val: node_name)

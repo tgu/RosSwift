@@ -89,8 +89,6 @@ extension MsgSpec {
             \t\t\t\(tabbedData)
             \t\t\t\"\"\"
 
-            \t\tpublic static let hasHeader = \(hasHeader)
-
             \t\(constDecl)
             \t\(decl)
 

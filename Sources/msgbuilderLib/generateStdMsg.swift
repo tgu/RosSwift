@@ -36,7 +36,6 @@ extension MsgSpec {
             \t\tpublic static let md5sum: String = "\(md5sum)"
             \t\tpublic static let datatype = "\(full_name)"
             \t\tpublic static let definition = "\(data)"
-            \t\tpublic static let hasHeader = false
 
             \t\tpublic var \(name): \(type)
 

@@ -7,7 +7,6 @@ extension std_msgs {
 		public static let md5sum: String = "cd7166c74c552c311fbcc2fe5a7bc289"
 		public static let datatype = "std_msgs/Time"
 		public static let definition = "time data"
-		public static let hasHeader = false
 
 		public var data: Time
 

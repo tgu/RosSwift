@@ -7,7 +7,6 @@ extension std_msgs {
 		public static let md5sum: String = "fdb28210bfa9d7c91146260178d9a584"
 		public static let datatype = "std_msgs/Float64"
 		public static let definition = "float64 data"
-		public static let hasHeader = false
 
 		public var data: Float64
 

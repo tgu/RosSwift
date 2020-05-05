@@ -36,9 +36,6 @@ extension std_msgs {
 			string frame_id
 			"""
 
-		public static let hasHeader = false
-
-	
 		public var seq: UInt32
 		public var stamp: Time
 		public var frame_id: String

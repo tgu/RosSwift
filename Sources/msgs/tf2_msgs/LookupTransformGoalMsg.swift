@@ -26,7 +26,6 @@ string fixed_frame
 #Whether or not to use the advanced API
 bool advanced
 """
-public static var hasHeader = false
 
 public var target_frame: String
 public var source_frame: String

@@ -7,7 +7,6 @@ extension std_msgs {
 		public static let md5sum: String = "992ce8a1687cec8c8bd883ec73ca41d1"
 		public static let datatype = "std_msgs/String"
 		public static let definition = "string data"
-		public static let hasHeader = false
 
 		public var data: String
 

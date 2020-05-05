@@ -18,7 +18,6 @@ public struct TestStringStringRequest: ServiceMessage {
     public static var md5sum: String = "992ce8a1687cec8c8bd883ec73ca41d1"
     public static var datatype = "std_msgs/String"
     public static var definition = "string data"
-    public static var hasHeader = false
     public static var srvMd5sum: String = TestStringString.md5sum
     public static var srvDatatype: String = TestStringString.datatype
 
@@ -37,7 +36,6 @@ public struct TestStringStringResponse: ServiceMessage {
     public static var md5sum: String = "992ce8a1687cec8c8bd883ec73ca41d1"
     public static var datatype = "std_msgs/String"
     public static var definition = "string data"
-    public static var hasHeader = false
     public static var srvMd5sum: String = TestStringString.md5sum
     public static var srvDatatype: String = TestStringString.datatype
 

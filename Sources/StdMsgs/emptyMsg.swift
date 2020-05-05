@@ -11,13 +11,6 @@ extension std_msgs {
 			
 			"""
 
-		public static let hasHeader = false
-
-	
-	
-
-
-
 		public init() {
 	
 		}

@@ -14,9 +14,6 @@ extension std_msgs {
 			MultiArrayLayout  layout        # specification of data layout
 			float32[]         data          # array of data
 			"""
-
-		public static let hasHeader = false
-
 	
 		public var layout: MultiArrayLayout
 		public var data: [Float32]

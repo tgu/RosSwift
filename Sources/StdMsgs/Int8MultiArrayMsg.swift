@@ -14,9 +14,6 @@ extension std_msgs {
 			MultiArrayLayout  layout        # specification of data layout
 			int8[]            data          # array of data
 			"""
-
-		public static let hasHeader = false
-
 	
 		public var layout: MultiArrayLayout
 		public var data: [Int8]

@@ -15,7 +15,6 @@ GetMapActionGoal action_goal
 GetMapActionResult action_result
 GetMapActionFeedback action_feedback
 """
-public static var hasHeader = false
 
 public var action_goal: GetMapActionGoal
 public var action_result: GetMapActionResult

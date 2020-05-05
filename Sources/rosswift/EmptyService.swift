@@ -14,7 +14,6 @@ public struct EmptyRequest: ServiceMessage {
     public static let srvMd5sum = EmptySrv.md5sum
     public static let srvDatatype = EmptySrv.datatype
     public static let datatype = "roscpp/EmptyRequest"
-    public static let hasHeader = false
     public static let definition = "\n"
 
     public init() {}
@@ -25,7 +24,6 @@ public struct EmptyResponse: ServiceMessage {
     public static let srvMd5sum = EmptySrv.md5sum
     public static let srvDatatype = EmptySrv.datatype
     public static let datatype = "roscpp/SetLoggerLevelResponse"
-    public static let hasHeader = false
     public static let definition = "\n"
 
     public init() {}

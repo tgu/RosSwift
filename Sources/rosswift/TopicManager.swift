@@ -502,8 +502,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                                   datatype: M.datatype,
                                   md5sum: M.md5sum,
                                   messageDefinition: M.definition,
-                                  latch: ops.latch,
-                                  hasHeader: M.hasHeader)
+                                  latch: ops.latch)
 
             pub.addCallbacks(callback: callbacks)
             advertisedTopics.append(pub)

@@ -13,9 +13,6 @@ extension std_msgs {
 			float32 b
 			float32 a
 			"""
-
-		public static let hasHeader = false
-
 	
 		public var r: Float32
 		public var g: Float32

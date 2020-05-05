@@ -55,9 +55,6 @@ extension std_msgs {
 			# multiarray(i,j,k) refers to the ith row, jth column, and kth channel.
 			"""
 
-		public static let hasHeader = false
-
-	
 		public var dim: [MultiArrayDimension]
 		public var data_offset: UInt32
 

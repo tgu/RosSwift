@@ -13,7 +13,6 @@ internal protocol SubscriptionCallbackHelper {
     var id: ObjectIdentifier { get }
     func deserialize(data: [UInt8]) -> Message?
     func call(msg: Message, item: SubscriptionQueue.Item)
-    var hasHeader: Bool { get }
 }
 
 internal final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
@@ -40,8 +39,6 @@ internal final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallba
             callback(message)
         }
     }
-
-    public let hasHeader = M.hasHeader
 
 }
 
@@ -73,8 +70,6 @@ internal final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionC
             ROS_ERROR("Trying to send message of type \(type(of: msg)) to a subscriber that wants \(type(of: M.self))")
         }
     }
-
-    public let hasHeader = M.hasHeader
 
 }
 

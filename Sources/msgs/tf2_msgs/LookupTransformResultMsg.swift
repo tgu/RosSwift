@@ -14,7 +14,6 @@ public static var definition = """
 geometry_msgs/TransformStamped transform
 tf2_msgs/TF2Error error
 """
-public static var hasHeader = false
 
 public var transform: geometry_msgs.TransformStamped
 public var error: tf2_msgs.TF2Error

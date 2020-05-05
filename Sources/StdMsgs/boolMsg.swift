@@ -7,7 +7,6 @@ extension std_msgs {
 		public static let md5sum: String = "8b94c1b53db61fb6aed406028ad6332a"
 		public static let datatype = "std_msgs/Bool"
 		public static let definition = "bool data"
-		public static let hasHeader = false
 
 		public var data: Bool
 

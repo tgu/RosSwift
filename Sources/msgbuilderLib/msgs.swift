@@ -135,7 +135,7 @@ struct Variable: FullType {
 
         // Check for reserved names
 
-        if ["md5sum","datatype","hasHeader","definition"].contains(name) {
+        if ["md5sum","datatype","definition"].contains(name) {
             name = "_" + name
         }
 
