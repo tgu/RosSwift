@@ -208,19 +208,20 @@ struct Variable: FullType {
 
 }
 
-public struct MsgSpec {
+public struct MsgSpec: BaseMsg {
     let variables: [Variable]
     let constants: [Constant]
     let text: String
     let full_name: String
     let package: String
     let short_name: String
+    let serviceMessage: Bool
 
     var messageType: String {
         return full_name.replacingOccurrences(of: "/", with: ".")
     }
     
-    init?(text: String, full_name: String) {
+    init?(text: String, full_name: String, serviceMessage: Bool) {
         guard let (package_name, short_name) = package_resource_name(name: full_name) else {
             return nil
         }
@@ -249,6 +250,7 @@ public struct MsgSpec {
         self.full_name = full_name
         self.package = package_name
         self.short_name = short_name
+        self.serviceMessage = serviceMessage
     }
 
     func compute_md5_text(msg_context: MsgContext) -> String? {
@@ -271,6 +273,8 @@ public struct MsgSpec {
     func compute_md5(msg_context: MsgContext) -> String? {
         return compute_md5_text(msg_context: msg_context)?.hashed()
     }
+
+
 }
 
 func is_valid_msg_field_name(_ x: String) -> Bool {

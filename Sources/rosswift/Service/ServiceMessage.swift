@@ -8,10 +8,6 @@
 import Foundation
 import StdMsgs
 
-public protocol ServiceMessage: Message {
-    static var srvMd5sum: String { get }
-    static var srvDatatype: String { get }
-}
 
 public struct TestStringStringRequest: ServiceMessage {
     public var data: String
@@ -49,14 +45,6 @@ public struct TestStringStringResponse: ServiceMessage {
 
 }
 
-public protocol ServiceProt {
-    associatedtype Request: ServiceMessage
-    associatedtype Response: ServiceMessage
-    var request: Request { get set }
-    var response: Response { get set }
-    static var md5sum: String { get }
-    static var datatype: String { get }
-}
 
 public struct TestStringString: ServiceProt {
     public static let md5sum = "a9e4701c829f791367680c5f8ed06ff4"

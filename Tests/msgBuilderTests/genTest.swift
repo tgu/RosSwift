@@ -2,8 +2,7 @@ import XCTest
 import Foundation
 @testable import msgbuilderLib
 
-//FIXME:
-let rosDistSource = "/Users/tgu/ros-install-osx/melodic_desktop_full_ws"
+let rosDistSource = ProcessInfo.processInfo.environment["ROS_DIST_SOURCE"] ?? ""
 
 class GenTest: XCTestCase {
 
@@ -37,7 +36,7 @@ class GenTest: XCTestCase {
             """
 
 
-        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log") {
+        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log", serviceMessage: false) {
             XCTAssertEqual(spec.constants.count, 5)
             let names = spec.variables.map { $0.name }
             XCTAssertEqual(names, ["header","level","name","msg","file","function","line","topics"])
@@ -58,7 +57,7 @@ class GenTest: XCTestCase {
         let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
                            "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
 
-        guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel") else {
+        guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel", serviceMessage: false) else {
             XCTFail()
             return
         }
@@ -73,14 +72,25 @@ class GenTest: XCTestCase {
         XCTAssertEqual(deps,types)
 
         XCTAssertEqual(spec.compute_md5(msg_context: context), "ac9eff44abf714214112b05d54a3cf9b")
+    }
 
-
+    func testLoadSrvFile() {
+        let context = MsgContext()
+        let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
+                           "control_msgs": ["\(rosDistSource)/src/control_msgs/msg","\(rosDistSource)/src/control_msgs/srv"],
+                            "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
+        guard let srv = context.load_srv_by_type(srv_type: "control_msgs/QueryTrajectoryState", search_path: search_path) else {
+            XCTFail()
+            return
+        }
+        XCTAssertEqual(srv.request.full_name, "control_msgs/QueryTrajectoryStateRequest")
+        XCTAssertEqual(srv.response.full_name, "control_msgs/QueryTrajectoryStateResponse")
     }
 
     func testLoadFromFile() {
         let path = "\(rosDistSource)/src/common_msgs/geometry_msgs/msg/Accel.msg"
         let context = MsgContext()
-        let spec = context.loadMsg(from: path, full_name: "geometry_msgs/Accel")
+        let spec = context.loadMsg(from: path, full_name: "geometry_msgs/Accel") as? MsgSpec
         XCTAssertEqual(spec?.constants.count, 0)
         let names = spec?.variables.map { $0.name }
         XCTAssertEqual(names, ["linear","angular"])
@@ -125,6 +135,11 @@ class GenTest: XCTestCase {
         }
 
 
+    }
+
+    func testMD5() {
+        let text = "953b798c0f514ff060a53a3498ce6246 pose\n".hashed()
+        XCTAssertEqual(text, "4f3e0bbe7a24e1f929488cd1970222d3")
     }
 
 }

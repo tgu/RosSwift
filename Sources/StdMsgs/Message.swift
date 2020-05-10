@@ -19,6 +19,22 @@ public protocol MessageWithHeader: Message {
     var header: std_msgs.Header { get set }
 }
 
+public protocol ServiceMessage: Message {
+    static var srvMd5sum: String { get }
+    static var srvDatatype: String { get }
+}
+
+public protocol ServiceProt {
+    associatedtype Request: ServiceMessage
+    associatedtype Response: ServiceMessage
+    var request: Request { get set }
+    var response: Response { get set }
+    static var md5sum: String { get }
+    static var datatype: String { get }
+}
+
+
+
 // Builtin native types
 
 extension Bool: Message {

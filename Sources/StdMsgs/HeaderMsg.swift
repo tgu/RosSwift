@@ -15,7 +15,7 @@ extension std_msgs {
 	///Frame this data is associated with
 	/// 0: no frame
 	/// 1: global frame
-	public struct Header: Message {
+	public struct Header: Message, Equatable {
 		public static let md5sum: String = "2176decaecbce78abc3b96ef049fabed"
 		public static let datatype = "std_msgs/Header"
 		public static let definition = """

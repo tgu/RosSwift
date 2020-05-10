@@ -27,6 +27,21 @@ func package_resource_name(name: String) -> (package: String, name: String)? {
 
 extension MsgSpec {
 
+    func dumpSwiftCode(context: MsgContext, destination: String) {
+        if let code = generateSwiftCode(context: context) {
+            let file = "\(destination)/\(package)/\(short_name)Msg.swift"
+            if let oldContent = try? String(contentsOfFile: file, encoding: .utf8) {
+                // The date in the first row will always change
+                if oldContent.components(separatedBy: .newlines).dropFirst() == code.components(separatedBy: .newlines).dropFirst() {
+                    return
+                }
+            }
+            try? code.write(toFile: file, atomically: false, encoding: .utf8)
+            print("generated \(full_name)")
+        }
+
+    }
+
     func generateSwiftCode(context: MsgContext) -> String? {
 
         let swiftMessageType = full_name.replacingOccurrences(of: "/", with: ".")
@@ -61,7 +76,16 @@ extension MsgSpec {
         }
         let importModules = modules.sorted().map{"import \($0)"}.joined(separator: "\n")
         let hasHeader = variables.contains { $0.simpleType == "std_msgs.Header" }
-        let messageProtocol = hasHeader ? "MessageWithHeader" : "Message"
+        let messageProtocol = serviceMessage ? "ServiceMessage" : hasHeader ? "MessageWithHeader" : "Message"
+        var servicePart = ""
+        if serviceMessage {
+            let baseName = short_name.contains("Response") ? short_name.dropLast("Response".count) : short_name.dropLast("Request".count)
+            servicePart = """
+            
+            \t\tpublic static var srvMd5sum: String = \(baseName).md5sum
+            \t\tpublic static var srvDatatype: String = \(baseName).datatype
+            """
+        }
 
         let comments = data.filter{ $0.starts(with: "#") }
             .map { "\t///" + $0.dropFirst() }
@@ -84,7 +108,7 @@ extension MsgSpec {
             \(comments)
             \tpublic struct \(path.last!): \(messageProtocol) {
             \t\tpublic static let md5sum: String = "\(md5sum)"
-            \t\tpublic static let datatype = "\(full_name)"
+            \t\tpublic static let datatype = "\(full_name)"\(servicePart)
             \t\tpublic static let definition = \"\"\"
             \t\t\t\(tabbedData)
             \t\t\t\"\"\"

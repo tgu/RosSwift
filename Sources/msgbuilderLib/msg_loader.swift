@@ -8,8 +8,18 @@
 import Foundation
 import StdMsgs
 
+protocol BaseMsg {
+    var package: String { get }
+    var short_name: String { get }
+    var full_name: String { get }
+    func dumpSwiftCode(context: MsgContext, destination: String)
+}
+
+extension BaseMsg {
+}
+
 public final class MsgContext {
-    var registered: [String: [String: MsgSpec] ]
+    var registered: [String: [String: BaseMsg] ]
     var files: [String: String]
     var dependencies: [String: [MsgSpec]]
 
@@ -20,15 +30,15 @@ public final class MsgContext {
 
         // used in common_msgs and needed for md5 computation
         
-        register(message: std_msgs.Header.self)
-        register(message: std_msgs.ColorRGBA.self)
+        register(message: std_msgs.Header.self, serviceMsg: false)
+        register(message: std_msgs.ColorRGBA.self, serviceMsg: false)
     }
 
-    func register(message: Message.Type) {
-        _ = addMsg(with: message.definition, full_name: message.datatype)
+    func register(message: Message.Type, serviceMsg: Bool) {
+        _ = addMsg(with: message.definition, full_name: message.datatype, serviceMsg: serviceMsg)
     }
 
-    func register(full_msg_type: String, msgspec: MsgSpec) {
+    func register(full_msg_type: String, msgspec: BaseMsg) {
         if let (package, base_type) = package_resource_name(name: bare_msg_type(full_msg_type)) {
             if var pack = registered[package] {
                 pack.updateValue(msgspec, forKey: base_type)
@@ -44,7 +54,7 @@ public final class MsgContext {
         guard let (package, base_type) = package_resource_name(name: full_msg_type) else {
             return nil
         }
-        return registered[package]?[base_type]
+        return registered[package]?[base_type] as? MsgSpec
     }
 
     func is_registered(_ msg_type: String) -> Bool {
@@ -79,7 +89,7 @@ public final class MsgContext {
         }
 
         let packages = content.filter { $0.hasSuffix("_msgs") || $0.hasSuffix("_pkgs")}
-        let files = content.filter { $0.hasSuffix(".msg") }
+        let files = content.filter { $0.hasSuffix(".msg") || $0.hasSuffix(".srv") }
 
         for file in files {
             let name = String(URL(fileURLWithPath: file).lastPathComponent.dropLast(4))
@@ -95,14 +105,20 @@ public final class MsgContext {
                 let sub_path = path.appendingPathComponent(package)
                 load_dir(path: sub_path, package_name: package)
             }
-        } else if content.contains("msg") {
-            let sub_path = path.appendingPathComponent("msg")
-            load_dir(path: sub_path, package_name: package_name)
+        } else {
+            if content.contains("msg") {
+                let sub_path = path.appendingPathComponent("msg")
+                load_dir(path: sub_path, package_name: package_name)
+            }
+            if content.contains("srv") {
+                let sub_path = path.appendingPathComponent("srv")
+                load_dir(path: sub_path, package_name: package_name)
+            }
         }
     }
 
-    public func addMsg(with content: String, full_name: String) -> MsgSpec? {
-        if let spec = MsgSpec(text: content, full_name: full_name) {
+    public func addMsg(with content: String, full_name: String, serviceMsg: Bool) -> MsgSpec? {
+        if let spec = MsgSpec(text: content, full_name: full_name, serviceMessage: serviceMsg) {
             register(full_msg_type: full_name, msgspec: spec)
             return spec
         } else {
@@ -111,11 +127,35 @@ public final class MsgContext {
         }
     }
 
-    func loadMsg(from path: String, full_name: String) -> MsgSpec? {
+    func addSrv(with content: String, full_name: String) -> SrvSpec? {
+        let parts = content.components(separatedBy: "---\n")
+        guard parts.count == 2 else {
+            return nil
+        }
+        guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true) else {
+            return nil
+        }
+        guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true) else {
+            return nil
+        }
+        if let (package, shortName) = package_resource_name(name: full_name) {
+            register(full_msg_type: msg_in.full_name, msgspec: msg_in)
+            register(full_msg_type: msg_out.full_name, msgspec: msg_out)
+            let srv =  SrvSpec(request: msg_in, response: msg_out, text: content, full_name: full_name, package: package, short_name: shortName)
+            register(full_msg_type: full_name, msgspec: srv)
+            return srv
+        }
+
+        return nil
+    }
+
+    func loadMsg(from path: String, full_name: String) -> BaseMsg? {
         if let content = try? String(contentsOfFile: path) {
-            if let spec = addMsg(with: content, full_name: full_name) {
+            if path.hasSuffix("msg"), let spec = addMsg(with: content, full_name: full_name, serviceMsg: false) {
                 set_file(full_msg_type: full_name, file_path: path)
                 return spec
+            } else if path.hasSuffix("srv"), let srv = addSrv(with: content, full_name: full_name) {
+                return srv
             }
         } else {
             print("Could not open \(path)")
@@ -123,7 +163,28 @@ public final class MsgContext {
         return nil
     }
 
-    func load_msg_by_type(msg_type: String, search_path: [String: [String]]) -> MsgSpec? {
+    func load_srv_from_file(from path: String, full_name: String, package: String, shortName: String) -> SrvSpec? {
+        if let content = try? String(contentsOfFile: path) {
+            let parts = content.components(separatedBy: "---\n")
+            guard parts.count == 2 else {
+                return nil
+            }
+            guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true) else {
+                return nil
+            }
+            guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true) else {
+                return nil
+            }
+            return SrvSpec(request: msg_in, response: msg_out, text: content, full_name: full_name, package: package, short_name: shortName)
+        } else {
+            print("Could not open \(path)")
+        }
+        return nil
+    }
+
+
+
+    func load_msg_by_type(msg_type: String, search_path: [String: [String]]) -> BaseMsg? {
         var type = msg_type
         if msg_type == HEADER {
             type = HEADER_FULL_NAME
@@ -131,6 +192,16 @@ public final class MsgContext {
         if let (package, base_type) = package_resource_name(name: type) {
             if let file_path = get_msg_file(package: package, base_type: base_type, search_path: search_path) {
                 let spec = loadMsg(from: file_path, full_name: type)
+                return spec
+            }
+        }
+        return nil
+    }
+
+    func load_srv_by_type(srv_type: String, search_path: [String: [String]]) -> SrvSpec? {
+        if let (package, base_type) = package_resource_name(name: srv_type) {
+            if let file_path = get_srv_file(package: package, base_type: base_type, search_path: search_path) {
+                let spec = load_srv_from_file(from: file_path, full_name: srv_type, package: package, shortName: base_type)
                 return spec
             }
         }
@@ -150,7 +221,7 @@ public final class MsgContext {
             if is_registered(resolved_type) {
                 depspec = get_registered(msg_type: resolved_type)
             } else {
-                depspec = load_msg_by_type(msg_type: resolved_type, search_path: search_path)
+                depspec = load_msg_by_type(msg_type: resolved_type, search_path: search_path) as? MsgSpec
             }
 
             if let depspec = depspec {
@@ -176,6 +247,12 @@ public final class MsgContext {
             """
 
             let file = "\(destination.path)/\(package)/\(package).swift"
+            if let oldContent = try? String(contentsOfFile: file, encoding: .utf8) {
+                // The date in the first row will always change
+                if oldContent.components(separatedBy: .newlines).dropFirst() == code.components(separatedBy: .newlines).dropFirst() {
+                    continue
+                }
+            }
             let url = URL(fileURLWithPath: file)
             try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? code.write(toFile: file, atomically: false, encoding: .utf8)
@@ -183,17 +260,7 @@ public final class MsgContext {
 
         for (_,element) in registered.enumerated() {
             for (_,spec) in element.value {
-                if let code = spec.generateSwiftCode(context: self) {
-                    let file = "\(destination.path)/\(spec.package)/\(spec.short_name)Msg.swift"
-                    if let oldContent = try? String(contentsOfFile: file, encoding: .utf8) {
-                        // The date in the first row will always change
-                        if oldContent.components(separatedBy: .newlines).dropFirst() == code.components(separatedBy: .newlines).dropFirst() {
-                            continue
-                        }
-                    }
-                    try? code.write(toFile: file, atomically: false, encoding: .utf8)
-                    print("generated \(spec.full_name)")
-                }
+                spec.dumpSwiftCode(context: self, destination: destination.path)
             }
         }
     }
@@ -217,14 +284,18 @@ func convert_constant_value(field_type: String, val: String) -> Any? {
     }
 }
 
-func get_msg_file(package: String, base_type: String, search_path: [String: [String]]) -> String? {
+func get_srv_file(package: String, base_type: String, search_path: [String: [String]]) -> String? {
+    return get_msg_file(package: package, base_type: base_type, search_path: search_path, ext: "srv")
+}
+
+func get_msg_file(package: String, base_type: String, search_path: [String: [String]], ext: String = "msg") -> String? {
     guard search_path.keys.contains(package) else {
         print("Cannot locate message [\(base_type)]: unknown package [\(package)] on search path [\(search_path)]")
         return nil
     }
 
     for path_tmp in search_path[package]! {
-        let path = path_tmp + "/" + base_type + ".msg"
+        let path = "\(path_tmp)/\(base_type).\(ext)"
         if FileManager.default.fileExists(atPath: path) {
             return path
         }

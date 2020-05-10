@@ -247,7 +247,6 @@ class SubscriptionQueueTests: XCTestCase {
 class FakeMessage: Message {
     static var md5sum: String = ""
     static var datatype: String = ""
-    static var hasHeader: Bool = false
     static var definition: String = ""
 }
 
@@ -257,7 +256,6 @@ protocol CallbackProtocol {
 
 
 class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible {
-    let hasHeader: Bool = false
 
     var debugDescription: String { return "Fake \(calls)" }
 
