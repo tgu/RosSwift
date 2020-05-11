@@ -1,6 +1,6 @@
 import Foundation
 import RosSwift
-import geometry_msgs
+import msgs
 import StdMsgs
 
 class A {

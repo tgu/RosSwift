@@ -12,12 +12,14 @@ let usage = """
 msgbuilder is a tool for converting ros msg files to swift structs
 
 Usage:
-msgbuilder [-o] source destination
-msgbuilder [-o] -r destination
+msgbuilder [-o | -b] source destination
+msgbuilder [-o | -b] -r destination
 
 options:
     -o overwrite existing files
     -r convert all messages found by 'rosmsg list'
+    -b regenerate builtin
+    -t do not embed messages in enum namespace
 
 source is a directory with message definitions
 destination is the directory where the swift message files will be stored
@@ -40,19 +42,27 @@ let args = CommandLine.arguments.dropFirst().filter { !$0.hasPrefix("-")}
 
 var overwrite = false
 var useRosMsg = false
-let context = MsgContext()
+var useBuiltin = true
+var embedInNamespace = true
 
 for opt in options {
     switch opt {
     case "-o":
         overwrite = true
+    case "-b":
+        useBuiltin = false
     case "-r":
         useRosMsg = true
+    case "-t":
+        embedInNamespace = false
     default:
         print("unknown option \(opt)")
         exit(1)
     }
 }
+
+let context = MsgContext(useBuiltin: useBuiltin, embed: embedInNamespace)
+
 
 if useRosMsg {
     if args.count != 1 {
@@ -74,7 +84,7 @@ if useRosMsg {
         for msg in allMsgs {
             let content = shell.rosmsg(["info","-r",msg]).trimmingCharacters(in: .whitespacesAndNewlines)
             print("getting info for '\(msg)'")
-            _ = context.addMsg(with: content, full_name: msg, serviceMsg: false)
+            _ = context.addMsg(with: content, full_name: msg, serviceMsg: false, generate: true)
         }
     }
     context.genAllMessages(to: destination)

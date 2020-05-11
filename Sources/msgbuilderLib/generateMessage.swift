@@ -13,6 +13,10 @@ import Foundation
 ///     - name: package resource name, e.g. 'std_msgs/String'
 /// - Returns: package name, resource name
 
+let builtinMsgs = ["actionlib_msgs","control_msgs","diagnostic_msgs","gazebo_msgs",
+"geographic_msgs","geometry_msgs","map_msgs","nav_msgs","pcl_msgs","rosgraph_msgs","sensor_msgs","shape_msgs","stereo_msgs",
+"trajectory_msgs","uuid_msgs","visualization_msgs"]
+
 func package_resource_name(name: String) -> (package: String, name: String)? {
     if name.contains("/") {
         let val = name.components(separatedBy: "/")
@@ -66,6 +70,10 @@ extension MsgSpec {
         let path = swiftMessageType.components(separatedBy: ".")
         var modules = Set(variables.compactMap{$0.module})
         modules.remove(package)
+        modules.subtract(builtinMsgs)
+        if !builtinMsgs.contains(package) {
+            modules.insert("msgs")
+        }
         modules.remove("std_msgs")
         if package != "std_msgs" {
             modules.insert("StdMsgs")
@@ -104,7 +112,7 @@ extension MsgSpec {
 
             \(importModules)
 
-            extension \(path.dropLast().joined(separator: ".")) {
+            \(context.embed ? "extension \(path.dropLast().joined(separator: ".")) {" : "")
             \(comments)
             \tpublic struct \(path.last!): \(messageProtocol) {
             \t\tpublic static let md5sum: String = "\(md5sum)"
@@ -122,7 +130,7 @@ extension MsgSpec {
             \t\(codeInit)
             \t\t}
             \t}
-            }
+            \(context.embed ? "}" : "")
             """
 
         return code

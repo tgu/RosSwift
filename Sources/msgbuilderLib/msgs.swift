@@ -216,12 +216,13 @@ public struct MsgSpec: BaseMsg {
     let package: String
     let short_name: String
     let serviceMessage: Bool
+    let generate: Bool
 
     var messageType: String {
         return full_name.replacingOccurrences(of: "/", with: ".")
     }
     
-    init?(text: String, full_name: String, serviceMessage: Bool) {
+    init?(text: String, full_name: String, serviceMessage: Bool, generate: Bool) {
         guard let (package_name, short_name) = package_resource_name(name: full_name) else {
             return nil
         }
@@ -251,6 +252,7 @@ public struct MsgSpec: BaseMsg {
         self.package = package_name
         self.short_name = short_name
         self.serviceMessage = serviceMessage
+        self.generate = generate
     }
 
     func compute_md5_text(msg_context: MsgContext) -> String? {

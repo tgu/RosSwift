@@ -2,7 +2,7 @@ import RosSwift
 import Foundation
 import RosTime
 import StdMsgs
-import geometry_msgs
+import msgs
 
 
 struct AddTwoIntsRequest: ServiceMessage {

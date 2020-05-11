@@ -7,11 +7,13 @@
 
 import Foundation
 import StdMsgs
+import msgs
 
 protocol BaseMsg {
     var package: String { get }
     var short_name: String { get }
     var full_name: String { get }
+    var generate: Bool { get }
     func dumpSwiftCode(context: MsgContext, destination: String)
 }
 
@@ -22,20 +24,85 @@ public final class MsgContext {
     var registered: [String: [String: BaseMsg] ]
     var files: [String: String]
     var dependencies: [String: [MsgSpec]]
+    var embed: Bool
 
-    public init() {
+    public init(useBuiltin: Bool, embed: Bool = true) {
         registered = [:]
         files = [:]
         dependencies = [:]
+        self.embed = embed
 
         // used in common_msgs and needed for md5 computation
         
-        register(message: std_msgs.Header.self, serviceMsg: false)
-        register(message: std_msgs.ColorRGBA.self, serviceMsg: false)
+        register(message: std_msgs.Header.self, serviceMsg: false, generate: false)
+        register(message: std_msgs.ColorRGBA.self, serviceMsg: false, generate: false)
+
+        if useBuiltin {
+            for (_, value) in geometry_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in uuid_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in geographic_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in actionlib_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in control_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in map_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+
+            for (_, value) in nav_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in pcl_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in rosgraph_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in sensor_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in shape_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in stereo_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in trajectory_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+            for (_, value) in visualization_msgs.all.enumerated() {
+                register(message: value.value, serviceMsg: false, generate: false)
+            }
+
+
+        }
+
+
     }
 
-    func register(message: Message.Type, serviceMsg: Bool) {
-        _ = addMsg(with: message.definition, full_name: message.datatype, serviceMsg: serviceMsg)
+    func register(message: Message.Type, serviceMsg: Bool, generate: Bool = true) {
+        _ = addMsg(with: message.definition, full_name: message.datatype, serviceMsg: serviceMsg, generate: generate)
     }
 
     func register(full_msg_type: String, msgspec: BaseMsg) {
@@ -117,8 +184,8 @@ public final class MsgContext {
         }
     }
 
-    public func addMsg(with content: String, full_name: String, serviceMsg: Bool) -> MsgSpec? {
-        if let spec = MsgSpec(text: content, full_name: full_name, serviceMessage: serviceMsg) {
+    public func addMsg(with content: String, full_name: String, serviceMsg: Bool, generate: Bool) -> MsgSpec? {
+        if let spec = MsgSpec(text: content, full_name: full_name, serviceMessage: serviceMsg, generate: generate) {
             register(full_msg_type: full_name, msgspec: spec)
             return spec
         } else {
@@ -132,16 +199,16 @@ public final class MsgContext {
         guard parts.count == 2 else {
             return nil
         }
-        guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true) else {
+        guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true, generate: true) else {
             return nil
         }
-        guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true) else {
+        guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true, generate: true) else {
             return nil
         }
         if let (package, shortName) = package_resource_name(name: full_name) {
             register(full_msg_type: msg_in.full_name, msgspec: msg_in)
             register(full_msg_type: msg_out.full_name, msgspec: msg_out)
-            let srv =  SrvSpec(request: msg_in, response: msg_out, text: content, full_name: full_name, package: package, short_name: shortName)
+            let srv =  SrvSpec(request: msg_in, response: msg_out, text: content, full_name: full_name, package: package, short_name: shortName, generate: true)
             register(full_msg_type: full_name, msgspec: srv)
             return srv
         }
@@ -151,7 +218,7 @@ public final class MsgContext {
 
     func loadMsg(from path: String, full_name: String) -> BaseMsg? {
         if let content = try? String(contentsOfFile: path) {
-            if path.hasSuffix("msg"), let spec = addMsg(with: content, full_name: full_name, serviceMsg: false) {
+            if path.hasSuffix("msg"), let spec = addMsg(with: content, full_name: full_name, serviceMsg: false, generate: true) {
                 set_file(full_msg_type: full_name, file_path: path)
                 return spec
             } else if path.hasSuffix("srv"), let srv = addSrv(with: content, full_name: full_name) {
@@ -169,13 +236,13 @@ public final class MsgContext {
             guard parts.count == 2 else {
                 return nil
             }
-            guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true) else {
+            guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true, generate: true) else {
                 return nil
             }
-            guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true) else {
+            guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true, generate: true) else {
                 return nil
             }
-            return SrvSpec(request: msg_in, response: msg_out, text: content, full_name: full_name, package: package, short_name: shortName)
+            return SrvSpec(request: msg_in, response: msg_out, text: content, full_name: full_name, package: package, short_name: shortName, generate: true)
         } else {
             print("Could not open \(path)")
         }
@@ -240,10 +307,30 @@ public final class MsgContext {
 
     public func genAllMessages(to destination: URL) {
         for package in registered.keys {
+            let mess = registered[package]!
+            .values.compactMap { $0 as? MsgSpec }
+            if !mess.contains(where: { $0.generate }) {
+                continue
+            }
+
+            var messages = mess
+                .filter { !$0.serviceMessage }
+                .map { "\"\($0.short_name)\": \($0.short_name).self"}
+                .joined(separator: ",\n\t\t")
+
+            if messages.isEmpty {
+                messages = ":"
+            }
+
             let code = """
             // Generated by msgbuilder \(Date())
 
-            public enum \(package) {}
+            import StdMsgs
+
+            public enum \(package) {
+                public static let all: [String: Message.Type] = [
+                    \(messages)]
+            }
             """
 
             let file = "\(destination.path)/\(package)/\(package).swift"
@@ -255,11 +342,13 @@ public final class MsgContext {
             }
             let url = URL(fileURLWithPath: file)
             try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try? code.write(toFile: file, atomically: false, encoding: .utf8)
+            if embed {
+                try? code.write(toFile: file, atomically: false, encoding: .utf8)
+            }
         }
 
         for (_,element) in registered.enumerated() {
-            for (_,spec) in element.value {
+            for (_,spec) in element.value.filter({$0.value.generate}) {
                 spec.dumpSwiftCode(context: self, destination: destination.path)
             }
         }

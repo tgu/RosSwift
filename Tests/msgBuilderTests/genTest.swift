@@ -36,7 +36,7 @@ class GenTest: XCTestCase {
             """
 
 
-        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log", serviceMessage: false) {
+        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log", serviceMessage: false, generate: true) {
             XCTAssertEqual(spec.constants.count, 5)
             let names = spec.variables.map { $0.name }
             XCTAssertEqual(names, ["header","level","name","msg","file","function","line","topics"])
@@ -53,11 +53,11 @@ class GenTest: XCTestCase {
             Quaternion rotation
             """
 
-        let context = MsgContext()
+        let context = MsgContext(useBuiltin: false)
         let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
                            "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
 
-        guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel", serviceMessage: false) else {
+        guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel", serviceMessage: false, generate: true) else {
             XCTFail()
             return
         }
@@ -75,7 +75,7 @@ class GenTest: XCTestCase {
     }
 
     func testLoadSrvFile() {
-        let context = MsgContext()
+        let context = MsgContext(useBuiltin: false)
         let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
                            "control_msgs": ["\(rosDistSource)/src/control_msgs/msg","\(rosDistSource)/src/control_msgs/srv"],
                             "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
@@ -89,7 +89,7 @@ class GenTest: XCTestCase {
 
     func testLoadFromFile() {
         let path = "\(rosDistSource)/src/common_msgs/geometry_msgs/msg/Accel.msg"
-        let context = MsgContext()
+        let context = MsgContext(useBuiltin: false)
         let spec = context.loadMsg(from: path, full_name: "geometry_msgs/Accel") as? MsgSpec
         XCTAssertEqual(spec?.constants.count, 0)
         let names = spec?.variables.map { $0.name }
@@ -138,7 +138,7 @@ class GenTest: XCTestCase {
     }
 
     func testMD5() {
-        let text = "953b798c0f514ff060a53a3498ce6246 pose\n".hashed()
+        let text = "953b798c0f514ff060a53a3498ce6246 pose".hashed()
         XCTAssertEqual(text, "4f3e0bbe7a24e1f929488cd1970222d3")
     }
 

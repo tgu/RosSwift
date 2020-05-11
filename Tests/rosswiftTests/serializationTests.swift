@@ -10,8 +10,7 @@ import XCTest
 @testable import RosSwift
 @testable import RosTime
 @testable import BinaryCoder
-@testable import sensor_msgs
-@testable import shape_msgs
+@testable import msgs
 
 
 extension sensor_msgs.Imu: Equatable {

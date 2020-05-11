@@ -37,7 +37,7 @@ public extension TimeBase {
         nsec.binaryEncode(to: encoder)
     }
 
-    public init(fromBinary decoder: BinaryDecoder) throws {
+    init(fromBinary decoder: BinaryDecoder) throws {
         let s = try decoder.decode(UInt32.self)
         let n = try decoder.decode(UInt32.self)
         self = .init(sec: s, nsec: n)

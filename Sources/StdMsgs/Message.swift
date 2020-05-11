@@ -207,6 +207,27 @@ public struct FixedLengthFloat64Array12: FixedLengthFloatArray, Equatable {
 
 }
 
+public struct FixedLengthFloat64Array15: FixedLengthFloatArray, Equatable {
+    public static let length: Int = 15
+    public var _array: [Float64]
+
+    public init() {
+        _array = [Float64](repeating: 0, count: 15)
+    }
+
+    public init(_ arr: [Float64]) {
+        precondition(arr.count == 15)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 15).map { _ in try Float64(from: decoder) }
+    }
+
+}
+
+
+
 public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable {
     public static let length: Int = 36
     public var _array: [Float64]
@@ -225,6 +246,26 @@ public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable {
     }
 
 }
+
+public struct FixedLengthFloat64Array225: FixedLengthFloatArray, Equatable {
+    public static let length: Int = 225
+    public var _array: [Float64]
+
+    public init() {
+        _array = [Float64](repeating: 0, count: 225)
+    }
+
+    public init(_ arr: [Float64]) {
+        precondition(arr.count == 225)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 225).map { _ in try Float64(from: decoder) }
+    }
+
+}
+
 
 public protocol FixedLengthUInt32Array: BinaryCodable {
     static var length: Int { get }
@@ -298,3 +339,31 @@ public struct FixedLengthUInt32Array4: FixedLengthUInt32Array, Equatable {
     }
 
 }
+
+public protocol FixedLengthUInt8Array: BinaryCodable {
+    static var length: Int { get }
+    var _array: [UInt8] { get set }
+}
+
+
+public struct FixedLengthUInt8Array16: FixedLengthUInt8Array, Equatable {
+    public static let length: Int = 16
+    public var _array: [UInt8]
+
+    public init() {
+        _array = [UInt8](repeating: 0, count: 16)
+    }
+
+    public init(_ arr: [UInt8]) {
+        precondition(arr.count == 16)
+        _array = arr
+    }
+
+    public init(fromBinary decoder: BinaryDecoder) throws {
+        _array = try (0 ..< 16).map { _ in try UInt8(from: decoder) }
+    }
+
+}
+
+
+
