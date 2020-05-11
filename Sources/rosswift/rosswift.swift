@@ -6,6 +6,7 @@ import NIO
 import NIOConcurrencyHelpers
 import RosTime
 import StdMsgs
+import msgs
 import rpcobject
 import Network
 
@@ -422,8 +423,8 @@ public final class Ros: Hashable {
     }
 
 
-    func clockCallback(msg: RosgraphMsgs.Clock) {
-        Time.setNow(msg.time)
+    func clockCallback(msg: rosgraph_msgs.Clock) {
+        Time.setNow(msg.clock)
     }
 
     func shutdown() {
