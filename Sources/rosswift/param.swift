@@ -513,8 +513,11 @@ public final class Param {
                     gParameters[mappedKey] = value
                 }
             }
-        } catch {
-            ROS_ERROR("\(error)")
+        } catch Master.ValidateError.malformed(let str) {
+            ROS_ERROR("\(str)")
+            return nil
+        } catch let err {
+            ROS_DEBUG(err.localizedDescription)
             return nil
         }
 
