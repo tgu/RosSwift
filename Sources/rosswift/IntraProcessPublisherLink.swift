@@ -33,7 +33,7 @@ final class IntraProcessPublisherLink: PublisherLink {
 
     func setPublisher(ros: Ros, publisher: IntraProcessSubscriberLink) -> Bool {
         self.publisher = publisher
-        let header = Header()
+        var header = Header()
 
         header.headers = ["callerid": ros.name,
                       "topic": parent.name,

@@ -140,7 +140,7 @@ final class InboundConnection {
 
             if link.header == nil {
                 if let headerData = buffer.readBytes(length: buffer.readableBytes) {
-                    let header = Header()
+                    var header = Header()
                     if !header.parse(buffer: headerData) {
                         p.drop(reason: .headerError)
                     } else {

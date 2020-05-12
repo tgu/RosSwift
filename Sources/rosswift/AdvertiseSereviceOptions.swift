@@ -6,7 +6,7 @@
 //
 import StdMsgs
 
-final class AdvertiseServiceOptions<MReq: ServiceMessage, MRes: ServiceMessage> {
+struct AdvertiseServiceOptions<MReq: ServiceMessage, MRes: ServiceMessage> {
     var service: String
     var md5sum: String { return MReq.srvMd5sum }
     var datatype: String { return MReq.srvDatatype }

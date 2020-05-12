@@ -9,7 +9,7 @@ import BinaryCoder
 import Foundation
 import StdMsgs
 
-public final class Header {
+public struct Header {
     public var headers = StringStringMap()
 
     public func getValues() -> StringStringMap {
@@ -20,7 +20,7 @@ public final class Header {
         return headers[key]
     }
 
-    public func parse(buffer: [UInt8]) -> Bool {
+    public mutating func parse(buffer: [UInt8]) -> Bool {
         var indx = 0
         while indx < buffer.count {
             let len = UInt32(buffer[indx]) |

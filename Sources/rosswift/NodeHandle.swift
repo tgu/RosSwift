@@ -255,7 +255,7 @@ public final class NodeHandle {
 
 
     func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(ops: AdvertiseServiceOptions<MReq, MRes>) -> ServiceServer? {
-        let options = ops
+        var options = ops
         guard let service = resolveName(name: ops.service) else {
             return nil
         }
