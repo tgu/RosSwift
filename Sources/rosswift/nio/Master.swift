@@ -234,11 +234,15 @@ final class Master {
         }
     }
 
-    func validateXmlrpcResponse(method: String, response: XmlRpcValue) -> XmlRpcValue? {
+    enum ValidateError: Error {
+        case malformed(String)
+        case error(String)
+    }
+
+    func validateXmlrpcResponse(method: String, response: XmlRpcValue) -> Result<XmlRpcValue,ValidateError> {
 
         guard response.isArray else {
-            ROS_DEBUG("XML-RPC call [\(method)] didn't return an array")
-            return nil
+            return .failure(.malformed("XML-RPC call [\(method)] didn't return an array"))
         }
 
         var resp = response
@@ -247,29 +251,25 @@ final class Master {
         }
 
         if resp.size() != 2 && resp.size() != 3 {
-            ROS_DEBUG("XML-RPC call [\(method)] didn't return a 2 or 3-element array")
-            return nil
+            return .failure(.malformed("XML-RPC call [\(method)] didn't return a 2 or 3-element array"))
         }
         guard case .int(let statusCode) = resp[0] else {
-            ROS_DEBUG("XML-RPC call [\(method)] didn't return a int as the 1st element")
-            return nil
+            return .failure(.malformed("XML-RPC call [\(method)] didn't return a int as the 1st element"))
         }
         guard case .string(let statusString) = resp[1] else {
-            ROS_DEBUG("XML-RPC call [\(method)] didn't return a string as the 2nd element")
-            return nil
+            return .failure(.malformed("XML-RPC call [\(method)] didn't return a string as the 2nd element"))
         }
         if statusCode != 1 {
-            ROS_DEBUG("XML-RPC call [\(method)] returned an error (\(statusCode): [\(statusString)]")
-            return nil
+            return .failure(.error("XML-RPC call [\(method)] returned an error (\(statusCode): [\(statusString)]"))
         }
         if resp.size() > 2 {
             if case .string(let uri) = resp[2] {
-                return XmlRpcValue(anyArray: [uri])
+                return .success(XmlRpcValue(anyArray: [uri]))
             } else {
-                return resp[2]
+                return .success(resp[2])
             }
         }
-        return XmlRpcValue(anyArray: [])
+        return .success(XmlRpcValue(anyArray: []))
     }
 
     func generateHeader(body: String, host: String, port: UInt16) -> String {
@@ -327,8 +327,6 @@ final class Master {
         let eventLoop = group.next()
         let promise: EventLoopPromise<XmlRpcValue> = eventLoop.makePromise()
 
-        ROS_DEBUG("trying to connect to \(host):\(port) for method \(method), request \(request)")
-
         bootstrap?.connect(host: host, port: Int(port)).map { channel -> Void in
             var buffer = channel.allocator.buffer(capacity: xml.utf8.count)
             buffer.writeString(xml)
@@ -340,7 +338,7 @@ final class Master {
             channel.closeFuture.whenComplete { res in
                 // FIXME: check result
 
-                let result = self.lock.withLock { () -> XmlRpcValue? in
+                let result = self.lock.withLock { () -> Result<XmlRpcValue, ValidateError> in
                     guard let handler = self.handlers[ObjectIdentifier(channel)] else {
                         fatalError("failed to connect to \(host):\(port) for method \(method)")
                     }
@@ -350,15 +348,16 @@ final class Master {
 
                 self.unregisterHandler(for: channel)
 
-                if let r = result, r.valid() {
+                switch result {
+                case .success(let r):
                     promise.succeed(r)
-                } else {
-                    promise.fail(MasterError.invalidResponse(result?.description ?? "no description"))
+                case .failure(let err):
+                    promise.fail(err)
                 }
             }
-            }.whenFailure { error in
-                ROS_ERROR(error.localizedDescription)
-                promise.fail(error)
+        }.whenFailure { error in
+            ROS_ERROR(error.localizedDescription)
+            promise.fail(error)
         }
         return promise.futureResult
 

@@ -404,8 +404,10 @@ public final class Param {
         do {
             let payload = try ros.master.execute(method: "searchParam", request: params).wait()
             result = payload.string
+        } catch Master.ValidateError.malformed(let str) {
+            ROS_ERROR("error during searchParam \(str)")
+            return false
         } catch {
-            ROS_ERROR("error during searchParam \(error)")
             return false
         }
 
