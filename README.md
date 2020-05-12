@@ -44,3 +44,18 @@ while ros.ok {
     j += 1
     rate.sleep()
 }
+```
+The following code snippet shows how to model a simple listener
+
+```swift
+import RosSwift
+import StdMsgs
+import msgs
+
+let ros = Ros(argv: &CommandLine.arguments, name: "listener")
+let node = ros.createNode()
+let imu = node.subscribe(topic: "/imu") { (msg: sensor_msgs.Imu) in
+    print("accel: [\(msg.linear_acceleration)]")
+}
+n.spinThread()
+```
