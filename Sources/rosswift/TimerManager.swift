@@ -131,6 +131,10 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
     }
 
     func remove(timerHandle: TimerHandle) {
+        if timerHandle == .none {
+            return
+        }
+
         var callbackQueue: CallbackQueueInterface?
         var removeId: Int = 0
 

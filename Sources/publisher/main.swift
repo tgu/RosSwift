@@ -5,90 +5,47 @@ import StdMsgs
 import msgs
 
 
-struct AddTwoIntsRequest: ServiceMessage {
-    init() {
-        a = 0
-        b = 0
-    }
 
-    static var srvMd5sum: String = AddTwoInts.md5sum
-    static var srvDatatype: String = AddTwoInts.datatype
-    static var md5sum: String = "36d09b846be0b371c5f190354dd3153e"
-    static var datatype: String = "beginner_tutorials/AddTwoIntsRequest"
-    static var definition: String = "int64 a\nint64 b"
-
-    var a : Int64
-    var b : Int64
-
-    init(a: Int64, b: Int64) {
-        self.a = a
-        self.b = b
-    }
-}
-
-struct AddTwoIntsResponse: ServiceMessage {
-    static var srvMd5sum: String = AddTwoInts.md5sum
-    static var srvDatatype: String = AddTwoInts.datatype
-    static var md5sum: String = "b88405221c77b1878a3cbbfff53428d7"
-    static var datatype: String = "beginner_tutorials/AddTwoIntsResponse"
-    static var definition: String = "int64 sum"
-
-    var sum : Int64
-}
-
-struct AddTwoInts {
-    typealias Request = AddTwoIntsRequest
-
-    typealias Response = AddTwoIntsResponse
-
-    public static var datatype: String = "beginner_tutorials/AddTwoInts"
-    public static var md5sum = "6a2e34150c00229791cc89ff309fff21"
-}
-
-func caseFlip(req: TestStringString.Request) -> TestStringString.Response? {
-    // copy over the request and overwrite the letters with their case-flip
-    print("case flip")
-    return TestStringString.Response("case flip")
-}
-
-func echo(req: TestStringString.Request) -> TestStringString.Response? {
-    // copy over the request and overwrite the letters with their case-flip
-
-    let response = req.data.uppercased()
-
-    return TestStringString.Response(response)
-}
+// Initiate ros before using any other part of RosSwift
 
 let ros = Ros(argv: &CommandLine.arguments, name: "talker")
 
+// createNode returns nil if the name passed is not a valid graph resource name
 
-var keys = [String]()
-
-guard let n = ros.createNode(ns: "") else {
+guard let node = ros.createNode(ns: "", remappings: [:]) else {
     exit(1)
 }
 
-let srv_add_two_ints = n.advertise(service: "/add_two_ints") { (req: AddTwoIntsRequest) -> AddTwoIntsResponse in
-    AddTwoIntsResponse(sum: req.a + req.b)
+// create a service from the Service type
+
+let srv_add_two_ints = AddTwoInts.advertise(service: "/add_two_ints", node: node) {
+    .init(sum: $0.a + $0.b)
 }
 
+do {
+    // call service from a second node
 
-let req = AddTwoIntsRequest(a: 34, b: 22)
-if let res : AddTwoIntsResponse = try? Service.call(node: n, serviceName: "/add_two_ints", req: req).wait() {
-    print("\(req.a) + \(req.b) = \(res.sum)")
-} else {
-    print("AddTwoIntsResponse failed")
+    let secondNode = ros.createNode()
+    let addRequest = AddTwoIntsRequest(a: 34, b: 22)
+    let optionalSum = addRequest.call(name: "/add_two_ints", node: secondNode)
+
+    if let sum = optionalSum {
+        print("\(addRequest.a) + \(addRequest.b) = \(sum.sum)")
+    } else {
+        print("AddTwoInts failed")
+    }
+
+    // the second node will go out of scope
 }
 
+let srv1 = node.advertise(service: "service_adv", srvFunc: caseFlip)
 
-let srv1 = n.advertise(service: "service_adv", srvFunc: caseFlip)
-let srv2 = n.advertise(service: "echo") { (req: TestStringString.Request) -> TestStringString.Response? in
-    let response = req.data.uppercased()
+let srv2 = TestStringString.advertise(service: "/echo", node: node) {
+    let response = $0.data.uppercased()
     return .init(response)
 }
 
-
-guard let natter_pub = n.advertise(topic: "/natter", message: geometry_msgs.Point.self ) else {
+guard let natter_pub = node.advertise(topic: "/natter", message: geometry_msgs.Point.self ) else {
     exit(1)
 }
 
@@ -97,26 +54,23 @@ func subscriberCallback(_ link: SingleSubscriberPublisher) -> Void {
     link.publish(Int32(999))
 }
 
-func subscriberLeavingCallback(_ link: SingleSubscriberPublisher) -> Void {
-    print("Subscriber [\(link.callerId)] has left")
-}
+let options = AdvertiseOptions(topic: "/chatter",
+                               std_msgs.string.self,
+                               connectCall: subscriberCallback,
+                               disconnectCall: { print("Subscriber [\($0.callerId)] has left")} )
 
-
-var options = AdvertiseOptions(topic: "/chatter",std_msgs.string.self)
-options.connectCallBack = subscriberCallback
-options.disconnectCallBack = subscriberLeavingCallback
-
-guard let chatter_pub = n.advertise(ops: options) else {
-    exit(1)
-}
-guard let twist_pub = n.advertise(topic: "/twait", message: geometry_msgs.TwistStamped.self ) else {
+guard let chatter_pub = node.advertise(ops: options) else {
     exit(1)
 }
 
+
+// optional publisher
+
+let twist_pub = node.advertise(topic: "/twait", message: geometry_msgs.TwistStamped.self )
 
 let request = TestStringString.Request("request from self")
 
-if let respons : TestStringString.Response = try? Service.call(node: n, serviceName: "echo", req: request).wait() {
+if let respons : TestStringString.Response = try? Service.call(node: node, serviceName: "echo", req: request).wait() {
     print(respons)
 } else {
     print("call returned nil")
@@ -145,13 +99,64 @@ while ros.ok {
     let tw = geometry_msgs.Twist(linear: lin, angular: ang)
     let twist = geometry_msgs.TwistStamped(header: header, twist: tw)
 
-    twist_pub.publish(message: twist)
+    twist_pub?.publish(message: twist)
 
     rate.sleep()
 }
 
-//do {
-//    try future.wait()
-//} catch {
-//    print(error.localizedDescription)
-//}
+
+struct AddTwoIntsRequest: ServiceRequestMessage {
+    typealias ServiceType = AddTwoInts
+    init() {
+        a = 0
+        b = 0
+    }
+
+    static var srvMd5sum: String = AddTwoInts.md5sum
+    static var srvDatatype: String = AddTwoInts.datatype
+    static var md5sum: String = "36d09b846be0b371c5f190354dd3153e"
+    static var datatype: String = "beginner_tutorials/AddTwoIntsRequest"
+    static var definition: String = "int64 a\nint64 b"
+
+    var a : Int64
+    var b : Int64
+
+    init(a: Int64, b: Int64) {
+        self.a = a
+        self.b = b
+    }
+}
+
+struct AddTwoIntsResponse: ServiceResponseMessage {
+    typealias ServiceType = AddTwoInts
+    static var srvMd5sum: String = AddTwoInts.md5sum
+    static var srvDatatype: String = AddTwoInts.datatype
+    static var md5sum: String = "b88405221c77b1878a3cbbfff53428d7"
+    static var datatype: String = "beginner_tutorials/AddTwoIntsResponse"
+    static var definition: String = "int64 sum"
+
+    var sum : Int64
+}
+
+struct AddTwoInts: ServiceProt {
+    typealias Request = AddTwoIntsRequest
+    typealias Response = AddTwoIntsResponse
+    var request: Request
+    var response: Response
+    public static var datatype: String = "beginner_tutorials/AddTwoInts"
+    public static var md5sum = "6a2e34150c00229791cc89ff309fff21"
+}
+
+func caseFlip(req: TestStringString.Request) -> TestStringString.Response? {
+    // copy over the request and overwrite the letters with their case-flip
+    print("case flip")
+    return TestStringString.Response("case flip")
+}
+
+func echo(req: TestStringString.Request) -> TestStringString.Response? {
+    // copy over the request and overwrite the letters with their case-flip
+
+    let response = req.data.uppercased()
+
+    return TestStringString.Response(response)
+}

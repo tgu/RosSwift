@@ -182,7 +182,7 @@ public final class NodeHandle {
     /// Advertise a topic, with full range of AdvertiseOptions.
     ///
     /// This call connects to the master to publicize that the node will be publishing messages on the given
-    //7 topic. This method returns a Publisher that allows you to publish a message on this topic.
+    /// topic. This method returns a Publisher that allows you to publish a message on this topic.
     ///
     /// - Parameters:
     ///     - ops:    Advertise options to use

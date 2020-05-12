@@ -47,6 +47,8 @@ public struct TestStringStringResponse: ServiceMessage {
 
 
 public struct TestStringString: ServiceProt {
+    public typealias Request = TestStringStringRequest
+    public typealias Response = TestStringStringResponse
     public static let md5sum = "a9e4701c829f791367680c5f8ed06ff4"
     public static let datatype = "beginners_tutorial/TestStringString"
 

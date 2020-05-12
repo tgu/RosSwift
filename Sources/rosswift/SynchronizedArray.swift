@@ -171,7 +171,7 @@ public extension SynchronizedArray {
 
             // must do this to decrease the retain count of element
             if completion != nil {
-                DispatchQueue.main.async {
+                DispatchQueue(label: "removing").async {
                     completion?(element)
                 }
             }
@@ -190,7 +190,7 @@ public extension SynchronizedArray {
             }
             let element = self.array.remove(at: index)
             if completion != nil {
-                DispatchQueue.main.async {
+                DispatchQueue(label: "removing").async {
                     completion?(element)
                 }
             }
@@ -205,7 +205,7 @@ public extension SynchronizedArray {
             let elements = self.array
             self.array.removeAll()
             if completion != nil {
-                DispatchQueue.main.async {
+                DispatchQueue(label: "removing").async {
                     completion?(elements)
                 }
             }

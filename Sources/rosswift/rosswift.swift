@@ -416,10 +416,10 @@ public final class Ros: Hashable {
 
 
 
-    func closeAllConnections(x: EmptyRequest) -> EmptyResponse? {
+    func closeAllConnections(x: std_srvs.EmptyRequest) -> std_srvs.EmptyResponse? {
         ROS_INFO("close_all_connections service called, closing connections")
         connectionManager.clear(reason: .transportDisconnect)
-        return EmptyResponse()
+        return std_srvs.EmptyResponse()
     }
 
 

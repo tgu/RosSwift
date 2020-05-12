@@ -73,32 +73,6 @@ public struct Network {
 
         return (parts[0], portNr)
     }
-
-    //    static func splitURI(uri: String, host: inout String, port: inout UInt16) -> Bool {
-    //        var uri = uri
-    //        if uri.hasPrefix("http://") {
-    //            uri = String(uri.dropFirst(7))
-    //        } else if uri.hasPrefix("rosrpc://") {
-    //            uri = String(uri.dropFirst(9))
-    //        }
-    //
-    //        let parts = uri.components(separatedBy: ":")
-    //        guard parts.count == 2 else {
-    //            return false
-    //        }
-    //        var portString = parts[1]
-    //
-    //        let segs = portString.components(separatedBy: "/")
-    //        portString = segs[0]
-    //
-    //        guard let portNr = UInt16(portString) else {
-    //            return false
-    //        }
-    //
-    //        port = portNr
-    //        host = parts[0]
-    //        return true
-    //    }
     
     public static func determineHost() -> String {
         

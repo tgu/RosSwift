@@ -18,6 +18,7 @@ protocol BaseMsg {
 }
 
 extension BaseMsg {
+
 }
 
 public final class MsgContext {
@@ -155,7 +156,7 @@ public final class MsgContext {
             exit(1)
         }
 
-        let packages = content.filter { $0.hasSuffix("_msgs") || $0.hasSuffix("_pkgs")}
+        let packages = content.filter { $0.hasSuffix("_msgs") || $0.hasSuffix("_pkgs") || $0.hasSuffix("_srvs")}
         let files = content.filter { $0.hasSuffix(".msg") || $0.hasSuffix(".srv") }
 
         for file in files {
@@ -196,13 +197,15 @@ public final class MsgContext {
 
     func addSrv(with content: String, full_name: String) -> SrvSpec? {
         let parts = content.components(separatedBy: "---\n")
-        guard parts.count == 2 else {
+        guard parts.count == 2 || content.trimmingCharacters(in: .whitespacesAndNewlines) == "---" else {
             return nil
         }
-        guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true, generate: true) else {
+        let req = parts.first ?? ""
+        let res = parts.dropFirst().first ?? ""
+        guard let msg_in = MsgSpec(text: req, full_name: full_name+"Request", serviceMessage: true, generate: true) else {
             return nil
         }
-        guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true, generate: true) else {
+        guard let msg_out = MsgSpec(text: res, full_name: full_name+"Response", serviceMessage: true, generate: true) else {
             return nil
         }
         if let (package, shortName) = package_resource_name(name: full_name) {
@@ -313,7 +316,9 @@ public final class MsgContext {
                 continue
             }
 
-            var messages = mess
+            var messages = mess.sorted(by: { (m1, m2) -> Bool in
+                m1.short_name < m2.short_name
+            })
                 .filter { !$0.serviceMessage }
                 .map { "\"\($0.short_name)\": \($0.short_name).self"}
                 .joined(separator: ",\n\t\t")

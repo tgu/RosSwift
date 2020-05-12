@@ -262,8 +262,11 @@ public struct MsgSpec: BaseMsg {
             if is_builtin(msg_type) {
                 buff += "\(v.field_type) \(v.name)\n"
             } else {
-                let sub_spec = msg_context.get_registered(msg_type: msg_type)
-                guard let sub_md5 = sub_spec?.compute_md5(msg_context: msg_context) else {
+                guard let sub_spec = msg_context.get_registered(msg_type: msg_type) else {
+                    print("unkown type: \(msg_type)")
+                    return nil
+                }
+                guard let sub_md5 = sub_spec.compute_md5(msg_context: msg_context) else {
                     return nil
                 }
                 buff += "\(sub_md5) \(v.name)\n"

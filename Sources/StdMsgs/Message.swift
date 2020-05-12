@@ -24,6 +24,14 @@ public protocol ServiceMessage: Message {
     static var srvDatatype: String { get }
 }
 
+public protocol ServiceRequestMessage: ServiceMessage {
+    associatedtype ServiceType: ServiceProt
+}
+
+public protocol ServiceResponseMessage: ServiceMessage {
+    associatedtype ServiceType: ServiceProt
+}
+
 public protocol ServiceProt {
     associatedtype Request: ServiceMessage
     associatedtype Response: ServiceMessage

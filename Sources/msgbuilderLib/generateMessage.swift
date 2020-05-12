@@ -15,7 +15,7 @@ import Foundation
 
 let builtinMsgs = ["actionlib_msgs","control_msgs","diagnostic_msgs","gazebo_msgs",
 "geographic_msgs","geometry_msgs","map_msgs","nav_msgs","pcl_msgs","rosgraph_msgs","sensor_msgs","shape_msgs","stereo_msgs",
-"trajectory_msgs","uuid_msgs","visualization_msgs"]
+"trajectory_msgs","uuid_msgs","visualization_msgs","std_srvs","std_msgs"]
 
 func package_resource_name(name: String) -> (package: String, name: String)? {
     if name.contains("/") {

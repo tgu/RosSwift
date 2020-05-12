@@ -519,7 +519,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                 if let it = subscriptions.first(where: { s -> Bool in
                     s.name == ops.topic && md5sumsMatch(lhs: s.md5sum, rhs: M.md5sum) && !s.dropped.load()
                 }) {
-                    DispatchQueue.main.async {
+                    DispatchQueue(label: "adding").async {
                         it.add(ros: self.ros, localConnection: pub)
                     }
                 }
@@ -642,3 +642,33 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
         }
 
     }
+
+
+
+@available(swift 5.1)
+@propertyWrapper
+public struct Published<Value: Message> {
+    public let topic: String
+    private unowned var node: NodeHandle!
+    private var cachedValue: Value?
+    private var publisher: Publisher?
+
+    public init(topic: String, node: NodeHandle) {
+        self.topic = topic
+        self.node = node
+        self.publisher = node.advertise(topic: topic, message: Value.self )
+    }
+
+    public var wrappedValue: Value? {
+        get {
+            return cachedValue
+        }
+
+        set {
+            cachedValue = newValue
+            if let value = cachedValue {
+                publisher?.publish(message: value)
+            }
+        }
+    }
+}
