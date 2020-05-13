@@ -9,19 +9,19 @@ import BinaryCoder
 import StdMsgs
 import RosTime
 
-internal protocol SubscriptionCallbackHelper {
+protocol SubscriptionCallbackHelper {
     var id: ObjectIdentifier { get }
     func deserialize(data: [UInt8]) -> Message?
     func call(msg: Message, item: SubscriptionQueue.Item)
 }
 
-internal final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (M) -> Void
 
     let callback: Callback
 
-    public var id: ObjectIdentifier {
+    var id: ObjectIdentifier {
         return ObjectIdentifier(self)
     }
 
@@ -30,11 +30,11 @@ internal final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallba
 
     }
 
-    public func deserialize(data: [UInt8]) -> Message? {
+    func deserialize(data: [UInt8]) -> Message? {
         return try? BinaryDecoder.decode(M.self, data: data)
     }
 
-    public func call(msg: Message, item: SubscriptionQueue.Item) {
+    func call(msg: Message, item: SubscriptionQueue.Item) {
         if let message = msg as? M {
             callback(message)
         }
@@ -43,13 +43,13 @@ internal final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallba
 }
 
 
-internal final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (MessageEvent<M>) -> Void
 
     let callback: Callback
 
-    public var id: ObjectIdentifier {
+    var id: ObjectIdentifier {
         return ObjectIdentifier(self)
     }
 
@@ -57,11 +57,11 @@ internal final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionC
         self.callback = callback
     }
 
-    public func deserialize(data: [UInt8]) -> Message? {
+    func deserialize(data: [UInt8]) -> Message? {
         return try? BinaryDecoder.decode(M.self, data: data)
     }
 
-    public func call(msg: Message, item: SubscriptionQueue.Item) {
+    func call(msg: Message, item: SubscriptionQueue.Item) {
         let time = item.receiptTime
         if let message = msg as? M {
             let event = MessageEvent(message: message, header: item.deserializer.connectionHeader, receiptTime: time)

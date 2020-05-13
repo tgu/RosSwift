@@ -8,13 +8,13 @@
 import Foundation
 
 /// A thread-safe array.
-public final class SynchronizedArray<Element> {
+final class SynchronizedArray<Element> {
     fileprivate let queue = DispatchQueue(label: "SynchronizedArray", attributes: .concurrent)
     fileprivate var array = [Element]()
 }
 
 // MARK: - Properties
-public extension SynchronizedArray {
+extension SynchronizedArray {
 
     /// The first element of the collection.
     var first: Element? {
@@ -53,7 +53,7 @@ public extension SynchronizedArray {
 }
 
 // MARK: - Immutable
-public extension SynchronizedArray {
+extension SynchronizedArray {
     func all() -> [Element] {
         var result = [Element]()
         queue.sync { result = self.array }
@@ -129,7 +129,7 @@ public extension SynchronizedArray {
 }
 
 // MARK: - Mutable
-public extension SynchronizedArray {
+extension SynchronizedArray {
 
     /// Adds a new element at the end of the array.
     ///
@@ -213,7 +213,7 @@ public extension SynchronizedArray {
     }
 }
 
-public extension SynchronizedArray {
+extension SynchronizedArray {
 
     /// Accesses the element at the specified position if it exists.
     ///
@@ -245,7 +245,7 @@ public extension SynchronizedArray {
 }
 
 // MARK: - Equatable
-public extension SynchronizedArray where Element: Equatable {
+extension SynchronizedArray where Element: Equatable {
 
     /// Returns a Boolean value indicating whether the sequence contains the given element.
     ///
@@ -259,7 +259,7 @@ public extension SynchronizedArray where Element: Equatable {
 }
 
 // MARK: - Infix operators
-public extension SynchronizedArray {
+extension SynchronizedArray {
 
     static func += (left: inout SynchronizedArray, right: Element) {
         left.append(right)
@@ -270,7 +270,8 @@ public extension SynchronizedArray {
     }
 }
 
-public extension SynchronizedArray where Element: Equatable {
+
+extension SynchronizedArray where Element: Equatable {
     func firstIndex(of element: Element) -> Int? {
         var result: Int?
         #if swift(>=4.2)

@@ -6,7 +6,6 @@
 //
 
 import BinaryCoder
-import Foundation
 import NIO
 import NIOConcurrencyHelpers
 import StdMsgs
@@ -40,7 +39,7 @@ final class ConnectionHandler: ChannelInboundHandler {
 
     var state = State.header
 
-    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         //        ROS_DEBUG("message from \(context.channel.remoteAddress) => \(context.channel.localAddress)")
         var buffer = self.unwrapInboundIn(data)
 

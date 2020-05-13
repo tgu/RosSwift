@@ -22,8 +22,6 @@ public protocol Event {
                             currentReal: EventTime) -> Self
 }
 
-
-import Foundation
 import RosTime
 
 /// Structure passed as a parameter to the callback invoked by a `Timer`

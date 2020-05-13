@@ -47,8 +47,8 @@ private func httpResponseHead(request: HTTPRequestHead, status: HTTPResponseStat
 
 
 final class HTTPHandler: ChannelInboundHandler {
-    public typealias InboundIn = HTTPServerRequestPart
-    public typealias OutboundOut = HTTPServerResponsePart
+    typealias InboundIn = HTTPServerRequestPart
+    typealias OutboundOut = HTTPServerResponsePart
     weak var server: XMLRPCServer!
 
     private enum State {
@@ -78,7 +78,7 @@ final class HTTPHandler: ChannelInboundHandler {
 
     private var infoSavedRequestHead: HTTPRequestHead?
 
-    public init(server: XMLRPCServer) {
+    init(server: XMLRPCServer) {
         self.server = server
     }
 

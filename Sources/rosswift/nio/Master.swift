@@ -21,12 +21,12 @@ struct TopicInfo {
 let xmlrpcVersion = "XMLRPC++ 0.7"
 
 final class XmlRpcMessageDelimiterCodec: ByteToMessageDecoder {
-    public typealias InboundIn = ByteBuffer
-    public typealias InboundOut = ByteBuffer
+    typealias InboundIn = ByteBuffer
+    typealias InboundOut = ByteBuffer
 
-    public var cumulationBuffer: ByteBuffer?
+    var cumulationBuffer: ByteBuffer?
 
-    public func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+    func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
 
         guard let header = buffer.getString(at: buffer.readerIndex, length: buffer.readableBytes) else {
             return .needMoreData
@@ -68,8 +68,8 @@ final class XmlRpcMessageDelimiterCodec: ByteToMessageDecoder {
 }
 
 final class XmlRpcHandler: ChannelInboundHandler {
-    public typealias InboundIn = ByteBuffer
-    public typealias OutboundOut = ByteBuffer
+    typealias InboundIn = ByteBuffer
+    typealias OutboundOut = ByteBuffer
 
     var response = XmlRpcValue()
     weak var owner: Master!
@@ -82,7 +82,7 @@ final class XmlRpcHandler: ChannelInboundHandler {
         owner.registerHandler(for: context.channel, handler: self)
     }
 
-    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var buffer = self.unwrapInboundIn(data)
         if let string = buffer.readString(length: buffer.readableBytes) {
             guard let range = string.lowercased().range(of: "content-length: ")  else {
@@ -114,7 +114,7 @@ final class XmlRpcHandler: ChannelInboundHandler {
         }
     }
 
-    public func errorCaught(context: ChannelHandlerContext, error: Error) {
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
         ROS_ERROR(error.localizedDescription)
 
         // As we are not really interested getting notified on success or failure we just pass nil as promise to
@@ -162,7 +162,7 @@ final class Master {
     var masterPort: UInt16 = 11311
     var masterRetryTimeout = 0.0
 
-    public func initialize(remappings: StringStringMap) {
+    func initialize(remappings: StringStringMap) {
         var masterURI = remappings["__master"]
         if masterURI == nil {
             var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]

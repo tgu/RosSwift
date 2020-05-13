@@ -5,7 +5,6 @@
 //  Created by Thomas Gustafsson on 2018-03-08.
 //
 
-import Foundation
 import rpcobject
 
 struct XMLRPCCallWrapper: XmlRpcServerMethod {

@@ -5,7 +5,7 @@
 //  Created by Thomas Gustafsson on 2018-03-09.
 //
 //
-import Foundation
+
 import BinaryCoder
 
 func serialize<T : BinaryCodable>(_ value: T) -> [UInt8] {

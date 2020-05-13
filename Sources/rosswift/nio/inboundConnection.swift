@@ -6,7 +6,6 @@
 //
 
 import BinaryCoder
-import Foundation
 import NIO
 import NIOConcurrencyHelpers
 import NIOExtras
@@ -116,7 +115,7 @@ final class InboundConnection {
     }
 
     final class InboundHandler: ChannelInboundHandler {
-        public typealias InboundIn = ByteBuffer
+        typealias InboundIn = ByteBuffer
 
         weak var parent: InboundConnection?
 

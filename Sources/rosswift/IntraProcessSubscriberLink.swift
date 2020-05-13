@@ -5,7 +5,6 @@
 //  Created by Thomas Gustafsson on 2018-10-23.
 //
 
-import Foundation
 import NIOConcurrencyHelpers
 import StdMsgs
 

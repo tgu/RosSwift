@@ -5,7 +5,6 @@
 //  Created by Thomas Gustafsson on 2018-03-19.
 //
 
-import Foundation
 import NIO
 
 import BinaryCoder
@@ -14,7 +13,7 @@ final class MessageDelimiterCodec: ByteToMessageDecoder {
     typealias InboundIn = ByteBuffer
     typealias InboundOut = ByteBuffer
 
-    public var cumulationBuffer: ByteBuffer?
+    var cumulationBuffer: ByteBuffer?
 
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
         if let count: UInt32 = buffer.getInteger(at: buffer.readerIndex, endianness: .little) {
@@ -35,10 +34,10 @@ final class MessageDelimiterCodec: ByteToMessageDecoder {
 }
 
 final class HeaderMessageCodec: ByteToMessageDecoder {
-    public typealias InboundIn = ByteBuffer
-    public typealias InboundOut = StringStringMap
+    typealias InboundIn = ByteBuffer
+    typealias InboundOut = StringStringMap
 
-    public var cumulationBuffer: ByteBuffer?
+    var cumulationBuffer: ByteBuffer?
 
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
         guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
@@ -82,8 +81,8 @@ final class HeaderMessageCodec: ByteToMessageDecoder {
 final class TransportTCP {
 
     final class Handler: ChannelInboundHandler {
-        public typealias InboundIn = StringStringMap
-        public typealias OutboundOut = ByteBuffer
+        typealias InboundIn = StringStringMap
+        typealias OutboundOut = ByteBuffer
 
         let callback: (StringStringMap) -> Void
 
@@ -91,7 +90,7 @@ final class TransportTCP {
             self.callback = callback
         }
 
-        public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        func channelRead(context: ChannelHandlerContext, data: NIOAny) {
             let buffer = self.unwrapInboundIn(data)
             callback(buffer)
         }

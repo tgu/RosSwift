@@ -5,7 +5,6 @@
 //  Created by Thomas Gustafsson on 2018-10-10.
 //
 
-import Foundation
 
 
 final class ROSOutAppender: LogAppender {

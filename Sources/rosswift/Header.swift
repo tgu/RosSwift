@@ -6,21 +6,21 @@
 //
 
 import BinaryCoder
-import Foundation
 import StdMsgs
 
-public struct Header {
-    public var headers = StringStringMap()
+struct Header {
+    var headers = StringStringMap()
 
-    public func getValues() -> StringStringMap {
+    func getValues() -> StringStringMap {
         return headers
     }
 
-    public func getValue(key: String) -> String? {
+    func getValue(key: String) -> String? {
         return headers[key]
     }
 
-    public mutating func parse(buffer: [UInt8]) -> Bool {
+
+    mutating func parse(buffer: [UInt8]) -> Bool {
         var indx = 0
         while indx < buffer.count {
             let len = UInt32(buffer[indx]) |

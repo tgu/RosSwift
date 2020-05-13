@@ -5,7 +5,6 @@
 //  Created by Thomas Gustafsson on 2018-10-24.
 //
 
-import Foundation
 import NIO
 import RosTime
 import StdMsgs
@@ -139,15 +138,15 @@ public final class ServiceClient {
     }
 
 
-    func waitForExistence(ros: Ros, timeout: Duration = Duration(seconds: -1)) -> Bool {
+    public func waitForExistence(ros: Ros, timeout: Duration = Duration(seconds: -1)) -> Bool {
         return Service.waitForService(ros: ros, serviceName: name, timeout: timeout)
     }
 
-    func exists() -> Bool {
+    public func exists() -> Bool {
         return Service.exists(ros: ros, serviceName: name, printFailureReason: false)
     }
 
-    func getService() -> String {
+    public func getService() -> String {
         return name
     }
 

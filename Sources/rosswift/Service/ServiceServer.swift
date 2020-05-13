@@ -5,7 +5,6 @@
 //  Created by Thomas Gustafsson on 2018-10-24.
 //
 
-import Foundation
 import NIOConcurrencyHelpers
 
 public final class ServiceServer {
