@@ -31,9 +31,13 @@ public struct Service {
         return client.call(req: req)
     }
 
-    static func call<Service: ServiceProt>(node: NodeHandle, name: String, service: inout Service) -> Bool {
-        return call(node: node, serviceName: name, req: service.request, response: &service.response)
+    static func call<R: ServiceRequestMessage>(node: NodeHandle, name: String, request: R) -> R.ServiceType.Response? {
+        return try? call(node: node, serviceName: name, req: request).wait()
     }
+
+//    static func call<Service: ServiceProt>(node: NodeHandle, name: String, service: inout Service) -> Bool {
+//        return call(node: node, serviceName: name, req: service.request, response: &service.response)
+//    }
 
     static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: NodeHandle, serviceName: String, req: MReq, response: inout MRes)  -> Bool {
         do {

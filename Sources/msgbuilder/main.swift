@@ -84,7 +84,7 @@ if useRosMsg {
         for msg in allMsgs {
             let content = shell.rosmsg(["info","-r",msg]).trimmingCharacters(in: .whitespacesAndNewlines)
             print("getting info for '\(msg)'")
-            _ = context.addMsg(with: content, full_name: msg, serviceMsg: false, generate: true)
+            _ = context.addMsg(with: content, full_name: msg, messageType: .message, generate: true)
         }
     }
     context.genAllMessages(to: destination)

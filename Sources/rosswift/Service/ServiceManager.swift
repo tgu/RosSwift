@@ -58,7 +58,7 @@ import Network
             }
         }
 
-        func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(_ ops: AdvertiseServiceOptions<MReq, MRes>) -> Bool {
+        func advertiseService<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>(_ ops: AdvertiseServiceOptions<MReq, MRes>) -> Bool {
             if isShuttingDown.load() {
                 return false
             }

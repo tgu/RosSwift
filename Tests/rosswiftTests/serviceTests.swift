@@ -73,12 +73,11 @@ class serviceTests: XCTestCase {
 
         let ros = Ros(name: "testCallInternalService")
         let n = ros.createNode()
-        var t = TestStringString()
 
         let srv1 = n.advertise(service: "/test_srv", srvFunc: serviceCallback)
         XCTAssertNotNil(srv1)
-        XCTAssert(Service.call(node: n, name: "/test_srv", service: &t))
-        XCTAssertEqual(t.response.data, "test")
+        let res = Service.call(node: n, name: "/test_srv", request: TestStringString.Request())
+        XCTAssertEqual(res?.data, "test")
 
 
     }
@@ -92,7 +91,7 @@ class serviceTests: XCTestCase {
 
         let ros = Ros(name: "testServiceAdvCopy")
         let node = ros.createNode()
-        var t = TestStringString()
+        let t = TestStringString.Request()
 
         let ros2 = Ros(name: "testServiceAdvCopyCaller")
         let node2 = ros2.createNode()
@@ -100,27 +99,24 @@ class serviceTests: XCTestCase {
         do {
             let srv1 = node.advertise(service: "/test_srv_23", srvFunc: serviceCallback)
             sleep(4)
-            XCTAssert(Service.call(node: node2, name: "/test_srv_23", service: &t))
+            XCTAssertNotNil(Service.call(node: node2, name: "/test_srv_23", request: t))
             do {
                 let srv2 = srv1
                 do {
                     let srv3 = srv2
                     XCTAssert(srv3 === srv2)
-                    t.response.data = ""
-                    XCTAssert(Service.call(node: node2, name: "/test_srv_23", service: &t))
-                    XCTAssertEqual(t.response.data, "test")
+                    let res = Service.call(node: node2, name: "/test_srv_23", request: t)
+                    XCTAssertEqual(res?.data, "test")
                 }
                 XCTAssert(srv2 === srv1);
-                t.response.data = ""
-                XCTAssert(Service.call(node: node2, name: "/test_srv_23", service: &t))
-                XCTAssertEqual(t.response.data, "test")
+                let res2 = Service.call(node: node2, name: "/test_srv_23", request: t)
+                XCTAssertEqual(res2?.data, "test")
             }
-            t.response.data = ""
-            XCTAssert(Service.call(node: node2, name: "/test_srv_23", service: &t))
-            XCTAssertEqual(t.response.data, "test")
+            let res3 = Service.call(node: node2, name: "/test_srv_23", request: t)
+            XCTAssertEqual(res3?.data, "test")
         }
         sleep(1)
-        XCTAssertFalse(Service.call(node: node2, name: "/test_srv_23", service: &t))
+        XCTAssertNil(Service.call(node: node2, name: "/test_srv_23", request: t))
 
         XCTAssertEqual(calls, 4)
         print("\(node.isOK)")
@@ -151,8 +147,8 @@ class serviceTests: XCTestCase {
         let srv2 = n.advertise(service: "/test_srv_19", srvFunc: serviceCallback2)
         XCTAssert(srv != nil)
         XCTAssertNil(srv2)
-        var t = TestStringString()
-        XCTAssert(Service.call(node: n, name: "/test_srv_19", service: &t))
+        let t = TestStringString.Request()
+        XCTAssertNotNil(Service.call(node: n, name: "/test_srv_19", request: t))
         XCTAssertEqual(c1, 1)
         XCTAssertEqual(c2, 0)
     }

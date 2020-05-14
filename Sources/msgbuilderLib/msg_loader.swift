@@ -35,65 +35,65 @@ public final class MsgContext {
 
         // used in common_msgs and needed for md5 computation
         
-        register(message: std_msgs.Header.self, serviceMsg: false, generate: false)
-        register(message: std_msgs.ColorRGBA.self, serviceMsg: false, generate: false)
+        register(message: std_msgs.Header.self, messageType: .message, generate: false)
+        register(message: std_msgs.ColorRGBA.self, messageType: .message, generate: false)
 
         if useBuiltin {
             for (_, value) in geometry_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in uuid_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in geographic_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in actionlib_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in control_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in map_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
 
             for (_, value) in nav_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in pcl_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in rosgraph_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in sensor_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in shape_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in stereo_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in trajectory_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
             for (_, value) in visualization_msgs.all.enumerated() {
-                register(message: value.value, serviceMsg: false, generate: false)
+                register(message: value.value, messageType: .message, generate: false)
             }
 
 
@@ -102,8 +102,8 @@ public final class MsgContext {
 
     }
 
-    func register(message: Message.Type, serviceMsg: Bool, generate: Bool = true) {
-        _ = addMsg(with: message.definition, full_name: message.datatype, serviceMsg: serviceMsg, generate: generate)
+    func register(message: Message.Type, messageType: MessageType, generate: Bool = true) {
+        _ = addMsg(with: message.definition, full_name: message.datatype, messageType: messageType, generate: generate)
     }
 
     func register(full_msg_type: String, msgspec: BaseMsg) {
@@ -156,7 +156,7 @@ public final class MsgContext {
             exit(1)
         }
 
-        let packages = content.filter { $0.hasSuffix("_msgs") || $0.hasSuffix("_pkgs") || $0.hasSuffix("_srvs")}
+        let packages = content.filter { ($0.hasSuffix("_msgs") && $0 != "std_msgs") || $0.hasSuffix("_pkgs") || $0.hasSuffix("_srvs")  }
         let files = content.filter { $0.hasSuffix(".msg") || $0.hasSuffix(".srv") }
 
         for file in files {
@@ -185,8 +185,8 @@ public final class MsgContext {
         }
     }
 
-    public func addMsg(with content: String, full_name: String, serviceMsg: Bool, generate: Bool) -> MsgSpec? {
-        if let spec = MsgSpec(text: content, full_name: full_name, serviceMessage: serviceMsg, generate: generate) {
+    public func addMsg(with content: String, full_name: String, messageType: MessageType, generate: Bool) -> MsgSpec? {
+        if let spec = MsgSpec(text: content, full_name: full_name, messageType: messageType, generate: generate) {
             register(full_msg_type: full_name, msgspec: spec)
             return spec
         } else {
@@ -202,10 +202,10 @@ public final class MsgContext {
         }
         let req = parts.first ?? ""
         let res = parts.dropFirst().first ?? ""
-        guard let msg_in = MsgSpec(text: req, full_name: full_name+"Request", serviceMessage: true, generate: true) else {
+        guard let msg_in = MsgSpec(text: req, full_name: full_name+"Request", messageType: .serviceRequest, generate: false) else {
             return nil
         }
-        guard let msg_out = MsgSpec(text: res, full_name: full_name+"Response", serviceMessage: true, generate: true) else {
+        guard let msg_out = MsgSpec(text: res, full_name: full_name+"Response", messageType: .serviceResponse, generate: false) else {
             return nil
         }
         if let (package, shortName) = package_resource_name(name: full_name) {
@@ -221,7 +221,7 @@ public final class MsgContext {
 
     func loadMsg(from path: String, full_name: String) -> BaseMsg? {
         if let content = try? String(contentsOfFile: path) {
-            if path.hasSuffix("msg"), let spec = addMsg(with: content, full_name: full_name, serviceMsg: false, generate: true) {
+            if path.hasSuffix("msg"), let spec = addMsg(with: content, full_name: full_name, messageType: .message, generate: true) {
                 set_file(full_msg_type: full_name, file_path: path)
                 return spec
             } else if path.hasSuffix("srv"), let srv = addSrv(with: content, full_name: full_name) {
@@ -239,10 +239,10 @@ public final class MsgContext {
             guard parts.count == 2 else {
                 return nil
             }
-            guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", serviceMessage: true, generate: true) else {
+            guard let msg_in = MsgSpec(text: parts[0], full_name: full_name+"Request", messageType: .serviceRequest, generate: true) else {
                 return nil
             }
-            guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", serviceMessage: true, generate: true) else {
+            guard let msg_out = MsgSpec(text: parts[1], full_name: full_name+"Response", messageType: .serviceResponse, generate: true) else {
                 return nil
             }
             return SrvSpec(request: msg_in, response: msg_out, text: content, full_name: full_name, package: package, short_name: shortName, generate: true)
@@ -319,7 +319,7 @@ public final class MsgContext {
             var messages = mess.sorted(by: { (m1, m2) -> Bool in
                 m1.short_name < m2.short_name
             })
-                .filter { !$0.serviceMessage }
+                .filter { !$0.messageType.isServiceMessage }
                 .map { "\"\($0.short_name)\": \($0.short_name).self"}
                 .joined(separator: ",\n\t\t")
 

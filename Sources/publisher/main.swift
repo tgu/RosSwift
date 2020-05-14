@@ -18,7 +18,7 @@ guard let node = ros.createNode(ns: "", remappings: [:]) else {
 
 // create a service from the Service type
 
-let srv_add_two_ints = AddTwoInts.advertise(service: "/add_two_ints", node: node) {
+let srv_add_two_ints = custom_msgs.AddTwoInts.advertise(service: "/add_two_ints", node: node) {
     .init(sum: $0.a + $0.b)
 }
 
@@ -26,7 +26,7 @@ do {
     // call service from a second node
 
     let secondNode = ros.createNode()
-    let addRequest = AddTwoIntsRequest(a: 34, b: 22)
+    let addRequest = custom_msgs.AddTwoInts.Request(a: 34, b: 22)
     let optionalSum = addRequest.call(name: "/add_two_ints", node: secondNode)
 
     if let sum = optionalSum {
@@ -102,49 +102,6 @@ while ros.ok {
     twist_pub?.publish(message: twist)
 
     rate.sleep()
-}
-
-
-struct AddTwoIntsRequest: ServiceRequestMessage {
-    typealias ServiceType = AddTwoInts
-    init() {
-        a = 0
-        b = 0
-    }
-
-    static var srvMd5sum: String = AddTwoInts.md5sum
-    static var srvDatatype: String = AddTwoInts.datatype
-    static var md5sum: String = "36d09b846be0b371c5f190354dd3153e"
-    static var datatype: String = "beginner_tutorials/AddTwoIntsRequest"
-    static var definition: String = "int64 a\nint64 b"
-
-    var a : Int64
-    var b : Int64
-
-    init(a: Int64, b: Int64) {
-        self.a = a
-        self.b = b
-    }
-}
-
-struct AddTwoIntsResponse: ServiceResponseMessage {
-    typealias ServiceType = AddTwoInts
-    static var srvMd5sum: String = AddTwoInts.md5sum
-    static var srvDatatype: String = AddTwoInts.datatype
-    static var md5sum: String = "b88405221c77b1878a3cbbfff53428d7"
-    static var datatype: String = "beginner_tutorials/AddTwoIntsResponse"
-    static var definition: String = "int64 sum"
-
-    var sum : Int64
-}
-
-struct AddTwoInts: ServiceProt {
-    typealias Request = AddTwoIntsRequest
-    typealias Response = AddTwoIntsResponse
-    var request: Request
-    var response: Response
-    public static var datatype: String = "beginner_tutorials/AddTwoInts"
-    public static var md5sum = "6a2e34150c00229791cc89ff309fff21"
 }
 
 func caseFlip(req: TestStringString.Request) -> TestStringString.Response? {

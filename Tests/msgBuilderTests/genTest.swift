@@ -36,7 +36,7 @@ class GenTest: XCTestCase {
             """
 
 
-        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log", serviceMessage: false, generate: true) {
+        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log", messageType: .message, generate: true) {
             XCTAssertEqual(spec.constants.count, 5)
             let names = spec.variables.map { $0.name }
             XCTAssertEqual(names, ["header","level","name","msg","file","function","line","topics"])
@@ -57,7 +57,7 @@ class GenTest: XCTestCase {
         let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
                            "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
 
-        guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel", serviceMessage: false, generate: true) else {
+        guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel", messageType: .message, generate: true) else {
             XCTFail()
             return
         }

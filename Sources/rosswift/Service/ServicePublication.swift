@@ -18,11 +18,11 @@ internal protocol ServiceProtocol: class {
     func drop()
     func addServiceClientLink(link: ServiceClientLink)
     func removeServiceClientLink(_ link: ServiceClientLink)
-    func processRequest(buf: [UInt8]) -> ServiceMessage?
+    func processRequest(buf: [UInt8]) -> Message?
 
 }
 
-internal final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
+internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>: ServiceProtocol {
 
     typealias CallFcn = (MReq) -> MRes?
     var call: CallFcn
@@ -88,7 +88,7 @@ internal final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessa
 
     }
 
-    func processRequest(buf: [UInt8]) -> ServiceMessage? {
+    func processRequest(buf: [UInt8]) -> Message? {
 
         let m = SerializedMessage(buffer: buf)
         do {

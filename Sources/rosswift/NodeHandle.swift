@@ -231,7 +231,7 @@ public final class NodeHandle {
     ///
 
 
-    public func advertise<MReq: ServiceMessage, MRes: ServiceMessage>(
+    public func advertise<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>(
         service: String,
         srvFunc: @escaping (MReq) -> MRes?) -> ServiceServer? {
 
@@ -253,7 +253,7 @@ public final class NodeHandle {
     ///
 
 
-    func advertiseService<MReq: ServiceMessage, MRes: ServiceMessage>(ops: AdvertiseServiceOptions<MReq, MRes>) -> ServiceServer? {
+    func advertiseService<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>(ops: AdvertiseServiceOptions<MReq, MRes>) -> ServiceServer? {
         var options = ops
         guard let service = resolveName(name: ops.service) else {
             return nil

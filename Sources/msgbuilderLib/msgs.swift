@@ -110,7 +110,9 @@ struct Variable: FullType {
         }
         let line_splits = clean_line.components(separatedBy: " ").filter { !$0.isEmpty }
         guard line_splits.count == 2 else {
-            print("Invalid declaration: \(orig_line)")
+            if orig_line != "---" {
+                print("Invalid declaration: \(orig_line) in \(package_context)")
+            }
             return nil
         }
         var field_type = line_splits[0]
@@ -208,6 +210,50 @@ struct Variable: FullType {
 
 }
 
+
+public enum MessageType: String {
+    case message = "Message"
+    case messageWithHeader = "MessageWithHeader"
+    case serviceRequest = "ServiceRequestMessage"
+    case serviceRequestWithHeader = "ServiceRequestMessage, MessageWithHeader"
+    case serviceResponse = "ServiceResponseMessage"
+    case serviceResponseWithHeader = "ServiceResponseMessage, MessageWithHeader"
+
+    var messageWithHeader: MessageType {
+        switch self {
+        case .message:
+            return .messageWithHeader
+        case .serviceRequest:
+            return .serviceRequestWithHeader
+        case .serviceResponse:
+            return .serviceResponseWithHeader
+        default:
+            return self
+        }
+    }
+
+    var isServiceMessage: Bool {
+        switch self {
+        case .serviceRequest, .serviceResponse, .serviceResponseWithHeader, .serviceRequestWithHeader:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var serviceName: String {
+        switch self {
+        case .serviceResponse, .serviceResponseWithHeader:
+            return "Response"
+        case .serviceRequest, .serviceRequestWithHeader:
+            return "Request"
+        default:
+            fatalError()
+        }
+    }
+}
+
+
 public struct MsgSpec: BaseMsg {
     let variables: [Variable]
     let constants: [Constant]
@@ -215,14 +261,14 @@ public struct MsgSpec: BaseMsg {
     let full_name: String
     let package: String
     let short_name: String
-    let serviceMessage: Bool
+    var messageType: MessageType
     let generate: Bool
 
-    var messageType: String {
+    var swiftMessageType: String {
         return full_name.replacingOccurrences(of: "/", with: ".")
     }
     
-    init?(text: String, full_name: String, serviceMessage: Bool, generate: Bool) {
+    init?(text: String, full_name: String, messageType: MessageType, generate: Bool) {
         guard let (package_name, short_name) = package_resource_name(name: full_name) else {
             return nil
         }
@@ -251,7 +297,7 @@ public struct MsgSpec: BaseMsg {
         self.full_name = full_name
         self.package = package_name
         self.short_name = short_name
-        self.serviceMessage = serviceMessage
+        self.messageType = messageType
         self.generate = generate
     }
 
@@ -287,6 +333,14 @@ func is_valid_msg_field_name(_ x: String) -> Bool {
 }
 
 func is_valid_msg_type(_ x: String) -> Bool {
+    if x.isEmpty {
+        return false
+    }
+    let base = bare_msg_type(x)
+    guard is_legal_resource_name(base) else {
+        return false
+    }
+
     return true
 }
 

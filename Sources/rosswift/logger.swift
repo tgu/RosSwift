@@ -25,76 +25,76 @@ struct Logger: Message {
 
 }
 
-struct GetLoggersRequest: ServiceMessage {
-    static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-    static let srvMd5sum = GetLoggers.md5sum
-    static let srvDatatype = GetLoggers.datatype
-    static let datatype = "roscpp/GetLoggersRequest"
-    static let definition = "\n"
-}
 
-struct GetLoggersResponse: ServiceMessage {
+
+struct GetLoggers: ServiceProt {
     static let md5sum = "32e97e85527d4678a8f9279894bb64b0"
-    static let srvMd5sum = GetLoggers.md5sum
-    static let srvDatatype = GetLoggers.datatype
-    static let datatype = "roscpp/GetLoggersResponse"
-    static let definition = """
-            Logger[] loggers
+    static let datatype = "roscpp/GetLoggers"
+    var request: Request
+    var response: Response
 
-            ================================================================================\n\
-            MSG: roscpp/Logger
-            string name
-            string level
-            """
+    struct Request: ServiceRequestMessage {
+        public typealias ServiceType = GetLoggers
+        static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
+        static let datatype = "roscpp/GetLoggersRequest"
+        static let definition = "\n"
+    }
 
-    let loggers: [Logger]
+    struct Response: ServiceResponseMessage {
+        public typealias ServiceType = GetLoggers
+        static let md5sum = "32e97e85527d4678a8f9279894bb64b0"
+        static let datatype = "roscpp/GetLoggersResponse"
+        static let definition = """
+                Logger[] loggers
 
-    init() {
-        self.loggers = [Logger]()
+                ================================================================================\n\
+                MSG: roscpp/Logger
+                string name
+                string level
+                """
+
+        let loggers: [Logger]
+
+        init() {
+            self.loggers = [Logger]()
+        }
     }
 }
 
-struct GetLoggers {
-    typealias Request = GetLoggersRequest
-    typealias Response = GetLoggersResponse
-    static let md5sum = "32e97e85527d4678a8f9279894bb64b0"
-    static let datatype = "roscpp/GetLoggers"
-}
-
-func getLoggers(x: GetLoggersRequest, y: inout GetLoggersRequest) -> Bool {
+func getLoggers(x: GetLoggers.Request, y: inout GetLoggers.Request) -> Bool {
     ROS_ERROR("getLoggers not implemented")
     return false
 }
 
-struct SetLoggerLevelRequest: ServiceMessage {
-    static let md5sum = "51da076440d78ca1684d36c868df61ea"
-    static let datatype = "roscpp/SetLoggerLevelRequest"
-    static let definition = "string logger\nstring level\n"
-    static let srvMd5sum = SetLoggerLevel.md5sum
-    static let srvDatatype = SetLoggerLevel.datatype
-
-    let logger: String
-    let level: String
-
-    init() {
-        logger = ""
-        level = ""
-    }
-}
-
-struct SetLoggerLevelResponse: ServiceMessage {
-    static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-    static let datatype = "roscpp/SetLoggerLevelResponse"
-    static let definition = "\n"
-    static let srvMd5sum = SetLoggerLevel.md5sum
-    static let srvDatatype = SetLoggerLevel.datatype
-}
-
-struct SetLoggerLevel {
-    typealias Request = SetLoggerLevelRequest
-    typealias Response = SetLoggerLevelResponse
+struct SetLoggerLevel: ServiceProt {
     static let md5sum = "51da076440d78ca1684d36c868df61ea"
     static let datatype = "roscpp/SetLoggerLevel"
+    var request: Request
+    var response: Response
+
+    struct Request: ServiceRequestMessage {
+        public typealias ServiceType = SetLoggerLevel
+        static let md5sum = "51da076440d78ca1684d36c868df61ea"
+        static let datatype = "roscpp/SetLoggerLevelRequest"
+        static let definition = "string logger\nstring level\n"
+
+        let logger: String
+        let level: String
+
+        init() {
+            logger = ""
+            level = ""
+        }
+    }
+
+    struct Response: ServiceResponseMessage {
+        public typealias ServiceType = SetLoggerLevel
+        static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
+        static let datatype = "roscpp/SetLoggerLevelResponse"
+        static let definition = "\n"
+    }
+
+
 }
 
 extension LoggerMessageType {
@@ -117,12 +117,12 @@ extension LoggerMessageType {
     }
 }
 
-func setLoggerLevel(x: SetLoggerLevelRequest) -> SetLoggerLevelResponse? {
+func setLoggerLevel(x: SetLoggerLevel.Request) -> SetLoggerLevel.Response? {
     guard let level = LoggerMessageType(x.level) else {
         ROS_ERROR("Cannot set logger level \(x.level) for logger \(x.logger)")
         return nil
     }
 
     Console.setLoggerLevel(logger: x.logger, level: level)
-    return SetLoggerLevelResponse()
+    return SetLoggerLevel.Response()
 }

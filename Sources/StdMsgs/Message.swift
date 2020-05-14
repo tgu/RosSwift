@@ -5,8 +5,6 @@
 //  Created by Thomas Gustafsson on 2018-03-03.
 //
 
-import Foundation
-import RosTime
 import BinaryCoder
 
 public protocol Message: BinaryCodable {
@@ -20,28 +18,29 @@ public protocol MessageWithHeader: Message {
 }
 
 public protocol ServiceMessage: Message {
-    static var srvMd5sum: String { get }
-    static var srvDatatype: String { get }
-}
-
-public protocol ServiceRequestMessage: ServiceMessage {
     associatedtype ServiceType: ServiceProt
 }
 
-public protocol ServiceResponseMessage: ServiceMessage {
-    associatedtype ServiceType: ServiceProt
+extension ServiceMessage {
+    public static var srvMd5sum: String {
+        return ServiceType.md5sum
+    }
+
+    public static var srvDatatype: String {
+        return ServiceType.datatype
+    }
 }
+
+public protocol ServiceRequestMessage: ServiceMessage {}
+
+public protocol ServiceResponseMessage: ServiceMessage {}
 
 public protocol ServiceProt {
-    associatedtype Request: ServiceMessage
-    associatedtype Response: ServiceMessage
-    var request: Request { get set }
-    var response: Response { get set }
+    associatedtype Request: ServiceRequestMessage
+    associatedtype Response: ServiceResponseMessage
     static var md5sum: String { get }
     static var datatype: String { get }
 }
-
-
 
 // Builtin native types
 
