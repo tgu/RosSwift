@@ -126,25 +126,40 @@ extension MsgSpec {
         var argInit = ""
         if !arguments.isEmpty {
             argInit = """
+
             \t\tpublic init(\(arguments)) {
             \t\(initCode)
             \t\t}
+            
             """
         }
 
-        let code = """
+        let emptyData = tabbedData.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        let singleRow = emptyData || !tabbedData.contains("\n") && tabbedData.count < 40
+
+        let definition = singleRow ? "\"\(tabbedData)\"" : "\"\"\"\n\t\t\t\(tabbedData)\n\t\t\t\"\"\""
+
+        var code = """
             \(comments)
             \tpublic struct \(name): \(messageProtocol) {
             \t\tpublic static let md5sum: String = "\(md5sum)"
             \t\tpublic static let datatype = "\(full_name)"\(servicePart)
-            \t\tpublic static let definition = \"\"\"
-            \t\t\t\(tabbedData)
-            \t\t\t\"\"\"
+            \t\tpublic static let definition = \(definition)
 
-            \t\(constDecl)
-            \t\(decl)
+            """
 
-            \(argInit)
+        if !constDecl.isEmpty {
+            code += "\n\t\(constDecl)"
+        }
+
+        if !decl.isEmpty {
+            code += "\n\t\(decl)\n"
+        }
+
+        code += argInit
+
+        code += """
 
             \t\tpublic init() {
             \t\(codeInit)
