@@ -45,9 +45,6 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
 
         unowned var ros: Ros!
 
-        internal init() {
-        }
-
         deinit {
             shutdown()
         }
@@ -274,40 +271,28 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
         /// subscription needs to be created.
 
         func addSubCallback<M: Message>(ops: SubscribeOptions<M>) -> Bool {
-            // spin through the subscriptions and see if we find a match. if so, use it.
-            var found = false
-
-            var sub: Subscription?
-
             if shuttingDown {
                 return false
             }
 
-            subscriptions.forEach {
-                if !$0.dropped.load() && $0.name == ops.topic {
-                    if md5sumsMatch(lhs: M.md5sum, rhs: $0.md5sum) {
-                        found = true
-                    }
-                    sub = $0
-                    return
-                }
+            guard let sub = subscriptions.first(where: {
+                !$0.dropped.load() && $0.name == ops.topic
+            }) else {
+                return false
             }
 
-            if let sub = sub {
-                if !found {
-                    fatalError("Tried to subscribe to a topic with the same name" +
-                        " but different md5sum as a topic that was already subscribed" +
-                        " [\(M.datatype)/\(M.md5sum) vs. \(sub.datatype)/\(sub.md5sum)]")
-                } else if !sub.add(callback: ops.helper,
-                                   md5: M.md5sum,
-                                   queue: ops.callbackQueue,
-                                   queueSize: ops.queueSize,
-                                   trackedObject: ops.trackedObject,
-                                   allowConcurrentCallbacks: ops.allowConcurrentCallbacks) {
-                    return false
-                }
+            guard md5sumsMatch(lhs: M.md5sum, rhs: sub.md5sum) else {
+                fatalError("Tried to subscribe to a topic with the same name" +
+                    " but different md5sum as a topic that was already subscribed" +
+                    " [\(M.datatype)/\(M.md5sum) vs. \(sub.datatype)/\(sub.md5sum)]")
             }
-            return found
+
+            return sub.add(callback: ops.helper,
+                           md5: M.md5sum,
+                           queue: ops.callbackQueue,
+                           queueSize: ops.queueSize,
+                           trackedObject: ops.trackedObject,
+                           allowConcurrentCallbacks: ops.allowConcurrentCallbacks)
 
         }
 
@@ -348,7 +333,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                                 trackedObject: options.trackedObject,
                                 allowConcurrentCallbacks: options.allowConcurrentCallbacks)
 
-                    if !registerSubscriber(callerId: ros.name, s: sub, datatype: M.datatype) {
+                    if !registerSubscriber(s: sub, datatype: M.datatype) {
                         ROS_DEBUG("couldn't register subscriber on topic [\(options.topic)")
                         sub.shutdown()
                         ok = false
@@ -391,8 +376,8 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
             return true
         }
 
-        func registerSubscriber(callerId: String, s: Subscription, datatype: String) -> Bool {
-            let args = XmlRpcValue(anyArray: [ros.name, s.name, datatype, xmlrpcManager.serverURI])
+        private func registerSubscriber(name: String, datatype: String) -> XmlRpcValue {
+            let args = XmlRpcValue(anyArray: [ros.name, name, datatype, xmlrpcManager.serverURI])
 
             var payload = XmlRpcValue()
             do {
@@ -400,58 +385,36 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
             } catch {
                 ROS_ERROR("registerSubscriber \(error)")
             }
+            return payload
+        }
 
+        func registerSubscriber(s: Subscription, datatype: String) -> Bool {
+            let payload = registerSubscriber(name: s.name, datatype: datatype)
             guard payload.valid() else {
                 return false
             }
 
-            var pubUris = [String]()
-            for i in 0..<payload.size() {
-                if case .string(let uri) = payload[i] {
-                    if uri != xmlrpcManager.serverURI {
-                        if !uri.isEmpty {
-                            pubUris.append(uri)
-                        } else {
-                            ROS_DEBUG("empty public uri")
-                        }
-                    }
-                }
-            }
+            let pubUris = payload.map { $0.string }.filter { $0 != xmlrpcManager.serverURI }
 
-            var pubLocal: Publication?
-            var selfSubscribed = false
-            //        var pub = Publication()
-            let subMd5sum = s.md5sum
             // Figure out if we have a local publisher
 
-            var ok = true
-            advertisedTopicsMutex.sync {
-                for pub in advertisedTopics {
-                    let pubMd5sum = pub.md5sum
-
-                    if pub.name == s.name && !pub.isDropped.load() {
-                        if !md5sumsMatch(lhs: pubMd5sum, rhs: subMd5sum) {
-                            ROS_DEBUG("md5sum mismatch making local subscription to topic \(s.name).")
-                            ROS_DEBUG("Subscriber expects type \(s.datatype), md5sum \(s.md5sum)")
-                            ROS_DEBUG("Publisher provides type \(pub.datatype), md5sum \(pub.md5sum)")
-                            ok = false
-                        } else {
-                            selfSubscribed = true
-                            pubLocal = pub
-                        }
-                        break
-                    }
-                }
+            let pub = advertisedTopicsMutex.sync {
+                advertisedTopics.first(where: {$0.name == s.name && !$0.isDropped.load()})
             }
 
-            if ok {
-                _ = s.pubUpdate(newPubs: pubUris)
-                if selfSubscribed, let local = pubLocal {
-                    s.add(ros: ros, localConnection: local)
+            if let localPub = pub {
+                guard md5sumsMatch(lhs: localPub.md5sum, rhs: s.md5sum) else {
+                    ROS_DEBUG("md5sum mismatch making local subscription to topic \(s.name).")
+                    ROS_DEBUG("Subscriber expects type \(s.datatype), md5sum \(s.md5sum)")
+                    ROS_DEBUG("Publisher provides type \(localPub.datatype), md5sum \(localPub.md5sum)")
+                    return false
                 }
+
+                s.add(ros: ros, localConnection: localPub)
             }
 
-            return ok
+            _ = s.pubUpdate(newPubs: pubUris)
+            return true
         }
 
         func unregisterSubscriber(topic: String) {
