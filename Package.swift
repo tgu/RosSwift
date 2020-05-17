@@ -15,9 +15,11 @@ let package = Package(
         .library(name: "RosSwift", targets: ["RosSwift"]),
         .executable(name: "publisher", targets: ["publisher"]),
         .executable(name: "listener", targets: ["listener"]),
-        .executable(name: "msgbuilder", targets: ["msgbuilder"]),        .library(name: "msgs", targets: ["msgs"]),
+        .executable(name: "msgbuilder", targets: ["msgbuilder"]),
+        .library(name: "msgs", targets: ["msgs"]),
         .library(name: "StdMsgs", targets: ["StdMsgs"]),
         .library(name: "RosTime", targets: ["RosTime"]),
+        .library(name: "RosMaster", targets: ["rosmaster"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.16.0"),
