@@ -22,8 +22,8 @@ final class ConnectionHandler: ChannelInboundHandler {
     var header = Header()
 
     func channelInactive(context: ChannelHandlerContext) {
-        subscriber?.drop()
-        serviceclient?.drop()
+        subscriber?.dropPublication()
+        serviceclient?.dropServiceClient()
         //        ROS_DEBUG("ConnectionHandler channelInactive for port \(context.channel.localAddress!.port!)")
         context.fireChannelInactive()
     }
@@ -90,7 +90,7 @@ final class ConnectionHandler: ChannelInboundHandler {
                 if subLink.handleHeader(ros: ros, header: header) {
                     subscriber = subLink
                 } else {
-                    subLink.drop()
+                    subLink.dropPublication()
                 }
             } else if let val = header.getValue(key: "service") {
                 ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: context.remoteAddress!.description))]")

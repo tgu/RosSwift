@@ -48,7 +48,7 @@ import Network
             localpub.forEach {
                 ROS_DEBUG("shutdown service \($0.name)")
                 self.unregisterService(service: $0.name)
-                $0.drop()
+                $0.dropService()
             }
 
             serviceServerLinks.removeAll { links in
@@ -97,7 +97,7 @@ import Network
             servicePublications.remove(at: pub, completion: { servicePub in
                 self.unregisterService(service: servicePub.name)
                 ROS_DEBUG( "shutting down service [\(servicePub.name)]")
-                servicePub.drop()
+                servicePub.dropService()
             })
 
             return true

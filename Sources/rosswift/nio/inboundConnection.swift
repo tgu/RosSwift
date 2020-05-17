@@ -84,7 +84,7 @@ final class InboundConnection {
         return "\(host):\(port)"
     }
 
-    func drop(reason: DropReason) {
+    func dropConnection(reason: DropReason) {
         if dropped.compareAndExchange(expected: false, desired: true) {
             // capture the address before closing the channel
             let remote = self.remoteAddress
@@ -110,7 +110,7 @@ final class InboundConnection {
         }
 
         if !link.setHeader(ros: parent.ros, header: header) {
-            drop(reason: .headerError)
+            dropConnection(reason: .headerError)
         }
     }
 
@@ -126,7 +126,7 @@ final class InboundConnection {
 
         func channelInactive(context: ChannelHandlerContext) {
             ROS_DEBUG("InboundHandler inactive")
-            parent?.drop(reason: .transportDisconnect)
+            parent?.dropConnection(reason: .transportDisconnect)
         }
 
         func channelRead(context: ChannelHandlerContext, data: NIOAny) {
@@ -141,11 +141,11 @@ final class InboundConnection {
                 if let headerData = buffer.readBytes(length: buffer.readableBytes) {
                     var header = Header()
                     if !header.parse(buffer: headerData) {
-                        p.drop(reason: .headerError)
+                        p.dropConnection(reason: .headerError)
                     } else {
                         if let error = header.getValue(key: "error") {
                             ROS_ERROR("Received error message in header for connection to [\(p.remoteAddress)]]: [\(error)]")
-                            p.drop(reason: .headerError)
+                            p.dropConnection(reason: .headerError)
                         } else {
                             p.onHeaderReceived(header: header)
                         }

@@ -46,9 +46,9 @@ final class IntraProcessSubscriberLink: SubscriberLink {
         subscriber?.handleMessage(m: m)
     }
 
-    func drop() {
+    func dropPublication() {
         if isDropped.compareAndExchange(expected: false, desired: true) {
-            subscriber?.drop()
+            subscriber?.dropLink()
             subscriber = nil
 
             ROS_DEBUG("Connection to local subscriber on topic [\(topic)] dropped")

@@ -66,11 +66,11 @@ internal final class Subscription {
 
     func shutdown() {
         if isShuttingDown.compareAndExchange(expected: false, desired: true) {
-            drop()
+            dropSubscription()
         }
     }
 
-    func drop() {
+    func dropSubscription() {
         if dropped.compareAndExchange(expected: false, desired: true) {
             dropAllConnections()
         }
@@ -79,7 +79,7 @@ internal final class Subscription {
     func dropAllConnections() {
         let localSubscribers = publisherLinks.all()
         publisherLinks.removeAll()
-        localSubscribers.forEach { $0.drop() }
+        localSubscribers.forEach { $0.dropLink() }
     }
 
     func headerReceived(link: PublisherLink, header: Header) {
@@ -189,7 +189,7 @@ internal final class Subscription {
             let uri = link.publisherXmlrpcUri
             if uri != serverURI {
                 ROS_DEBUG("Disconnecting from publisher [\(link.callerId)] of topic [\(self.name)] at [\(serverURI)]")
-                link.drop()
+                link.dropLink()
             } else {
                 ROS_DEBUG("Disconnect: skipping myself for topic [\(self.name)]")
             }

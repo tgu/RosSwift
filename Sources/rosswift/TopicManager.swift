@@ -95,7 +95,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                             ROS_DEBUG("shutting down \($0.name)")
                             _ = unregisterPublisher(topic: $0.name)
                         }
-                        $0.drop()
+                        $0.dropPublication()
                     }
                     advertisedTopics.removeAll()
                     advertisedTopicNames.removeAll()
@@ -559,7 +559,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
             advertisedTopicsMutex.sync {
                 if p.numCallbacks == 0 {
                     _ = unregisterPublisher(topic: p.name)
-                    p.drop()
+                    p.dropPublication()
                     advertisedTopics.removeAll(where: { $0.name == topic && !$0.isDropped.load() })
                     advertisedTopicNames.remove(where: { $0 == topic })
                 }

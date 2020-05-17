@@ -28,7 +28,7 @@ final class TransportSubscriberLink: SubscriberLink {
         self.topicManager = topicManager
     }
     
-    func drop() {
+    func dropPublication() {
         if let conn = connection {
             if conn.isSendingHeaderError {
                 NotificationCenter.default.removeObserver(self)

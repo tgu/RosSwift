@@ -52,7 +52,7 @@ class SteadyTimerHelper {
                 let p = WallDuration(milliseconds: 500)
                 pretendWork(0.15)
                 setPeriod(p, reset: true)
-            } else if totalCalls == callsBeforeTestingPeriod + 2 {
+            } else if totalCalls == callsBeforeTestingPeriod + 3 {
                 let p = WallDuration(milliseconds: 250)
                 pretendWork(0.15)
                 setPeriod(p, reset: true)

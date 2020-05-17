@@ -82,7 +82,7 @@ final class Publication {
 
     deinit {
         ROS_DEBUG("deinit called for Publication \(name)")
-        drop()
+        dropPublication()
     }
 
     func isLatched() -> Bool {
@@ -124,7 +124,7 @@ final class Publication {
         #endif
     }
 
-    func drop() {
+    func dropPublication() {
         if isDropped.compareAndExchange(expected: false, desired: true) {
             dropAllConnections()
         }
@@ -200,7 +200,7 @@ final class Publication {
         subscriberLinksQueue.sync {
             swap(&localPublishers, &subscriberLinks)
         }
-        localPublishers.forEach { $0.drop() }
+        localPublishers.forEach { $0.dropPublication() }
     }
 
     func peerConnect(link: SubscriberLink) {

@@ -41,7 +41,7 @@ final class TransportPublisherLink: PublisherLink {
         if !retryTimerHandle.isNone {
             getInternalTimerManager().remove(timerHandle: retryTimerHandle)
         }
-        connection?.drop(reason: .destructing)
+        connection?.dropConnection(reason: .destructing)
     }
 
     func initialize(ros: Ros, connection: InboundConnection) {
@@ -64,10 +64,10 @@ final class TransportPublisherLink: PublisherLink {
         }
     }
 
-    func drop() {
+    func dropLink() {
         isDropping = true
         parent.remove(publisherLink: self)
-        connection?.drop(reason: .destructing)
+        connection?.dropConnection(reason: .destructing)
         connection = nil
     }
 

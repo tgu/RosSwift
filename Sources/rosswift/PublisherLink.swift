@@ -17,7 +17,7 @@ internal protocol PublisherLink: class {
     var header: Header? { get set }
     var md5sum: String { get set }
 
-    func drop()
+    func dropLink()
 }
 
     struct Stats {

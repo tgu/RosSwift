@@ -15,7 +15,7 @@ internal protocol ServiceProtocol: class {
     var requestDataType: String { get }
     var responseDataType: String { get }
     var dataType: String { get }
-    func drop()
+    func dropService()
     func addServiceClientLink(link: ServiceClientLink)
     func removeServiceClientLink(_ link: ServiceClientLink)
     func processRequest(buf: [UInt8]) -> Message?
@@ -45,10 +45,10 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
     }
 
     deinit {
-        drop()
+        dropService()
     }
 
-    func drop() {
+    func dropService() {
         ROS_DEBUG("drop")
         // grab a lock here, to ensure that no subscription callback will
         // be invoked after we return

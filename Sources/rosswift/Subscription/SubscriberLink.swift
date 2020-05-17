@@ -15,7 +15,7 @@ protocol SubscriberLink: class {
     var topic: String { get }
     var transportInfo: String { get }
 
-    func drop()
+    func dropPublication()
     func enqueueMessage(m: SerializedMessage)
 }
 

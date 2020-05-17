@@ -10,7 +10,7 @@ import msgs
 
 let ros = Ros(argv: &CommandLine.arguments, name: "talker")
 
-// createNode returns nil if the name passed is not a valid graph resource name
+// createNode returns nil if the namespace passed is not a valid graph resource name
 
 guard let node = ros.createNode(ns: "", remappings: [:]) else {
     exit(1)
@@ -108,12 +108,4 @@ func caseFlip(req: TestStringString.Request) -> TestStringString.Response? {
     // copy over the request and overwrite the letters with their case-flip
     print("case flip")
     return TestStringString.Response("case flip")
-}
-
-func echo(req: TestStringString.Request) -> TestStringString.Response? {
-    // copy over the request and overwrite the letters with their case-flip
-
-    let response = req.data.uppercased()
-
-    return TestStringString.Response(response)
 }

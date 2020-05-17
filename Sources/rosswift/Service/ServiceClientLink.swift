@@ -11,7 +11,7 @@ internal final class ServiceClientLink {
     var parent: ServiceProtocol?
     var persistent = false
 
-    func drop() {
+    func dropServiceClient() {
         assert(connection != nil)
         assert(parent != nil)
         parent?.removeServiceClientLink(self)

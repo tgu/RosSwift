@@ -48,9 +48,9 @@ final class IntraProcessPublisherLink: PublisherLink {
         return "INTRAPROCESS"
     }
 
-    func drop() {
+    func dropLink() {
         if isDropped.compareAndExchange(expected: false, desired: true) {
-            publisher?.drop()
+            publisher?.dropPublication()
             publisher = nil
             ROS_DEBUG("Connection to local publisher on topic [\(parent.name)] dropped")
 
