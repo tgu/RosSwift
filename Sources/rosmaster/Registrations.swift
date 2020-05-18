@@ -268,7 +268,7 @@ public final class RegistrationManager {
         }
     }
     
-    private func unregister<T: Register>(r: inout T, key: String, caller_id: String, caller_api: String? = nil, service_api: String? = nil) -> Result<String,ErrorMessage> {
+    private func unregister<T: Register>(r: T, key: String, caller_id: String, caller_api: String? = nil, service_api: String? = nil) -> Result<String,ErrorMessage> {
 
         return nodeQueue.sync(flags: .barrier) {
             if nodes[caller_id] != nil {
@@ -329,7 +329,7 @@ public final class RegistrationManager {
     }
     
     func unregister(service: String, caller_id: String, service_api: String) -> Result<String,ErrorMessage> {
-        return unregister(r: &services, key: service, caller_id: caller_id, service_api: service_api)
+        return unregister(r: services, key: service, caller_id: caller_id, service_api: service_api)
     }
     
     func register(subscriber: Caller, topic: String) {
@@ -338,7 +338,7 @@ public final class RegistrationManager {
     }
     
     func unregister(subscriber: Caller, topic: String) -> Result<String,ErrorMessage> {
-        return unregister(r: &subscribers, key: topic, caller_id: subscriber.id, caller_api: subscriber.api)
+        return unregister(r: subscribers, key: topic, caller_id: subscriber.id, caller_api: subscriber.api)
     }
 
     func register(publisher: Caller, topic: String) {
@@ -347,7 +347,7 @@ public final class RegistrationManager {
     }
     
     func unregister(publisher: Caller, topic: String) -> Result<String,ErrorMessage> {
-        return unregister(r: &publishers, key: topic, caller_id: publisher.id, caller_api: publisher.api)
+        return unregister(r: publishers, key: topic, caller_id: publisher.id, caller_api: publisher.api)
     }
 
     func getNode(caller: String, name: String) -> NodeRef? {
@@ -364,7 +364,7 @@ public final class RegistrationManager {
 
     func unregisterParameterSubscriber(key: String, node: Caller) -> Result<String,ErrorMessage> {
         let key = resolve(name: key, nameSpace: node.id)
-        return unregister(r: &paramSubscribers, key: key, caller_id: node.id, caller_api: node.api)
+        return unregister(r: paramSubscribers, key: key, caller_id: node.id, caller_api: node.api)
     }
 
     func lookupService(key: String) -> Caller? {

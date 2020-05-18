@@ -321,7 +321,9 @@ public final class CallbackQueue: CallbackQueueInterface {
 
     fileprivate func setupTLS() {
         if tls.currentValue == nil {
-            tls.currentValue = ThreadLocalStorage(index: self.callbacks.endIndex)
+            condition.sync {
+                tls.currentValue = ThreadLocalStorage(index: self.callbacks.endIndex)
+            }
         }
     }
 
