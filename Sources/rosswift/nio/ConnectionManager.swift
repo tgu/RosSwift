@@ -86,7 +86,7 @@ final class ConnectionHandler: ChannelInboundHandler {
             if let topic = readMap["topic"], let remote = context.remoteAddress {
                 let conn = Connection(transport: context.channel, header: header)
                 ROS_DEBUG("Connection: Creating TransportSubscriberLink for topic [\(topic)] connected to [\(remote)]")
-                let subLink = TransportSubscriberLink(connection: conn, topicManager: ros.topicManager)
+                let subLink = TransportSubscriberLink(connection: conn)
                 if subLink.handleHeader(ros: ros, header: header) {
                     subscriber = subLink
                 } else {

@@ -15,28 +15,17 @@ final class TransportSubscriberLink: SubscriberLink {
     var connectionId: UInt = 0
     var destinationCallerId: String = ""
     var topic: String = ""
-    
-    var headerWritten = false
     var connection: Connection?
-    var running = true
-    
     let isIntraprocess = false
-    let topicManager: TopicManager
-    
-    init(connection: Connection, topicManager: TopicManager) {
+
+    init(connection: Connection) {
         self.connection = connection
-        self.topicManager = topicManager
     }
     
     func dropPublication() {
-        if let conn = connection {
-            if conn.isSendingHeaderError {
-                NotificationCenter.default.removeObserver(self)
-            } else {
-                parent?.removeSubscriberLink(self)
-                
-                connection = nil
-            }
+        if let conn = connection, !conn.isSendingHeaderError {
+            parent?.removeSubscriberLink(self)
+            connection = nil
         }
     }
     
@@ -56,7 +45,7 @@ final class TransportSubscriberLink: SubscriberLink {
         
         // This will get validated by validateHeader below
         let clientCallerId = header.getValue(key: "callerid") ?? ""
-        guard let pub = topicManager.lookupPublication(topic: topic) else {
+        guard let pub = ros.topicManager.lookupPublication(topic: topic) else {
             let msg = "received a connection for a nonexistent topic [\(topic)] " +
             "from [\(connection.remoteAddress)] [\(clientCallerId)]."
             ROS_ERROR(msg)
@@ -90,12 +79,10 @@ final class TransportSubscriberLink: SubscriberLink {
         connection.writeHeader(keyVals: m).whenComplete { result in
             switch result {
             case .success:
-                self.headerWritten = true
+                break
             case .failure(let error):
                 ROS_ERROR("Failed to write header: \(error)")
                 // FIXME: is this correct?
-                self.headerWritten = true
-                
             }
         }
         
