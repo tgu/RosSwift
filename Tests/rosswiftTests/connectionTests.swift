@@ -240,6 +240,31 @@ class connectionTests: XCTestCase {
         XCTAssertNil(t3)
     }
 
+    func testPublisherCallback() {
+        let ros = Ros(name: "testPublisherCallback")
+
+        let n = ros.createNode()
+        var conns = 0
+        var disconns = 0
+        let ops = AdvertiseOptions(topic: "/testCallback", queueSize: 1, latch: false, std_msgs.int8.self, connectCall: { _ in conns += 1 }, disconnectCall: { _ in disconns += 1})
+
+        let pub = n.advertise(ops: ops)
+        do {
+            let sub = n.subscribe(topic: "/testCallback") { (msg: Int8) -> Void  in }
+            XCTAssertEqual(sub?.publisherCount, 1)
+            XCTAssertEqual(conns, 1)
+            XCTAssertEqual(disconns, 0)
+            XCTAssertEqual(pub?.numSubscribers, 1)
+        }
+
+        XCTAssertEqual(pub?.numSubscribers, 0)
+        XCTAssertEqual(conns, 1)
+        XCTAssertEqual(disconns, 1)
+
+    }
+
+
+
     func testMultipleRos() {
         let r1 = Ros(name: "testMultipleRos", namespace: "ett")
         let r2 = Ros(name: "testMultipleRos", namespace: "två")

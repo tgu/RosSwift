@@ -32,15 +32,13 @@ final class IntraProcessPublisherLink: PublisherLink {
 
     func setPublisher(ros: Ros, publisher: IntraProcessSubscriberLink) -> Bool {
         self.publisher = publisher
-        var header = Header()
-
-        header.headers = ["callerid": ros.name,
+        let header = Header(headers: ["callerid": ros.name,
                       "topic": parent.name,
                       "type": publisher.dataType,
                       "md5sum": publisher.md5Sum,
                       "message_definition": publisher.messageDefinition,
                       "latching": publisher.isLatching() ? "1" : "0"
-                    ]
+                    ])
         return setHeader(ros: ros, header: header)
     }
 
@@ -64,7 +62,7 @@ final class IntraProcessPublisherLink: PublisherLink {
         }
 
         parent.handle(message: m,
-                      connectionHeader: header?.getValues() ?? StringStringMap(),
+                      connectionHeader: header?.headers ?? StringStringMap(),
                       link: self)
 
     }

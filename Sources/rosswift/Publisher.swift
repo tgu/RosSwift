@@ -10,6 +10,7 @@ import StdMsgs
 
 public protocol Publisher {
     var topic: String { get }
+    var numSubscribers: Int { get }
     func publish(message: Message)
 }
 
@@ -68,7 +69,7 @@ public final class SpecializedPublisher<M: Message>: Publisher {
         unadvertise()
     }
 
-    var numSubscribers: Int {
+    public var numSubscribers: Int {
         if isValid {
             return topicManager.getNumSubscribers(topic: topic)
         }

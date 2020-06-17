@@ -139,16 +139,15 @@ final class InboundConnection {
 
             if link.header == nil {
                 if let headerData = buffer.readBytes(length: buffer.readableBytes) {
-                    var header = Header()
-                    if !header.parse(buffer: headerData) {
-                        p.dropConnection(reason: .headerError)
-                    } else {
-                        if let error = header.getValue(key: "error") {
+                    if let header = Header(buffer: headerData) {
+                        if let error = header["error"] {
                             ROS_ERROR("Received error message in header for connection to [\(p.remoteAddress)]]: [\(error)]")
                             p.dropConnection(reason: .headerError)
                         } else {
                             p.onHeaderReceived(header: header)
                         }
+                    } else {
+                        p.dropConnection(reason: .headerError)
                     }
                 } else {
                     ROS_ERROR("Could not read available \(buffer.readableBytes)")
@@ -159,7 +158,7 @@ final class InboundConnection {
                 if let sub = p.parent {
                     // FIXME: Handle drop statistics
                     _ = sub.handle(message: m,
-                                           connectionHeader: link.header!.getValues(),
+                                           connectionHeader: link.header!.headers,
                                            link: link)
                 }
             } else {

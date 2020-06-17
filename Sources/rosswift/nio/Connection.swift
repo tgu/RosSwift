@@ -38,7 +38,7 @@ final class Connection {
     }
 
     var callerID: String {
-        if let callerid = header.getValue(key: "callerid") {
+        if let callerid = header["callerid"] {
             return callerid
         }
 

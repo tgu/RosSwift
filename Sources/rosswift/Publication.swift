@@ -262,9 +262,9 @@ final class Publication {
     }
 
     func validateHeader(header: Header, errorMsg: inout String) -> Bool {
-        guard let md5sum = header.getValue(key: "md5sum"),
-            let topic = header.getValue(key: "topic"),
-            let callerid = header.getValue(key: "callerid") else {
+        guard let md5sum = header["md5sum"],
+            let topic = header["topic"],
+            let callerid = header["callerid"] else {
                 ROS_DEBUG("Header from subscriber did not have the required elements: md5sum, topic, callerid")
                 return false
         }
@@ -279,7 +279,7 @@ final class Publication {
         }
 
         if self.md5sum != md5sum && md5sum != "*" && self.md5sum != "*" {
-            let datatype = header.getValue(key: "type") ?? "no datatype"
+            let datatype = header["type"] ?? "no datatype"
 
             errorMsg = "Client [\(callerid)] wants topic \(topic)" +
                         " to have datatype/md5sum [\(datatype)/\(md5sum)]" +

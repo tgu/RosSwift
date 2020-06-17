@@ -22,16 +22,16 @@ internal final class ServiceClientLink {
     }
 
     func handleHeader(header: Header, ros: Ros) -> Bool {
-        guard let md5sum = header.getValue(key: "md5sum"),
-            let service = header.getValue(key: "service"),
-            let clientCallerId = header.getValue(key: "callerid") else {
+        guard let md5sum = header["md5sum"],
+            let service = header["service"],
+            let clientCallerId = header["callerid"] else {
 
             let msg = "bogus tcpros header. did not have the required elements: md5sum, service, callerid"
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
             return false
         }
-        if let persist = header.getValue(key: "persistent") {
+        if let persist = header["persistent"] {
             persistent = persist == "1" || persist == "true"
         }
 

@@ -19,7 +19,7 @@ final class ConnectionHandler: ChannelInboundHandler {
 
     private let ros: Ros
 
-    var header = Header()
+    var header = Header(headers: [:])
 
     func channelInactive(context: ChannelHandlerContext) {
         subscriber?.dropPublication()
@@ -92,7 +92,7 @@ final class ConnectionHandler: ChannelInboundHandler {
                 } else {
                     subLink.dropPublication()
                 }
-            } else if let val = header.getValue(key: "service") {
+            } else if let val = header["service"] {
                 ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: context.remoteAddress!.description))]")
                 let conn = Connection(transport: context.channel, header: header)
 

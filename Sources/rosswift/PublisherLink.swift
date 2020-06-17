@@ -29,17 +29,17 @@ internal protocol PublisherLink: class {
 extension PublisherLink {
 
     func setHeader(ros: Ros, header: Header) -> Bool {
-        guard let newId = header.getValue(key: "callerid") else {
+        guard let newId = header["callerid"] else {
             ROS_ERROR("header did not have required element: callerid")
             return false
         }
 
-        guard let newMd5sum = header.getValue(key: "md5sum") else {
+        guard let newMd5sum = header["md5sum"] else {
             ROS_ERROR("Publisher header did not have required element: md5sum")
             return false
         }
 
-        guard header.getValue(key: "type") != nil else {
+        guard header["type"] != nil else {
             ROS_ERROR("Publisher header did not have required element: type")
             return false
         }
@@ -48,7 +48,7 @@ extension PublisherLink {
         md5sum = newMd5sum
 
         latched = false
-        if let latchedString = header.getValue(key: "latching"), latchedString == "1" {
+        if let latchedString = header["latching"], latchedString == "1" {
             latched = true
         }
 

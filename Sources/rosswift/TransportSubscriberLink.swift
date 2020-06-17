@@ -36,7 +36,7 @@ final class TransportSubscriberLink: SubscriberLink {
             ROS_ERROR("no connection")
             return false
         }
-        guard let topic = header.getValue(key: "topic") else {
+        guard let topic = header["topic"] else {
             let msg = "Header from subscriber did not have the required element: topic"
             ROS_ERROR(msg)
             connection.sendHeaderError(msg)
@@ -44,7 +44,7 @@ final class TransportSubscriberLink: SubscriberLink {
         }
         
         // This will get validated by validateHeader below
-        let clientCallerId = header.getValue(key: "callerid") ?? ""
+        let clientCallerId = header["callerid"] ?? ""
         guard let pub = ros.topicManager.lookupPublication(topic: topic) else {
             let msg = "received a connection for a nonexistent topic [\(topic)] " +
             "from [\(connection.remoteAddress)] [\(clientCallerId)]."
