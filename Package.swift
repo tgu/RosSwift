@@ -61,7 +61,8 @@ let package = Package(
                                     "StdMsgs",
                                     "BinaryCoder",
                                     "rpcobject",
-                                    "msgs"]),
+                                    "msgs",
+                                    .product(name: "NIOConcurrencyHelpers", package: "swift-nio")]),
         .testTarget( name: "msgBuilderTests",
                      dependencies: ["msgbuilderLib"]),
         .target(name: "Network", dependencies: [

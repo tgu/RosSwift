@@ -54,10 +54,7 @@ final class Connection {
     }
 
     func sendHeaderError(_ msg: String) {
-        var m = StringStringMap()
-        m["error"] = msg
-
-        writeHeader(keyVals: m).whenComplete { result in
+        writeHeader(keyVals: ["error": msg]).whenComplete { result in
             switch result {
             case .success:
                 ROS_DEBUG("writeHeader finished")

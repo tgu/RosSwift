@@ -115,7 +115,7 @@ class Root<T: ArrayContructable> {
 }
 
 // Edges are what actually store the Strings in the tree
-class Edge<T: ArrayContructable>: Root<T> {
+final class Edge<T: ArrayContructable>: Root<T> {
     var parent: Root<T>
     var label: String
     var value: T

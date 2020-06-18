@@ -94,7 +94,7 @@ extension Result where Success == String, Failure == ErrorMessage {
 
 protocol Register {
     var type: RegistrationType { get }
-    func unregister(key: String, caller_id: String, api: String) -> Result<String,ErrorMessage>
+    mutating func unregister(key: String, caller_id: String, api: String) -> Result<String,ErrorMessage>
     func getState() -> [State]
 
 }
@@ -162,7 +162,7 @@ struct ErrorMessage: Error {
     let message: String
 }
 
-class Registrations: Register {
+struct Registrations: Register {
     let type: RegistrationType
     var providers: Multimap<String,Caller>
     private let queue = DispatchQueue(label: "", attributes: .concurrent)
@@ -192,7 +192,7 @@ class Registrations: Register {
         return queue.sync { providers.values }
     }
 
-    func register(key: String, node: Caller) {
+    mutating func register(key: String, node: Caller) {
         queue.sync(flags: .barrier) {
             if !self.providers[key].contains(node) {
                 self.providers.insert(value: node, forKey: key)
@@ -200,7 +200,7 @@ class Registrations: Register {
         }
     }
     
-    func unregister(key: String, caller_id: String, api: String) -> Result<String,ErrorMessage> {
+    mutating func unregister(key: String, caller_id: String, api: String) -> Result<String,ErrorMessage> {
         let caller = Caller(id: caller_id, api: api)
         return queue.sync(flags: .barrier) {
             if providers[key].contains(caller) {
@@ -215,7 +215,7 @@ class Registrations: Register {
 
     /// Remove all registrations associated with id
 
-    func unregisterAll(id: String) {
+    mutating func unregisterAll(id: String) {
         return queue.sync(flags: .barrier) {
             for key in providers.keys {
                 let to_remove = providers[key].filter { $0.id == id }
@@ -268,7 +268,7 @@ public final class RegistrationManager {
         }
     }
     
-    private func unregister<T: Register>(r: T, key: String, caller_id: String, caller_api: String? = nil, service_api: String? = nil) -> Result<String,ErrorMessage> {
+    private func unregister<T: Register>(r: inout T, key: String, caller_id: String, caller_api: String? = nil, service_api: String? = nil) -> Result<String,ErrorMessage> {
 
         return nodeQueue.sync(flags: .barrier) {
             if nodes[caller_id] != nil {
@@ -329,7 +329,7 @@ public final class RegistrationManager {
     }
     
     func unregister(service: String, caller_id: String, service_api: String) -> Result<String,ErrorMessage> {
-        return unregister(r: services, key: service, caller_id: caller_id, service_api: service_api)
+        return unregister(r: &services, key: service, caller_id: caller_id, service_api: service_api)
     }
     
     func register(subscriber: Caller, topic: String) {
@@ -338,7 +338,7 @@ public final class RegistrationManager {
     }
     
     func unregister(subscriber: Caller, topic: String) -> Result<String,ErrorMessage> {
-        return unregister(r: subscribers, key: topic, caller_id: subscriber.id, caller_api: subscriber.api)
+        return unregister(r: &subscribers, key: topic, caller_id: subscriber.id, caller_api: subscriber.api)
     }
 
     func register(publisher: Caller, topic: String) {
@@ -347,7 +347,7 @@ public final class RegistrationManager {
     }
     
     func unregister(publisher: Caller, topic: String) -> Result<String,ErrorMessage> {
-        return unregister(r: publishers, key: topic, caller_id: publisher.id, caller_api: publisher.api)
+        return unregister(r: &publishers, key: topic, caller_id: publisher.id, caller_api: publisher.api)
     }
 
     func getNode(caller: String, name: String) -> NodeRef? {
@@ -364,7 +364,7 @@ public final class RegistrationManager {
 
     func unregisterParameterSubscriber(key: String, node: Caller) -> Result<String,ErrorMessage> {
         let key = resolve(name: key, nameSpace: node.id)
-        return unregister(r: paramSubscribers, key: key, caller_id: node.id, caller_api: node.api)
+        return unregister(r: &paramSubscribers, key: key, caller_id: node.id, caller_api: node.api)
     }
 
     func lookupService(key: String) -> Caller? {

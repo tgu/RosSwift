@@ -3,6 +3,7 @@
 import XCTest
 @testable import RosSwift
 @testable import RosTime
+import NIOConcurrencyHelpers
 
 class CountingCallback: CallbackInterface {
     let mutex = DispatchQueue(label: "mutex")
@@ -202,18 +203,18 @@ class CallbackQueueTests: XCTestCase {
 
     }
 
-    func callAvailableThread(queue: CallbackQueue, done: inout Bool) {
-        while !done {
+    func callAvailableThread(queue: CallbackQueue, done: NIOAtomic<Bool>) {
+        while !done.load() {
             _ = queue.callOne(timeout: WallDuration(seconds: 0.1))
         }
     }
 
-    func runThreadedTest(cb: CallbackInterface, threadFunc: @escaping (CallbackQueue,inout Bool) -> Void) -> Int {
+    func runThreadedTest(cb: CallbackInterface, threadFunc: @escaping (CallbackQueue, NIOAtomic<Bool>) -> Void) -> Int {
         let queue = CallbackQueue()
-        var done = false
+        let done = NIOAtomic.makeAtomic(value: false)
         var threads = [Thread]()
         for _ in 0..<10 {
-            let thread = Thread { threadFunc(queue,&done) }
+            let thread = Thread { threadFunc(queue, done) }
             threads.append(thread)
             thread.start()
         }
@@ -228,7 +229,7 @@ class CallbackQueueTests: XCTestCase {
             WallDuration(milliseconds: 10).sleep()
         }
 
-        done = true
+        done.store(true)
 
         return i
     }
@@ -239,8 +240,8 @@ class CallbackQueueTests: XCTestCase {
         XCTAssertEqual(cb.count, i)
     }
 
-    func callOneThread(queue: CallbackQueue, done: inout Bool) {
-        while !done {
+    func callOneThread(queue: CallbackQueue, done: NIOAtomic<Bool>) {
+        while !done.load() {
             _ = queue.callOne(timeout: WallDuration(milliseconds: 100))
         }
     }

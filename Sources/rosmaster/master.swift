@@ -9,7 +9,7 @@ import Foundation
 import NIO
 
 public let defaultMasterPort = 11311
-let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
 public class Master {
     let host: String
