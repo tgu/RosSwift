@@ -24,7 +24,7 @@ extension SocketAddress {
     }
 }
 
-public struct Network {
+public struct RosNetwork {
     public let gHost: String
     public let gTcprosServerPort: UInt16
     
@@ -45,7 +45,7 @@ public struct Network {
         }
         
         if host.isEmpty {
-            host = Network.determineHost()
+            host = RosNetwork.determineHost()
         }
         gHost = host
     }

@@ -9,7 +9,7 @@ import Foundation
 import NIO
 import NIOConcurrencyHelpers
 import rpcobject
-import Network
+import RosNetwork
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
@@ -168,7 +168,7 @@ final class Master {
             var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]
             if masterUriEnv == nil {
                 if amIBeingDebugged() {
-                    masterUriEnv = "http://\(Network.determineHost()):11311"
+                    masterUriEnv = "http://\(RosNetwork.determineHost()):11311"
                 } else {
                     fatalError( "ROS_MASTER_URI is not defined in the environment. Either " +
                         "type the following or (preferrably) add this to your " +
@@ -183,7 +183,7 @@ final class Master {
         }
 
         // Split URI into
-        guard let master = Network.splitURI(uri: masterURI!) else {
+        guard let master = RosNetwork.splitURI(uri: masterURI!) else {
             fatalError( "Couldn't parse the master URI [\(masterURI!)] into a host:port pair.")
         }
         masterHost = master.host

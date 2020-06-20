@@ -8,7 +8,7 @@ import RosTime
 import StdMsgs
 import msgs
 import rpcobject
-import Network
+import RosNetwork
 
 public typealias StringStringMap = [String: String]
 
@@ -78,7 +78,7 @@ public final class Ros: Hashable {
     let xmlrpcManager: XMLRPCManager
     let master: Master
 
-    let network: Network
+    let network: RosNetwork
     public let name: String
     let namespace: String
 
@@ -103,7 +103,7 @@ public final class Ros: Hashable {
         isRunning = true
 
         check_ipv6_environment()
-        network = Network(remappings: remappings)
+        network = RosNetwork(remappings: remappings)
         master = Master(group: threadGroup)
         master.initialize(remappings: remappings)
 

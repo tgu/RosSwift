@@ -20,6 +20,7 @@ let package = Package(
         .library(name: "StdMsgs", targets: ["StdMsgs"]),
         .library(name: "RosTime", targets: ["RosTime"]),
         .library(name: "RosMaster", targets: ["rosmaster"]),
+        .library(name: "RosNetwork", targets: ["RosNetwork"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.16.0"),
@@ -37,7 +38,7 @@ let package = Package(
                                 .product(name: "NIO", package: "swift-nio"),
                                 .product(name: "NIOHTTP1", package: "swift-nio"),
                                 .product(name: "NIOExtras", package: "swift-nio-extras"),
-                                "Network",
+                                "RosNetwork",
                                 "HeliumLogger",
                                 "Deque",
                                 "rpcobject"],
@@ -65,12 +66,12 @@ let package = Package(
                                     .product(name: "NIOConcurrencyHelpers", package: "swift-nio")]),
         .testTarget( name: "msgBuilderTests",
                      dependencies: ["msgbuilderLib"]),
-        .target(name: "Network", dependencies: [
+        .target(name: "RosNetwork", dependencies: [
             .product(name: "Logging", package: "swift-log"),
             .product(name: "NIO", package: "swift-nio")
         ]),
         .target(name: "roscore", dependencies: [
-            "rosmaster", "Network",
+            "rosmaster", "RosNetwork",
             .product(name: "Logging", package: "swift-log")]),
         .target(name: "rosmaster", dependencies: [
             "rpcclient",
@@ -81,7 +82,7 @@ let package = Package(
             .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .target(name: "rpcobject")]),
-        .target(name: "rosparam", dependencies: ["rpcclient","Network"]),
+        .target(name: "rosparam", dependencies: ["rpcclient","RosNetwork"]),
         .testTarget(name: "rosmasterTests", dependencies: ["roscore"]),
 
     ]

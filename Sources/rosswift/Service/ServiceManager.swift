@@ -9,7 +9,7 @@ import NIO
 import NIOConcurrencyHelpers
 import StdMsgs
 import rpcobject
-import Network
+import RosNetwork
 
     internal final class ServiceManager {
 //        static let instance = ServiceManager()
@@ -190,7 +190,7 @@ import Network
                     return nil
                 }
 
-                guard let server = Network.splitURI(uri: servURI) else {
+                guard let server = RosNetwork.splitURI(uri: servURI) else {
                     ROS_DEBUG("lookupService: Bad service uri [\(servURI)]")
                     return nil
                 }

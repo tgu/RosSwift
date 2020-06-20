@@ -1,7 +1,7 @@
 import Foundation
 import Logging
 import rosmaster
-import Network
+import RosNetwork
 
 public class MyLog: LogHandler {
     let label: String
@@ -52,7 +52,7 @@ private enum Signal: Int32 {
     case TERM = 15
 }
 
-let network = Network(remappings: [:])
+let network = RosNetwork(remappings: [:])
 let master = Master(host: network.gHost, port: defaultMasterPort)
 
 _ = try! master.start().wait()
