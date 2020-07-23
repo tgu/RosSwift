@@ -22,7 +22,7 @@ extension Data {
 
         var digest = Data(count: Int(length))
         
-        _ = digest.withUnsafeMutableBytes { (digestBytes) in
+        digest.withUnsafeMutableBytes { (digestBytes) in
             self.withUnsafeBytes { (messageBytes) in
                 let length = CC_LONG(self.count)
                 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
@@ -46,8 +46,7 @@ public extension String {
     func hashed() -> String? {
 
         // convert string to utf8 encoded data
-        guard let message = data(using: .utf8) else { return nil }
-        return message.hashed()
+        return data(using: .utf8)?.hashed()
     }
 }
 

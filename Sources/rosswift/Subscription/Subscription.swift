@@ -299,7 +299,7 @@ internal final class Subscription {
             DispatchQueue.global().async {
                 let connection = InboundConnection(parent: self, host: pubHost, port: pubPort)
                 let pubLink = TransportPublisherLink(parent: self, xmlrpcUri: uri, transportHints: self.transportHints)
-                _ = pubLink.initialize(ros: self.ros, connection: connection)
+                pubLink.initialize(ros: self.ros, connection: connection)
 //                self.ros.connectionManager.addConnection(connection: connection)
                 self.publisherLinks.append(pubLink)
                 ROS_DEBUG("Connected to publisher of topic [\(self.name)] at [\(pubHost):\(pubPort)]")

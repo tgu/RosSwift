@@ -152,7 +152,7 @@ class paramTests: XCTestCase {
 
     func testdeleteParam()
     {
-        _ = ros.param.set( key: "test_delete_param", value: "asdf" )
+        ros.param.set( key: "test_delete_param", value: "asdf" )
         _ = ros.param.del( key: "test_delete_param" )
         var param = ""
         XCTAssertFalse( ros.param.get( "test_delete_param", &param ) )

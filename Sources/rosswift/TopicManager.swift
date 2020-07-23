@@ -103,7 +103,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
 
                     subscriptions.forEach {
                         ROS_DEBUG("closing down subscription to \($0.name)")
-                        _ = unregisterSubscriber(topic: $0.name)
+                        unregisterSubscriber(topic: $0.name)
                         $0.shutdown()
                     }
                     subscriptions.removeAll()

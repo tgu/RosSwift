@@ -330,7 +330,7 @@ final class Master {
         bootstrap?.connect(host: host, port: Int(port)).map { channel -> Void in
             var buffer = channel.allocator.buffer(capacity: xml.utf8.count)
             buffer.writeString(xml)
-            _ = channel.writeAndFlush(buffer).whenFailure { error in
+            channel.writeAndFlush(buffer).whenFailure { error in
                 ROS_ERROR("write failed to \(channel.remoteAddress!) [\(error)]")
                 promise.fail(MasterError.writeError("write failed to \(channel.remoteAddress!) [\(error)]"))
             }
