@@ -69,8 +69,8 @@ final class RosMasterHandler {
         let caller = params[0].string
 
         let arg1 = params.dropFirst().first
-        let arg2 = params.dropFirst().dropFirst().first
-        let arg3 = params.dropFirst().dropFirst().dropFirst().first
+        let arg2 = params.dropFirst(2).first
+        let arg3 = params.dropFirst(3).first
 
         if methodName == "setParam" {
             guard let key = arg1?.string, let value = arg2 else {
