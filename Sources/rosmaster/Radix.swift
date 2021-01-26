@@ -23,20 +23,20 @@
 import Logging
 import rpcobject
 
-protocol ArrayContructable: Collection {
+protocol ArrayConstructable: Collection {
     init()
     init(any: Any)
     var count: Int { get }
     var dictionary: [String: Self]? { get }
 }
 
-extension XmlRpcValue: ArrayContructable {}
+extension XmlRpcValue: ArrayConstructable {}
 
 fileprivate let logger = Logger(label: "radix")
 
 // The root is the top of the Radix Tree
 
-class Root<T: ArrayContructable> {
+class Root<T: ArrayConstructable> {
     var children: [Edge<T>]
 
     init() {
@@ -115,7 +115,7 @@ class Root<T: ArrayContructable> {
 }
 
 // Edges are what actually store the Strings in the tree
-final class Edge<T: ArrayContructable>: Root<T> {
+final class Edge<T: ArrayConstructable>: Root<T> {
     var parent: Root<T>
     var label: String
     var value: T
@@ -190,7 +190,7 @@ final class Edge<T: ArrayContructable>: Root<T> {
     }
 }
 
-final class RadixTree<T: ArrayContructable> {
+final class RadixTree<T: ArrayConstructable> {
     typealias EdgeType = Edge<T>
     let root: Root<T>
 
@@ -320,18 +320,4 @@ fileprivate func sharedPrefix(_ str1: String, _ str2: String) -> String {
         .prefix(while: { $0 == $1 })
         .map { $0.0 }
         .joined(separator: "/")
-    
-    var temp = [String]()
-    var c1 = p1.startIndex
-    var c2 = p2.startIndex
-    for _ in 0...min(p1.count-1, p2.count-1) {
-        if p1[c1] == p2[c2] {
-            temp.append( String(p1[c1]) )
-            c1 = p1.index(after:c1)
-            c2 = p2.index(after:c2)
-        } else {
-            return temp.joined(separator: "/")
-        }
-    }
-    return temp.joined(separator: "/")
 }

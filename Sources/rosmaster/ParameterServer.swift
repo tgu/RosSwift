@@ -12,7 +12,7 @@ import rpcobject
 fileprivate let logger = Logger(label: "params")
 
 
-struct Update<Value: ArrayContructable> {
+struct Update<Value: ArrayConstructable> {
     let subscriber: Caller
     let key: String
     let value: Value?
@@ -25,7 +25,7 @@ struct Update<Value: ArrayContructable> {
 }
 
 
-final class ParameterServer<Value: ArrayContructable> {
+final class ParameterServer<Value: ArrayConstructable> {
     typealias ParameterValue = Root<Value>
     let registrationManager: RegistrationManager
     let parameters = RadixTree<Value>()

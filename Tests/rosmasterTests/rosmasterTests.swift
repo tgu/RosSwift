@@ -4,7 +4,7 @@ import XCTest
 @testable import rpcobject
 
 
-extension Int: ArrayContructable, Collection {
+extension Int: ArrayConstructable, Collection {
     public subscript(position: Int) -> Int {
         get {
             return self
