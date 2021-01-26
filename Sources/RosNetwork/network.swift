@@ -100,10 +100,12 @@ public struct RosNetwork {
         }
         
         do {
-            for i in try System.enumerateInterfaces() {
-                let host = i.address.host
-                if host != "127.0.0.1" && i.address.protocolFamily == PF_INET {
-                    return host
+            for i in try System.enumerateDevices() {
+                if let address = i.address {
+                    let host = address.host
+                    if host != "127.0.0.1" && address.protocol == .inet {
+                        return host
+                    }
                 }
             }
         } catch {

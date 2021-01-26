@@ -312,9 +312,15 @@ final class RadixTree<T: ArrayContructable> {
 // Returns the prefix that is shared between the two input strings
 // i.e. sharedPrefix("co/urt", "co/ral") -> "co"
 fileprivate func sharedPrefix(_ str1: String, _ str2: String) -> String {
+    precondition(!str1.hasPrefix("/") && !str2.hasPrefix("/"))
     let p1 = str1.split(separator: "/")
     let p2 = str2.split(separator: "/")
-
+    
+    return zip(p1, p2)
+        .prefix(while: { $0 == $1 })
+        .map { $0.0 }
+        .joined(separator: "/")
+    
     var temp = [String]()
     var c1 = p1.startIndex
     var c2 = p2.startIndex

@@ -23,12 +23,12 @@ let package = Package(
         .library(name: "RosNetwork", targets: ["RosNetwork"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.16.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.25.0"),
         .package(url: "https://github.com/tgu/BinaryCoder.git", from: "1.1.0"),
         .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.0"),
         .package(url: "https://github.com/tgu/Deque.git", from: "3.1.2"),
-        .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.4.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.2.0"),
+        .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.7.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
     ],
     targets: [
         .target( name: "RosSwift",
