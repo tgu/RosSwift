@@ -468,7 +468,9 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                                   latch: ops.latch)
 
             pub.addCallbacks(callback: callbacks)
-            advertisedTopics.append(pub)
+            advertisedTopicsMutex.sync {
+            	advertisedTopics.append(pub)
+            }
 
             advertisedTopicNames.append(ops.topic)
 
