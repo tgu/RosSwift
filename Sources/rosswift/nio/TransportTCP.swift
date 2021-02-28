@@ -1,6 +1,5 @@
 //
-//  Master.swift
-//  swiftros
+//  TransportTCP.swift
 //
 //  Created by Thomas Gustafsson on 2018-03-19.
 //

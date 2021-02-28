@@ -30,9 +30,6 @@ struct SrvSpec: BaseMsg {
 
 
     func dumpSwiftCode(context: MsgContext, destination: String) {
-//        request.dumpSwiftCode(context: context, destination: destination)
-//        response.dumpSwiftCode(context: context, destination: destination)
-
         if let code = generateSwiftCode(context: context) {
             let file = "\(destination)/\(package)/\(short_name)Srv.swift"
             if let oldContent = try? String(contentsOfFile: file, encoding: .utf8) {
@@ -48,7 +45,6 @@ struct SrvSpec: BaseMsg {
                 print("failed to write \(file)\nerror: \(error.localizedDescription)")
             }
         }
-
     }
 
     func generateSwiftCode(context: MsgContext) -> String? {

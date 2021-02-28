@@ -1,6 +1,5 @@
 //
-//  hashing.swift
-//  RosSwift
+//  Message builder for RosSwift
 //
 //  Created by Thomas Gustafsson on 2018-10-12.
 //

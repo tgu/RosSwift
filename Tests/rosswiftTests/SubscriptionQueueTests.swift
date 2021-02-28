@@ -176,8 +176,8 @@ class SubscriptionQueueTests: XCTestCase {
     }
 
 
-    #if os(macOS)
     func testConcurrentCallbacks() {
+        #if os(macOS)
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: true)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
@@ -203,8 +203,8 @@ class SubscriptionQueueTests: XCTestCase {
         lock1.lock(whenCondition: 1)
         lock2.lock(whenCondition: 1)
         XCTAssertEqual(helper.calls, 2)
+        #endif
     }
-    #endif
 
     struct WaitForASecond: CallbackProtocol {
         func call() {
@@ -213,8 +213,8 @@ class SubscriptionQueueTests: XCTestCase {
     }
 
 
-    #if os(macOS)
     func testNonConcurrentOrdering() {
+        #if os(macOS)
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
@@ -240,8 +240,8 @@ class SubscriptionQueueTests: XCTestCase {
         XCTAssertEqual(helper.calls, 1)
         queue.call()
         XCTAssertEqual(helper.calls, 2)
+        #endif
     }
-    #endif
 }
 
 class FakeMessage: Message {

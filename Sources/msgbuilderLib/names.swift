@@ -5,8 +5,6 @@
 //  Created by Thomas Gustafsson on 2019-04-29.
 //
 
-import Foundation
-
 
 /// Check if name is a legal ROS name for filesystem resources
 /// (alphabetical character followed by alphanumeric, underscore, or

@@ -49,7 +49,7 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
     }
 
     func dropService() {
-        ROS_DEBUG("drop")
+        ROS_DEBUG("drop service \(name)")
         // grab a lock here, to ensure that no subscription callback will
         // be invoked after we return
         clientLinksQueue.sync {

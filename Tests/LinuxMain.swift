@@ -1,12 +1,12 @@
 import XCTest
-@testable import rosswiftTests
 
-XCTMain([
-//    testCase(rosswiftTests.allTests),
-//    testCase(paramTests.allTests),
-//    testCase(serviceTests.allTests),
-//    testCase(connectionTests.allTests),
-//    testCase(XmlRpcValueTest.allTests),
-//    testCase(serializationTests.allTests),
-//    testCase(NameRemappingWithNamespace.allTests)
-])
+import msgBuilderTests
+import rosmasterTests
+import rosswiftTests
+
+var tests = [XCTestCaseEntry]()
+tests += msgBuilderTests.__allTests()
+tests += rosmasterTests.__allTests()
+tests += rosswiftTests.__allTests()
+
+XCTMain(tests)

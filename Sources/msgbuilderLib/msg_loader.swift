@@ -17,10 +17,6 @@ protocol BaseMsg {
     func dumpSwiftCode(context: MsgContext, destination: String)
 }
 
-extension BaseMsg {
-
-}
-
 public final class MsgContext {
     var registered: [String: [String: BaseMsg] ]
     var files: [String: String]

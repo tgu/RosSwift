@@ -1,5 +1,5 @@
 //
-//  nioXMLRPCManager.swift
+//  XMLRPCManager.swift
 //  RosSwift
 //
 //  Created by Thomas Gustafsson on 2018-10-21.

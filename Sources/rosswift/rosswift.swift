@@ -368,9 +368,6 @@ public final class Ros: Hashable {
         let useSimTime = param.param(name: "/use_sim_time", defaultValue: false)
         if useSimTime {
             Time.setNow(Time())
-        }
-
-        if useSimTime {
             let ops = SubscribeOptions(topic: "/clock", queueSize: 1, queue: getGlobalCallbackQueue(), callback: clockCallback)
             if !topicManager.subscribeWith(options: ops) {
                 ROS_ERROR("could not subscribe to /clock")
@@ -415,7 +412,6 @@ public final class Ros: Hashable {
 
             isStarted = false
             isRunning = false
-//            promise.succeed(())
             isShuttingDown.store(false)
         }
     }
@@ -432,9 +428,6 @@ public final class Ros: Hashable {
     public func spinOnce() {
         gGlobalQueue.callAvailable()
     }
-
-
-
 }
 
 
