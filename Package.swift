@@ -97,6 +97,10 @@ package.targets.append(
     .target( name: "msgbuilderLib",
              dependencies: ["StdMsgs","OpenSSL",
                             "msgs"]))
+package.dependencies.append(.package(url: "https://github.com/Bouke/NetService.git", from: "0.7.0"))
+package.targets.first(where: { $0.name == "rosmaster" })!.dependencies.append("NetService")
+package.targets.first(where: { $0.name == "RosSwift" })!.dependencies.append("NetService")
+
 #else
 package.targets.append(
     .target( name: "msgbuilderLib",

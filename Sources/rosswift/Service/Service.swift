@@ -10,7 +10,7 @@ import RosTime
 import StdMsgs
 import BinaryCoder
 
-public struct Service {
+public enum Service {
 
     /// Invoke an RPC service.
     ///
@@ -35,10 +35,6 @@ public struct Service {
         return try? call(node: node, serviceName: name, req: request).wait()
     }
 
-//    static func call<Service: ServiceProt>(node: NodeHandle, name: String, service: inout Service) -> Bool {
-//        return call(node: node, serviceName: name, req: service.request, response: &service.response)
-//    }
-
     static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: NodeHandle, serviceName: String, req: MReq, response: inout MRes)  -> Bool {
         do {
             let resp: MRes = try call(node: node, serviceName: serviceName, req: req).wait()
@@ -55,7 +51,7 @@ public struct Service {
     ///   - serviceName: Name of the service to wait for
     ///   - timeout: The amount of time to wait for, in milliseconds.  If timeout is -1, waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    static func waitForService(ros: Ros, serviceName: String, timeout: Int32) -> Bool {
+    public static func waitForService(ros: Ros, serviceName: String, timeout: Int32) -> Bool {
         let dur = Duration(milliseconds: timeout)
         return waitForService(ros: ros, serviceName: serviceName, timeout: dur )
     }
@@ -66,7 +62,7 @@ public struct Service {
     /// - Parameter timeout: The amount of time to wait for before timing out.  If timeout is -1 (default),
     /// waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    static func waitForService(ros: Ros, serviceName: String, timeout: Duration = Duration()) -> Bool {
+    public static func waitForService(ros: Ros, serviceName: String, timeout: Duration = Duration()) -> Bool {
         let mappedNames = ros.resolve(name: serviceName)
         let startTime = Time.now
         var printed = false

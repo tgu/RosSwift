@@ -101,30 +101,22 @@ class TimerTest: XCTestCase {
         let ros = Ros(name: "testMultipleSteadyTimeCallbacks")
 
         let n = ros.createNode()
-        let count = 10
-        var helpers = [SteadyTimerHelper]()
-        helpers.reserveCapacity(count)
-        for i in 0..<count {
-            let period = Double(i+1)*0.1
-            let helper = SteadyTimerHelper(node: n, period)
-            helpers.append(helper)
+        let helpers = (1...10).map {
+            SteadyTimerHelper(node: n, Double($0)*0.1)
         }
-
         let start = WallTime.now
         let d = WallDuration(milliseconds: 10)
-        let spinCount = 1000
-        for _ in 0..<spinCount {
+        for _ in 1...1000 {
             ros.spinOnce()
             d.sleep()
         }
         let end = WallTime.now
         let dur = (end - start).toSec()
 
-        for i in 0..<count {
-            XCTAssertFalse(helpers[i].failed)
-
-            let expectedCount = Int(dur / helpers[i].expectedPeriod.toSec())
-            XCTAssertEqual(helpers[i].totalCalls, expectedCount)
+        for h in helpers {
+            XCTAssertFalse(h.failed)
+            let expectedCount = Int(dur / h.expectedPeriod.toSec())
+            XCTAssertEqual(h.totalCalls, expectedCount)
         }
     }
 

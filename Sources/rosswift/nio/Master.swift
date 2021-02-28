@@ -10,6 +10,9 @@ import NIO
 import NIOConcurrencyHelpers
 import rpcobject
 import RosNetwork
+#if os(Linux)
+import NetService
+#endif
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
@@ -123,7 +126,7 @@ final class XmlRpcHandler: ChannelInboundHandler {
     }
 }
 
-struct XMLRPCClient {
+enum XMLRPCClient {
     static let requestBegin = "<?xml version=\"1.0\"?>\r\n<methodCall>\r\n<methodName>"
     static let requestEnd = "</methodCall>\r\n"
     static let methodresponseTag = "<methodResponse>"
@@ -158,16 +161,46 @@ struct XMLRPCClient {
 
 final class Master {
 
-    var masterHost = "127.0.0.1"
-    var masterPort: UInt16 = 11311
-    var masterRetryTimeout = 0.0
+    let masterHost: String
+    let masterPort: UInt16
+    let group: EventLoopGroup
+    var bootstrap: ClientBootstrap?
+    var handlers = [ObjectIdentifier: XmlRpcHandler]()
+    let lock = Lock()
 
-    func initialize(remappings: StringStringMap) {
+    var uri: String {
+        return "/"
+    }
+
+    func registerHandler(for channel: Channel, handler: XmlRpcHandler) {
+        lock.withLock {
+            precondition(handlers[ObjectIdentifier(channel)] == nil)
+            handlers[ObjectIdentifier(channel)] = handler
+        }
+    }
+
+    func unregisterHandler(for channel: Channel) {
+        lock.withLock {
+            precondition(handlers[ObjectIdentifier(channel)] != nil)
+            handlers.removeValue(forKey: ObjectIdentifier(channel))
+        }
+    }
+
+    init(group: EventLoopGroup, remappings: StringStringMap) {
         var masterURI = remappings["__master"]
         if masterURI == nil {
             var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]
             if masterUriEnv == nil {
-                if amIBeingDebugged() {
+                print("ROS_MASTER_URI not set, searching...")
+                // primitive search for a rosmaster advertised with zeroconf (Bonjour)
+                let browser = RosMasterBrowser()
+                browser.start()
+                while browser.host.isEmpty {
+                    RunLoop.main.run(until: .init(timeIntervalSinceNow: 1.0))
+                }
+                if !browser.host.isEmpty {
+                    masterUriEnv = "http://\(browser.host):\(browser.port)"
+                } else if amIBeingDebugged() {
                     masterUriEnv = "http://\(RosNetwork.determineHost()):11311"
                 } else {
                     fatalError( "ROS_MASTER_URI is not defined in the environment. Either " +
@@ -188,42 +221,7 @@ final class Master {
         }
         masterHost = master.host
         masterPort = master.port
-        ROS_DEBUG("master on host: \(masterHost), port: \(masterPort)")
-    }
 
-    let group: EventLoopGroup
-    var bootstrap: ClientBootstrap?
-    var handlers = [ObjectIdentifier: XmlRpcHandler]()
-    var lock = Lock()
-    var channel: Channel?
-
-    var uri: String {
-        return "/"
-    }
-
-    var host: String {
-        return masterHost
-    }
-
-    var port: UInt16 {
-        return masterPort
-    }
-
-    func registerHandler(for channel: Channel, handler: XmlRpcHandler) {
-        lock.withLock {
-            precondition(handlers[ObjectIdentifier(channel)] == nil)
-            handlers[ObjectIdentifier(channel)] = handler
-        }
-    }
-
-    func unregisterHandler(for channel: Channel) {
-        lock.withLock {
-            precondition(handlers[ObjectIdentifier(channel)] != nil)
-            handlers.removeValue(forKey: ObjectIdentifier(channel))
-        }
-    }
-
-    internal init(group: EventLoopGroup) {
         self.group = group
         self.bootstrap = ClientBootstrap(group: group)
             // Enable SO_REUSEADDR.
@@ -232,6 +230,9 @@ final class Master {
                 channel.pipeline.addHandlers([ByteToMessageHandler(XmlRpcMessageDelimiterCodec()),
                                               XmlRpcHandler(owner: self)])
         }
+        
+        ROS_DEBUG("master on host: \(masterHost), port: \(masterPort)")
+
     }
 
     enum ValidateError: Error {
@@ -313,7 +314,7 @@ final class Master {
     }
 
     func execute(method: String, request: XmlRpcValue) -> EventLoopFuture<XmlRpcValue> {
-        return execute(method: method, request: request, host: host, port: masterPort)
+        return execute(method: method, request: request, host: masterHost, port: masterPort)
     }
 
     enum MasterError: Error {

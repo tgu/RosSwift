@@ -80,6 +80,8 @@ var parameter: Int = 0
 
 if ros.param.getCached("int", &parameter) {
     print("parameter int = \(parameter)")
+} else {
+    ros.param.set(key: "int", value: 12)
 }
 ros.param.set(key: "~parm", value: ["T":34.3,"I":45.0,"D":0.34])
 

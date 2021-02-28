@@ -12,27 +12,6 @@ import RosNetwork
 
 public typealias StringStringMap = [String: String]
 
-func amIBeingDebugged() -> Bool {
-    #if os(OSX)
-    var info = kinfo_proc()
-    var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
-    var size = MemoryLayout<kinfo_proc>.stride
-    let junk = sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0)
-    assert(junk == 0, "sysctl failed")
-    return (info.kp_proc.p_flag & P_TRACED) != 0
-    #else
-    return false
-    #endif
-}
-
-func check_ipv6_environment() {
-    //        if let envIPv6 = getenv("ROS_IPV6") {
-    //            let env = String(utf8String: envIPv6)
-    //            let useIPv6 = env == "on"
-    //        }
-}
-
-
 public final class Ros: Hashable {
 
     public static func == (lhs: Ros, rhs: Ros) -> Bool {
@@ -99,23 +78,18 @@ public final class Ros: Hashable {
     /// - Parameter options: [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
 
     public init(name inName: String, namespace: String = "", remappings: StringStringMap = [:], options: InitOption = []) {
-        initOptions = options
-        isRunning = true
-
-        check_ipv6_environment()
-        network = RosNetwork(remappings: remappings)
-        master = Master(group: threadGroup)
-        master.initialize(remappings: remappings)
-
-        var ns = namespace
-
-        if let namespaceEnvironment = ProcessInfo.processInfo.environment["ROS_NAMESPACE"] {
-            ns = namespaceEnvironment
-        }
-
-        guard !inName.isEmpty else {
+        if inName.isEmpty {
             fatalError("The node name must not be empty")
         }
+
+        initOptions = options
+        isRunning = true
+        check_ipv6_environment()
+        network = RosNetwork(remappings: remappings)
+        master = Master(group: threadGroup, remappings: remappings)
+
+        var ns = ProcessInfo.processInfo.environment["ROS_NAMESPACE"] ?? namespace
+
 
         var node_name = inName
 
@@ -464,12 +438,12 @@ public final class Ros: Hashable {
 }
 
 
-func basicSigintHandler(signal: Int32) {
+private func basicSigintHandler(signal: Int32) {
     ROS_INFO("SIGINT")
     Ros.globalRos.forEach{ $0.requestShutdown() }
 }
 
-func atexitCallback() {
+private func atexitCallback() {
     Ros.globalRos.forEach { ros in
         if ros.isRunning && !ros.isShuttingDown.load() {
             ROS_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles")
@@ -477,3 +451,27 @@ func atexitCallback() {
         }
     }
 }
+
+private func check_ipv6_environment() {
+    if let envIPv6 = ProcessInfo.processInfo.environment["ROS_IPV6"] {
+        let env = String(utf8String: envIPv6)
+        let useIPv6 = env == "on"
+        if useIPv6 {
+            print("ROS_IPV6 is ignored")
+        }
+    }
+}
+
+func amIBeingDebugged() -> Bool {
+    #if os(OSX)
+    var info = kinfo_proc()
+    var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+    var size = MemoryLayout<kinfo_proc>.stride
+    let junk = sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0)
+    assert(junk == 0, "sysctl failed")
+    return (info.kp_proc.p_flag & P_TRACED) != 0
+    #else
+    return false
+    #endif
+}
+

@@ -17,7 +17,7 @@ The package include ``msgbuilder`` to generate code for custom messages.
 
 ## Master
 
-The package include ``roscore``  that is a swift implementation of the ros master.
+The package include ``roscore``  that is a swift implementation of the ros master. The master advertises its presense with Bonjour on Apple devices and with Avahi on Linux devices. A client initialization of Ros will search for the master unless the url is specified with remapping ``ros = Ros(name: "phone", remappings: ["__master":"http://10.0.1.23:11311"])``  or with the environment variable ``ROS_MASTER_URI``
 
 ## Example
 

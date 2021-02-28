@@ -15,11 +15,11 @@ protocol TransportUDP {}
 
 internal final class Subscription {
     final class CallBackInfo {
-        var callbackQueue: CallbackQueueInterface
-        var helper: SubscriptionCallbackHelper
-        var subscriptionQueue: SubscriptionQueue
-        var hasTrackedObject: Bool
-        var trackedObject: AnyObject?
+        let callbackQueue: CallbackQueueInterface
+        let helper: SubscriptionCallbackHelper
+        let subscriptionQueue: SubscriptionQueue
+        let hasTrackedObject: Bool
+        let trackedObject: AnyObject?
 
         init(queue: CallbackQueueInterface,
              helper: SubscriptionCallbackHelper,
@@ -300,7 +300,6 @@ internal final class Subscription {
                 let connection = InboundConnection(parent: self, host: pubHost, port: pubPort)
                 let pubLink = TransportPublisherLink(parent: self, xmlrpcUri: uri, transportHints: self.transportHints)
                 pubLink.initialize(ros: self.ros, connection: connection)
-//                self.ros.connectionManager.addConnection(connection: connection)
                 self.publisherLinks.append(pubLink)
                 ROS_DEBUG("Connected to publisher of topic [\(self.name)] at [\(pubHost):\(pubPort)]")
             }
