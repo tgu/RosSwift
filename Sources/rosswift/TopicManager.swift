@@ -612,7 +612,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
 
 @available(swift 5.1)
 @propertyWrapper
-public struct Published<Value: Message> {
+public struct RosPublished<Value: Message> {
     public let topic: String
     private unowned var node: NodeHandle!
     private var cachedValue: Value?

@@ -67,6 +67,10 @@ public final class NodeHandle {
     }
 
     public let ros: Ros
+    
+    public var rosMasterPath: String {
+        return ros.master.path
+    }
 
     // MARK: Life
 

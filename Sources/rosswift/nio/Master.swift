@@ -167,6 +167,10 @@ final class Master {
     var bootstrap: ClientBootstrap?
     var handlers = [ObjectIdentifier: XmlRpcHandler]()
     let lock = Lock()
+    
+    var path: String {
+        return "\(masterHost):\(masterPort)"
+    }
 
     var uri: String {
         return "/"
