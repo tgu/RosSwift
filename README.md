@@ -12,13 +12,15 @@ Minimum SDK10.14 on OSX, also works on iOS14
 Swift 5.3 on Raspberry, tested with Ubuntu 20.10
 
 It can be necessary to allow arbitary loads in the Info.plist file for iOS and macOS
-'''
+
+```
 <key>NSAppTransportSecurity</key>
 <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>
 </dict>
-'''
+```
+
 
 ## Messages
 
@@ -30,12 +32,12 @@ The package include ``roscore``  that is a swift implementation of the ros maste
 
 For service discovery in iOS14 Client app, add NSBonjourServices to your Info.plist
 
-´´´
+```
 <key>NSBonjourServices</key>
 <array>
   <string>_ros._tcp</string>
 </array>
-´´´
+```
 
 
 ## Example
