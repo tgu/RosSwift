@@ -202,7 +202,7 @@ final class Master {
                 while browser.host.isEmpty {
                     RunLoop.main.run(until: .init(timeIntervalSinceNow: 1.0))
                 }
-                if !browser.host.isEmpty {
+                if browser.host != "error" {
                     masterUriEnv = "http://\(browser.host):\(browser.port)"
                 } else if amIBeingDebugged() {
                     masterUriEnv = "http://\(RosNetwork.determineHost()):11311"

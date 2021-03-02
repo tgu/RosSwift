@@ -21,19 +21,20 @@ final class RosMasterBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDel
     }
 
     func start() {
-        ROS_DEBUG("Search for ros master domains")
-        browser.searchForServices(ofType: "_ros._tcp.", inDomain: "")
+        browser.searchForServices(ofType: "_ros._tcp.", inDomain: "local.")
     }
     
     //MARK: NetServiceBrowserDelegate
     
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
         service.delegate = self
-        print("starting resolve")
         service.resolve(withTimeout: 10)
-        print("returned resolve")
         RunLoop.current.run(until: .init(timeIntervalSinceNow: 1))
-        print("runloop finished")
+    }
+    
+    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
+        print(errorDict)
+        host = "error"
     }
     
     //MARK: NetServiceDelegate
@@ -45,5 +46,5 @@ final class RosMasterBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDel
             port = sender.port
         }
     }
-
+    
 }
