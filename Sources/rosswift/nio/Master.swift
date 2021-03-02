@@ -14,7 +14,7 @@ import RosNetwork
 import NetService
 #endif
 
-let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
 struct TopicInfo {
     let name: String

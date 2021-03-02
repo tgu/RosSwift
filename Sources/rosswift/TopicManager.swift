@@ -145,7 +145,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                 if protoName == "TCPROS" {
                     let tcprosParams = XmlRpcValue(array: [.init(str: "TCPROS"),
                                                             .init(str: ros.network.gHost),
-                                                            .init(any: connectionManager.getTCPPort())])
+                                                            .init(any: connectionManager.port)])
                     let ret = XmlRpcValue(array: [.init(any: 1),
                                                   .init(str: ""),
                                                   tcprosParams])

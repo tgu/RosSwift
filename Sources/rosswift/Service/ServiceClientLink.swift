@@ -7,17 +7,16 @@
 
 
 internal final class ServiceClientLink {
-    var connection: Connection?
+    var connection: Connection
     var parent: ServiceProtocol?
     var persistent = false
 
     func dropServiceClient() {
-        assert(connection != nil)
         assert(parent != nil)
         parent?.removeServiceClientLink(self)
     }
 
-    func initialize(connection: Connection) {
+    init(connection: Connection) {
         self.connection = connection
     }
 
@@ -28,7 +27,7 @@ internal final class ServiceClientLink {
 
             let msg = "bogus tcpros header. did not have the required elements: md5sum, service, callerid"
             ROS_LOG_ERROR(msg)
-            connection?.sendHeaderError(msg)
+            connection.sendHeaderError(msg)
             return false
         }
         if let persist = header["persistent"] {
@@ -40,7 +39,7 @@ internal final class ServiceClientLink {
         guard let servicePublication = ros.serviceManager.lookupServicePublication(service: service) else {
             let msg = "received a tcpros connection for a nonexistent service [\(service)]."
             ROS_LOG_ERROR(msg)
-            connection?.sendHeaderError(msg)
+            connection.sendHeaderError(msg)
             return false
         }
 
@@ -48,7 +47,7 @@ internal final class ServiceClientLink {
             let msg = "client wants service \(service) to have md5sum \(md5sum)" +
                       " but it has \(servicePublication.md5sum). Dropping connection."
             ROS_LOG_ERROR(msg)
-            connection?.sendHeaderError(msg)
+            connection.sendHeaderError(msg)
             return false
         }
 
@@ -60,7 +59,7 @@ internal final class ServiceClientLink {
         if servicePublication.isDropped {
             let msg = "received a tcpros connection for a nonexistent service \(service)"
             ROS_LOG_ERROR(msg)
-            connection?.sendHeaderError(msg)
+            connection.sendHeaderError(msg)
             return false
         }
 
@@ -71,7 +70,7 @@ internal final class ServiceClientLink {
                             "md5sum": servicePublication.md5sum,
                             "callerid": ros.name]
 
-        connection?.writeHeader(keyVals: m).map {
+        connection.writeHeader(keyVals: m).map {
             ROS_DEBUG("data written")
         }.whenFailure { error in
             ROS_DEBUG("Could not wite header: \(m)\n\n error: \(error)")

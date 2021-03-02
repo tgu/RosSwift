@@ -16,10 +16,6 @@ enum DropReason {
     case destructing
 }
 
-typealias ReadFinishedFunc = (Connection, [UInt8], Int, Bool) -> Void
-typealias WriteFinishedFunc = (Connection) -> Void
-typealias DropFunc = (Notification) -> Void
-
 final class Connection {
 
     var channel: Channel
@@ -49,7 +45,7 @@ final class Connection {
         return "callerid=[\(callerID)] address=[\(remoteAddress)]"
     }
 
-    func getTransportInfo() -> String {
+    var transportInfo: String {
         return "TCPROS connection on port \(channel.localAddress?.port ?? 0) to [\(remoteAddress)]"
     }
 
@@ -76,8 +72,7 @@ final class Connection {
     }
 
     func write(buffer: [UInt8]) -> EventLoopFuture<Void> {
-        var buf = channel.allocator.buffer(capacity: buffer.count)
-        buf.writeBytes(buffer)
+        let buf = channel.allocator.buffer(bytes: buffer)
         return channel.writeAndFlush(buf)
     }
 

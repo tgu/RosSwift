@@ -13,17 +13,17 @@ final class ConnectionHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
     typealias InboundOut = ByteBuffer
 
-    private var subscriber: TransportSubscriberLink?
-    private var serviceclient: ServiceClientLink?
-
     private let ros: Ros
 
-    var header = Header(headers: [:])
-
     func channelInactive(context: ChannelHandlerContext) {
-        subscriber?.dropPublication()
-        serviceclient?.dropServiceClient()
-        //        ROS_DEBUG("ConnectionHandler channelInactive for port \(context.channel.localAddress!.port!)")
+        switch state {
+        case .serviceCall(let serviceLink):
+            serviceLink.dropServiceClient()
+        case .subscriber(let subscriber):
+       	 	subscriber.dropPublication()
+        default:
+            break
+        }
         context.fireChannelInactive()
     }
 
@@ -31,15 +31,15 @@ final class ConnectionHandler: ChannelInboundHandler {
         self.ros = ros
     }
 
-    enum State {
+    enum ConnectionState {
         case header
-        case serviceCall
+        case subscriber(TransportSubscriberLink)
+        case serviceCall(ServiceClientLink)
     }
 
-    var state = State.header
+    var state = ConnectionState.header
 
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        //        ROS_DEBUG("message from \(context.channel.remoteAddress) => \(context.channel.localAddress)")
         var buffer = self.unwrapInboundIn(data)
 
         switch state {
@@ -78,7 +78,7 @@ final class ConnectionHandler: ChannelInboundHandler {
                 return
             }
 
-            header.headers = readMap
+            let header = Header(headers: readMap)
 
             // Connection Header Received
 
@@ -87,34 +87,29 @@ final class ConnectionHandler: ChannelInboundHandler {
                 ROS_DEBUG("Connection: Creating TransportSubscriberLink for topic [\(topic)] connected to [\(remote)]")
                 let subLink = TransportSubscriberLink(connection: conn)
                 if subLink.handleHeader(ros: ros, header: header) {
-                    subscriber = subLink
+                    state = .subscriber(subLink)
                 } else {
                     subLink.dropPublication()
                 }
             } else if let val = header["service"] {
                 ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: context.remoteAddress!.description))]")
                 let conn = Connection(transport: context.channel, header: header)
-
-                let link = ServiceClientLink()
-                link.initialize(connection: conn)
+                let link = ServiceClientLink(connection: conn)
                 if link.handleHeader(header: header, ros: ros) {
-                    serviceclient = link
+                    state = .serviceCall(link)
                 }
-                state = .serviceCall
             } else {
                 ROS_ERROR("Got a connection for a type other than 'topic' or 'service' from [\(String(describing: context.remoteAddress?.description))].  Fail.")
-                fatalError()
+                context.close(promise: nil)
             }
+            
+        case .subscriber:
+            ROS_ERROR("Got a unexpected connection [\(String(describing: context.remoteAddress?.description))].")
+            context.close(promise: nil)
 
-        case .serviceCall:
+        case .serviceCall(let serviceLink):
             if let rawMessage = buffer.readBytes(length: buffer.readableBytes) {
-                guard let link = serviceclient else {
-                    ROS_ERROR("ServiceCall not able process: link is missing")
-                    context.close(promise: nil)
-                    return
-                }
-
-                if let response = link.parent?.processRequest(buf: rawMessage) {
+                if let response = serviceLink.parent?.processRequest(buf: rawMessage) {
                     let rawResponse = SerializedMessage(msg: response)
                     var buf = context.channel.allocator.buffer(capacity: rawResponse.buf.count + 1)
                     buf.writeBytes([UInt8(1)]+rawResponse.buf)  // Start with Bool(true)
@@ -144,7 +139,7 @@ internal final class ConnectionManager {
     internal init() {
     }
 
-    func getTCPPort() -> Int32 {
+    var port: Int32 {
         return Int32(channel?.localAddress?.port ?? 0)
     }
 
@@ -169,10 +164,9 @@ internal final class ConnectionManager {
         initialize(group: threadGroup)
         do {
             channel = try boot?.bind(host: ros.network.gHost, port: 0).wait()
-            ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host ?? "unknown host"):\(getTCPPort())]")
-
+            ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host ?? "unknown host"):\(port)]")
         } catch {
-            ROS_ERROR("Could not bind to [\(getTCPPort())]: \(error)")
+            ROS_ERROR("Could not bind to [\(port)]: \(error)")
         }
     }
 
@@ -195,7 +189,6 @@ internal final class ConnectionManager {
             .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 16)
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
-
     }
 
 }

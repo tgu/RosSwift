@@ -73,7 +73,7 @@ import RosNetwork
                                          callback: ops.callback)
             servicePublications.append(pub)
 
-            let uri = "rosrpc://\(ros.network.gHost):\(connectionManager.getTCPPort())"
+            let uri = "rosrpc://\(ros.network.gHost):\(connectionManager.port)"
             let params = XmlRpcValue(anyArray: [ros.name, ops.service, uri, xmlrpcManager.serverURI])
             do {
                 let _ = try ros.master.execute(method: "registerService", request: params).wait()
@@ -107,7 +107,7 @@ import RosNetwork
             let args = XmlRpcValue(anyArray:
                 [ros.name,
                 service,
-                "rosrpc://\(ros.network.gHost):\(connectionManager.getTCPPort())"])
+                "rosrpc://\(ros.network.gHost):\(connectionManager.port)"])
             do {
                 let response = try ros.master.execute(method: "unregisterService", request: args).wait()
                 ROS_DEBUG("response: \(response)")

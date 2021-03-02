@@ -29,7 +29,7 @@ final class TransportSubscriberLink: SubscriberLink {
         }
     }
     
-    var transportInfo: String { return connection?.getTransportInfo() ?? "" }
+    var transportInfo: String { return connection?.transportInfo ?? "" }
     
     func handleHeader(ros: Ros, header: Header) -> Bool {
         guard let connection = connection else {
