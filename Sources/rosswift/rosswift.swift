@@ -86,7 +86,11 @@ public final class Ros: Hashable {
         isRunning = true
         check_ipv6_environment()
         network = RosNetwork(remappings: remappings)
-        master = Master(group: threadGroup, remappings: remappings)
+        
+        let (masterHost, masterPort) = Master.determineRosMasterAddress(remappings: remappings)
+
+        
+        master = Master(group: threadGroup, host: masterHost, port: masterPort)
 
         var ns = ProcessInfo.processInfo.environment["ROS_NAMESPACE"] ?? namespace
 

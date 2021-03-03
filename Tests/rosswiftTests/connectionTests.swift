@@ -328,6 +328,80 @@ class connectionTests: XCTestCase {
 
         XCTAssertEqual(received, sent)
     }
+    
+    func testNonLatching() {
+        let ros = Ros(name: "nonlatching")
+        
+        let n = ros.createNode()
+        
+        let pub = n.advertise(topic: "/testInternal", latch: false, message: Int64.self)!
+        pub.publish(message: Int64(1))
+        
+        var count = 0
+        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+            count += 1
+        }
+        
+        ros.spinOnce()
+
+        XCTAssertEqual(count, 0)
+
+    }
+    
+
+    
+    func testLatching() {
+        let ros = Ros(name: "latching")
+        
+        let n = ros.createNode()
+        
+        let pub = n.advertise(topic: "/testInternal", latch: true, message: Int64.self)!
+        pub.publish(message: Int64(1))
+        
+        var count = 0
+        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+            count += 1
+        }
+        
+        ros.spinOnce()
+
+        XCTAssertEqual(count, 1)
+
+    }
+    
+    func testLatchingMultipleSubscribers() {
+        let ros = Ros(name: "latching")
+        
+        let n = ros.createNode()
+        
+        let pub = n.advertise(topic: "/testInternal", latch: true, message: Int64.self)!
+        pub.publish(message: Int64(1))
+        
+        var count1 = 0
+        var count2 = 0
+        
+        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+            count1 += 1
+        }
+        
+        ros.spinOnce()
+
+        XCTAssertEqual(count1, 1)
+        XCTAssertEqual(count2, 0)
+        
+        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+            count2 += 1
+        }
+        
+        ros.spinOnce()
+
+        XCTAssertEqual(count1, 1)
+        XCTAssertEqual(count1, 1)
+
+
+    }
+
+
 
 
 }

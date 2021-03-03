@@ -45,8 +45,4 @@ final class XMLRPCManager {
     func unbind(function: String) {
         server.remove(methodName: function)
     }
-
-    func getPid(params: XmlRpcValue) -> XmlRpcValue {
-        return XmlRpcValue(anyArray: [2, "", Int(getpid())])
-    }
 }

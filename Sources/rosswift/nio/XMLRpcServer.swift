@@ -148,16 +148,6 @@ final class HTTPHandler: ChannelInboundHandler {
         return body
     }
 
-    func generateHeader(body: String) -> String {
-        let header = "HTTP/1.1 200 OK\r\nServer: "
-            + xmlrpcVersion
-            + "\r\n"
-            + "Content-Type: text/xml\r\n"
-            + "Content-length: "
-            + "\(body.lengthOfBytes(using: .utf8))\r\n\r\n"
-        return header
-    }
-
     func channelReadComplete(context: ChannelHandlerContext) {
         context.flush()
     }

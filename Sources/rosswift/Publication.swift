@@ -57,7 +57,6 @@ final class Publication {
     let md5sum: String
     let messageDefinition: String
     var sequenceNr = NIOAtomic.makeAtomic(value: UInt32(0))
-    var intraprocessSubscriberCount = 0
     var pubCallbacks = [SubscriberCallbacks]()
     var subscriberLinks = [SubscriberLink]()
     let latch: Bool
@@ -138,12 +137,7 @@ final class Publication {
         subscriberLinksQueue.sync {
 
             subscriberLinks.append(link)
-
-            if link.isIntraprocess {
-                intraprocessSubscriberCount += 1
-            }
-
-            if latch, let last = lastMessage, last.buf.isEmpty {
+            if latch, let last = lastMessage, !last.buf.isEmpty {
                 link.enqueueMessage(m: last)
             }
 
@@ -160,10 +154,6 @@ final class Publication {
         }
 
         subscriberLinksQueue.async {
-            if link.isIntraprocess {
-                self.intraprocessSubscriberCount -= 1
-            }
-
             if let it = self.subscriberLinks.firstIndex(where: { $0 === link }) {
                 self.peerDisconnect(subLink: link)
                 self.subscriberLinks.remove(at: it)
@@ -254,6 +244,10 @@ final class Publication {
             subscriberLinks.forEach {
                 $0.enqueueMessage(m: msg)
             }
+        }
+        
+        if latch {
+            lastMessage = msg
         }
     }
 

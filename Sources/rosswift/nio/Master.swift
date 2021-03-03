@@ -189,8 +189,8 @@ final class Master {
             handlers.removeValue(forKey: ObjectIdentifier(channel))
         }
     }
-
-    init(group: EventLoopGroup, remappings: StringStringMap) {
+    
+    static func determineRosMasterAddress(remappings: StringStringMap) -> (host: String, port: UInt16) {
         var masterURI = remappings["__master"]
         if masterURI == nil {
             var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]
@@ -223,8 +223,13 @@ final class Master {
         guard let master = RosNetwork.splitURI(uri: masterURI!) else {
             fatalError( "Couldn't parse the master URI [\(masterURI!)] into a host:port pair.")
         }
-        masterHost = master.host
-        masterPort = master.port
+        
+        return master
+    }
+
+    init(group: EventLoopGroup, host: String, port: UInt16) {
+        masterHost = host
+        masterPort = port
 
         self.group = group
         self.bootstrap = ClientBootstrap(group: group)
@@ -333,8 +338,7 @@ final class Master {
         let promise: EventLoopPromise<XmlRpcValue> = eventLoop.makePromise()
 
         bootstrap?.connect(host: host, port: Int(port)).map { channel -> Void in
-            var buffer = channel.allocator.buffer(capacity: xml.utf8.count)
-            buffer.writeString(xml)
+            let buffer = channel.allocator.buffer(string: xml)
             channel.writeAndFlush(buffer).whenFailure { error in
                 ROS_ERROR("write failed to \(channel.remoteAddress!) [\(error)]")
                 promise.fail(MasterError.writeError("write failed to \(channel.remoteAddress!) [\(error)]"))
