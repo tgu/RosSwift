@@ -113,7 +113,7 @@ final class HTTPHandler: ChannelInboundHandler {
                 fatalError()
             }
 
-            let obj = XMLRPCManager.parseRequest(xml: str)
+            let obj = XmlRpcUtil.parseRequest(xml: str)
             let methodName = obj.method
             let params = XmlRpcValue(anyArray: obj.params)
 
@@ -134,30 +134,9 @@ final class HTTPHandler: ChannelInboundHandler {
         }
     }
 
-    private func parseRequest(xml: String) -> (method: String, params: [XmlRpcValue]) {
-        var xmlSeq = xml.dropFirst(0)
-        var params = [XmlRpcValue]()
-        let methodName = XmlRpcUtil.parseTag(from: .methodname, to: .endMethodname, xml: &xmlSeq)
-        if !methodName.isEmpty && XmlRpcUtil.findTag(tag: .params, xml: &xmlSeq) {
-            while XmlRpcUtil.nextTagIs(tag: .param, xml: &xmlSeq) {
-                var v = XmlRpcValue()
-                let _ = v.fromXML(xml: &xmlSeq)
-                params.append(v)
-                _ = XmlRpcUtil.nextTagIs(tag: .endParam, xml: &xmlSeq)
-            }
-            _ = XmlRpcUtil.nextTagIs(tag: .endParams, xml: &xmlSeq)
-        }
-        return (methodName, params)
-    }
-
-
     func executeMethod(methodName: String, params: XmlRpcValue) -> XmlRpcValue {
         if let method = server.find(method: methodName) {
-            do {
-                return try method.execute(params: params)
-            } catch {
-                ROS_ERROR(error.localizedDescription)
-            }
+        	return method(params)
         }
         return XmlRpcValue(str: "")
     }
@@ -209,7 +188,7 @@ final class HTTPHandler: ChannelInboundHandler {
 final class XMLRPCServer {
     var channel: Channel?
     var boot: ServerBootstrap?
-    var methods = [String: XmlRpcServerMethod]()
+    var methods = [String: XMLRPCFunc]()
     let methodsQueue = DispatchQueue(label: "methodsQueue")
 
     init(group: EventLoopGroup) {
@@ -244,10 +223,18 @@ final class XMLRPCServer {
         }
     }
 
-    func add(method: XmlRpcServerMethod) {
+    func add(method: @escaping XMLRPCFunc, named: String) -> Bool {
+        var ok = true
         methodsQueue.sync {
-            methods[method.name] = method
+            if methods[named] != nil {
+            	ROS_ERROR("function already bound")
+            	ROS_ERROR("\(methods)")
+                ok = false
+            } else {
+                methods[named] = method
+            }
         }
+        return ok
     }
 
     func removeMethod(method: XmlRpcServerMethod) {
@@ -260,7 +247,7 @@ final class XMLRPCServer {
         }
     }
 
-    func find(method name: String) -> XmlRpcServerMethod? {
+    func find(method name: String) -> XMLRPCFunc? {
         return methodsQueue.sync {
             return methods[name]
         }

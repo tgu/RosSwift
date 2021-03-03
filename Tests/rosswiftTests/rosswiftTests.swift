@@ -124,7 +124,7 @@ class rosswiftTests: XCTestCase {
             + "<value><array><data><value>TCPROS</value></data></array>"
             + "</value></data></array></value></param></params></methodCall>"
 
-            let ob = XMLRPCManager.parseRequest(xml: xml)
+            let ob = XmlRpcUtil.parseRequest(xml: xml)
             XCTAssertEqual(ob.method, "requestTopic")
             XCTAssertEqual(ob.params[0].string, "/matlab_global_node_02713")
             XCTAssertEqual(ob.params[1].string, "/chatter")

@@ -8,6 +8,23 @@
 import Foundation
 
 public enum XmlRpcUtil {
+    
+    public static func parseRequest(xml: String) -> (method: String, params: [XmlRpcValue]) {
+        var xmlSeq = xml.dropFirst(0)
+        var params = [XmlRpcValue]()
+        let methodName = parseTag(from: .methodname, to: .endMethodname, xml: &xmlSeq)
+        if !methodName.isEmpty && findTag(tag: .params, xml: &xmlSeq) {
+            while nextTagIs(tag: .param, xml: &xmlSeq) {
+                var v = XmlRpcValue()
+                let _ = v.fromXML(xml: &xmlSeq)
+                params.append(v)
+                _ = nextTagIs(tag: .endParam, xml: &xmlSeq)
+            }
+            _ = nextTagIs(tag: .endParams, xml: &xmlSeq)
+        }
+        return (methodName, params)
+    }
+
 
     public static func nextTagIs(tag: Tags, xml: inout String.SubSequence) -> Bool {
         if xml.trimmingCharacters(in: .whitespacesAndNewlines).starts(with: tag.rawValue) {

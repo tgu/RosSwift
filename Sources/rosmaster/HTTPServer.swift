@@ -118,7 +118,7 @@ private final class HTTPHandler: ChannelInboundHandler {
             guard let str = buffer.readString(length: buffer.readableBytes) else {
                 fatalError()
             }
-            let obj = parseRequest(xml: str)
+            let obj = XmlRpcUtil.parseRequest(xml: str)
             let resp = executeRequest(method: obj.method, params: obj.params)
             let xml = resp.toXml()
             let responseXML = self.generateResponse(resultXML: xml)
@@ -133,24 +133,6 @@ private final class HTTPHandler: ChannelInboundHandler {
             self.completeResponse(context, trailers: nil, promise: nil)
         }
     }
-
-    //Mark: parser
-    private func parseRequest(xml: String) -> (method: String, params: [XmlRpcValue]) {
-        var xmlSeq = xml.dropFirst(0)
-        var params = [XmlRpcValue]()
-        let methodName = XmlRpcUtil.parseTag(from: .methodname, to: .endMethodname, xml: &xmlSeq)
-        if !methodName.isEmpty && XmlRpcUtil.findTag(tag: .params, xml: &xmlSeq) {
-            while XmlRpcUtil.nextTagIs(tag: .param, xml: &xmlSeq) {
-                var v = XmlRpcValue()
-                let _ = v.fromXML(xml: &xmlSeq)
-                params.append(v)
-                _ = XmlRpcUtil.nextTagIs(tag: .endParam, xml: &xmlSeq)
-            }
-            _ = XmlRpcUtil.nextTagIs(tag: .endParams, xml: &xmlSeq)
-        }
-        return (methodName, params)
-    }
-
 
     private func executeRequest(method: String, params: [XmlRpcValue]) -> XmlRpcValue {
         if method == "system.multicall" {
