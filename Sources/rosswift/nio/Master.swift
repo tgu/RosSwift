@@ -369,7 +369,7 @@ final class Master {
     }
 
     func getTopics(callerId: String) -> EventLoopFuture<[TopicInfo]> {
-        let args = XmlRpcValue(array: [XmlRpcValue(str: callerId), XmlRpcValue(str: "")])
+        let args = XmlRpcValue(strings: callerId, "")
         return execute(method: "getPublishedTopics", request: args).map({ (rpc) -> [TopicInfo] in
             return rpc.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
         })

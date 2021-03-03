@@ -152,7 +152,7 @@ final class HTTPHandler: ChannelInboundHandler {
 
 
     func executeMethod(methodName: String, params: XmlRpcValue) -> XmlRpcValue {
-        if let method = server.findMethod(name: methodName) {
+        if let method = server.find(method: methodName) {
             do {
                 return try method.execute(params: params)
             } catch {
@@ -167,9 +167,6 @@ final class HTTPHandler: ChannelInboundHandler {
         let req = "</param></params></methodResponse>\r\n"
         let body = res + resultXML + req
         return body
-        //        let header = generateHeader(body: body)
-        //        let response = header + body
-        //        return response
     }
 
     func generateHeader(body: String) -> String {
@@ -247,23 +244,23 @@ final class XMLRPCServer {
         }
     }
 
-    func addMethod(method: XmlRpcServerMethod) {
+    func add(method: XmlRpcServerMethod) {
         methodsQueue.sync {
             methods[method.name] = method
         }
     }
 
     func removeMethod(method: XmlRpcServerMethod) {
-        removeMethod(methodName: method.name)
+        remove(methodName: method.name)
     }
 
-    func removeMethod(methodName: String) {
+    func remove(methodName: String) {
         methodsQueue.sync {
             _ = methods.removeValue(forKey: methodName)
         }
     }
 
-    func findMethod(name: String) -> XmlRpcServerMethod? {
+    func find(method name: String) -> XmlRpcServerMethod? {
         return methodsQueue.sync {
             return methods[name]
         }

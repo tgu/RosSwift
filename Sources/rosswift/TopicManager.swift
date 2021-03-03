@@ -490,10 +490,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                 }
             }
 
-            let args = XmlRpcValue(array: [.init(str: ros.name),
-                                           .init(str: ops.topic),
-                                           .init(str: M.datatype),
-                                           .init(str: xmlrpcManager.serverURI)])
+            let args = XmlRpcValue(strings: ros.name, ops.topic, M.datatype, xmlrpcManager.serverURI)
             var payload = XmlRpcValue()
             do {
                 payload = try ros.master.execute(method: "registerPublisher", request: args).wait()

@@ -14,7 +14,7 @@ struct XMLRPCCallWrapper: XmlRpcServerMethod {
     init(function: String, cb: @escaping XMLRPCFunc, server: XMLRPCServer) {
         self.name = function
         self.function = cb
-        server.addMethod(method: self)
+        server.add(method: self)
     }
 
     func execute(params: XmlRpcValue) throws -> XmlRpcValue {

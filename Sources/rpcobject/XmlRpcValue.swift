@@ -33,6 +33,10 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         self = .string(str)
     }
 
+    public init(strings: String...) {
+        self = .array(strings.map{.string($0)})
+    }
+
     public init(array: [XmlRpcValue]) {
         self = .array(array)
     }

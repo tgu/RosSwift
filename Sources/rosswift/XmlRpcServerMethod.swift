@@ -7,10 +7,6 @@
 
 import rpcobject
 
-enum XmlRpcServerMethodError: Error {
-    case notImplemented
-}
-
 protocol XmlRpcServerMethod {
     var name: String { get }
 
