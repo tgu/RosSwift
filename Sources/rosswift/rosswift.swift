@@ -385,7 +385,7 @@ public final class Ros: Hashable {
         ROS_INFO("Started node [\(name)], " +
             "pid [\(getpid())], bound on [\(network.gHost)], " +
             "xmlrpc port [\(xmlrpcManager.serverPort)], " +
-            "tcpros port [\(connectionManager.port)], using [\(Time.isSimTime() ? "sim":"real")] time")
+            "tcpros port [\(connectionManager.port)], using [\(Time.isSimTime ? "sim":"real")] time")
 
     }
 

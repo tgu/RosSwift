@@ -8,6 +8,8 @@
 import Foundation
 
 public struct SteadyTime: TimeBase {
+    public static let isSystemTime: Bool = true
+    
     public let nanoseconds: UInt64
 
     public init(nanosec: UInt64) {

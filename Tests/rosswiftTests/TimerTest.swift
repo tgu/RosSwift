@@ -8,6 +8,7 @@
 import XCTest
 @testable import RosSwift
 @testable import RosTime
+@testable import msgs
 
 class SteadyTimerHelper {
     var expectedPeriod: WallDuration
@@ -28,7 +29,7 @@ class SteadyTimerHelper {
     }
 
     func callback(event: SteadyTimerEvent) {
-        let first = lastCall.isZero()
+        let first = lastCall.isZero
         lastCall = event.currentExpired
 
         if !first {
@@ -121,5 +122,81 @@ class TimerTest: XCTestCase {
     }
 
 
+    func testSimClock() {
+        let ros = Ros(name: "SimTimeTest")
+        ros.param.set(key: "/use_sim_time", value: true)
+        let n = ros.createNode()
+        let pub = n.advertise(topic: "/clock", message: rosgraph_msgs.Clock.self)!
+        let start = Time.now
+        
+        XCTAssertTrue(start.isZero)
+        
+        pub.publish(message: rosgraph_msgs.Clock(clock: Time(seconds: 42)))
+        
+        ros.spinOnce()
+        
+        XCTAssertEqual(Time.now.toSec(), 42.0)
+
+    }
+    
+    func testClockTimeValid() {
+        Time.setNow(Time())
+        XCTAssertFalse(Time.isValid)
+        Time.setNow(Time.min)
+        XCTAssertTrue(Time.isValid)
+    }
+    
+    func testClockWaitForValid() {
+        Time.setNow(Time())
+        
+        // test timeout
+        
+        let start = WallTime.now
+        XCTAssertFalse(Time.waitForValid(timeout: WallDuration(milliseconds: 1000)))
+        let end = WallTime.now
+        XCTAssertGreaterThan(end-start, WallDuration(milliseconds: 1000))
+        
+        var done = false
+        
+        DispatchQueue(label: "waitThread").async {
+            _ = Time.waitForValid()
+            done = true
+        }
+        
+        WallDuration(milliseconds: 1000).sleep()
+        XCTAssertFalse(done)
+        
+        Time.setNow(Time.min)
+        
+        while !done {
+            WallDuration(milliseconds: 1000).sleep()
+        }
+        
+    }
+    
+    func testClockSleepFromZero() {
+        Time.initialize()
+        Time.setNow(Time())
+        var done = false
+        
+        DispatchQueue(label: "sleep").async {
+        	let ok = Duration(milliseconds: 1000).sleep()
+            if !ok {
+                print("!OK")
+            }
+            done = true
+        }
+        
+        WallDuration(milliseconds: 1000).sleep()
+        let start = WallTime.now
+        Time.setNow(Time(nanosec: start.nanoseconds))
+        while !done {
+            WallDuration(milliseconds: 1).sleep()
+            let now = WallTime.now
+            Time.setNow(Time(nanosec: now.nanoseconds))
+        }
+        let end = WallTime.now
+        XCTAssertGreaterThan(end-start, WallDuration(milliseconds: 1000))
+    }
   
 }

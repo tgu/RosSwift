@@ -16,7 +16,7 @@ public protocol TimeBase: Comparable, BinaryCodable {
 
     init(nanosec: UInt64)
 
-    static func isSystemTime() -> Bool
+    static var isSystemTime: Bool { get }
     static var now: Self { get }
 }
 
@@ -57,7 +57,7 @@ public extension TimeBase {
         self.init(nanosec: nano)
     }
 
-    func isZero() -> Bool {
+    var isZero: Bool {
         return nanoseconds == 0
     }
 
@@ -65,9 +65,9 @@ public extension TimeBase {
         return TimeInterval(nanoseconds) * 1e-9
     }
 
-    static func isSystemTime() -> Bool {
-        return true
-    }
+//    static var isSystemTime: Bool {
+//        return true
+//    }
 
     static func += (lhs: inout Self, rhs: BasicDurationBase) {
         lhs = lhs + rhs

@@ -222,7 +222,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                 }
                 // If we're on simulation time we need to check now() against sleep_end more often than on system time,
                 // since simulation time may be running faster than real time.
-                if !T.isSystemTime() {
+                if !T.isSystemTime {
                     _ = timersCond.wait(until: Date(timeIntervalSinceNow: 0.1))
                 } else {
                     // On system time we can simply sleep for the rest of the wait time, since anything else requiring processing will

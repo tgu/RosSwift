@@ -35,7 +35,7 @@ public struct Duration: DurationBase {
 
         var start = Time.now
         var end = start + self
-        if start.isZero() {
+        if start.isZero {
             end = Time(nanosec: UInt64.max)
         }
 
@@ -43,7 +43,7 @@ public struct Duration: DurationBase {
         while !Time.gStopped && Time.now < end {
             _ = wallSleep(sec: 0, nsec: 1_000_000)
             didSleep = true
-            if start.isZero() {
+            if start.isZero {
                 start = Time.now
                 end = start + self
             }

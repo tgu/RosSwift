@@ -9,6 +9,8 @@ import Foundation
 
 
 public struct WallTime: TimeBase {
+    public static let isSystemTime = true
+    
     public let nanoseconds: UInt64
 
     public init(nanosec: UInt64) {

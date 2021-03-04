@@ -22,6 +22,7 @@ public struct Time: TimeBase {
     public static var simTime = Time()
     public static var simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
     public static let max = Time(nanosec: UInt64.max)
+    public static let min = Time(nanosec: 1)
 
     public init(nanosec: UInt64) {
         nanoseconds = nanosec
@@ -38,19 +39,19 @@ public struct Time: TimeBase {
     }
 
 
-    public static func isSimTime() -> Bool {
+    public static var isSimTime: Bool {
         return useSimTime
     }
 
-    public static func isSystemTime() -> Bool {
-        return !isSimTime()
+    public static var isSystemTime: Bool {
+        return !isSimTime
     }
 
     /// Returns whether or not the current time is valid.
     /// Time is valid if it is non-zero.
 
-    public static func isValid() -> Bool {
-        return !useSimTime || simTime.isZero()
+    public static var isValid: Bool {
+        return !useSimTime || !simTime.isZero
     }
 
     /// Retrieve the current time. If ROS clock time is in use,
@@ -85,7 +86,7 @@ public struct Time: TimeBase {
 
     public static func waitForValid(timeout: WallDuration = WallDuration()) -> Bool {
         let start = WallTime.now
-        while !isValid() && !gStopped {
+        while !isValid && !gStopped {
             _ = WallDuration(seconds: 0.01).sleep()
             if timeout > WallDuration(sec: 0, nsec: 0) && WallTime.now - start > timeout {
                 return false
