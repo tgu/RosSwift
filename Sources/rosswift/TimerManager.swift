@@ -364,8 +364,6 @@ extension TimerManager {
             
         }
 
-        func ready() -> Bool {
-            return true
-        }
+        let ready = true
     }
 }

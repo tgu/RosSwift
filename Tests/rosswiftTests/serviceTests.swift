@@ -81,6 +81,7 @@ class serviceTests: XCTestCase {
 
 
     }
+    
 
     func testServiceAdvCopy()  {
         var calls = 0
@@ -168,12 +169,14 @@ class serviceTests: XCTestCase {
         let node = ros.createNode()
         let serv = node.advertise(service: "/service_adv2", srvFunc: srvCallback)
         XCTAssertNotNil(serv)
-        var req = TestStringString.Request()
+        let req = TestStringString.Request("case_FLIP")
         var res = TestStringString.Response()
-        req.data = "case_FLIP"
+        
+        
+        let otherNode = ros.createNode()
 
         for i in 0..<100 {
-            XCTAssert(Service.call(node: node, serviceName: "service_adv2", req: req, response: &res))
+            XCTAssert(Service.call(node: otherNode, serviceName: "service_adv2", req: req, response: &res))
             XCTAssertEqual(res.data, "A\(i+1)")
         }
         XCTAssertEqual(count, 100)

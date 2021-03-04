@@ -45,10 +45,7 @@ internal final class PeerConnDisconnCallback: CallbackInterface {
         return .success
     }
 
-    func ready() -> Bool {
-        return true
-    }
-
+    let ready = true
 }
 
 final class Publication {

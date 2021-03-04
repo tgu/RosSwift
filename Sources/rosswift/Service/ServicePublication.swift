@@ -60,14 +60,11 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
 
     final class ServiceCallback: CallbackInterface {
 
+        let ready = true
+        
         func call() -> CallResult {
             ROS_ERROR("call() not implemented")
-
             return .invalid
-        }
-
-        func ready() -> Bool {
-            return true
         }
 
         var buffer: [UInt8]
@@ -85,7 +82,6 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
             self.hasTrackedObject = hasTrackedObject
             self.trackedObject = trackedObject
         }
-
     }
 
     func processRequest(buf: [UInt8]) -> Message? {

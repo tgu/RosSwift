@@ -182,7 +182,7 @@ public final class CallbackQueue: CallbackQueueInterface {
                     callbacks.remove(at: idx)
                     continue
                 }
-                if let cb = item.callback, cb.ready() {
+                if let cb = item.callback, cb.ready {
                     cbInfo = item
                     callbacks.remove(at: idx)
                     break

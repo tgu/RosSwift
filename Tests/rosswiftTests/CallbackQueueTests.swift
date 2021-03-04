@@ -6,6 +6,7 @@ import XCTest
 import NIOConcurrencyHelpers
 
 class CountingCallback: CallbackInterface {
+    let ready = true
     let mutex = DispatchQueue(label: "mutex")
     var count = 0
 
@@ -14,10 +15,6 @@ class CountingCallback: CallbackInterface {
             count += 1
         }
         return .success
-    }
-
-    func ready() -> Bool {
-        return true
     }
 }
 
@@ -107,9 +104,7 @@ class CallbackQueueTests: XCTestCase {
             return .success
         }
 
-        func ready() -> Bool {
-            return true
-        }
+        let ready = true
     }
 
     func testRemoveSelf() {
@@ -154,9 +149,7 @@ class CallbackQueueTests: XCTestCase {
             return .success
         }
 
-        func ready() -> Bool {
-            return true
-        }
+        let ready = true
     }
 
     func testRecursive1() {

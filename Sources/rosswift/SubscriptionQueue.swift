@@ -114,11 +114,11 @@ internal final class SubscriptionQueue: CallbackInterface {
         return .success
     }
 
-    func ready() -> Bool {
+    var ready: Bool {
         return true
     }
 
-    func full() -> Bool {
+    var full: Bool {
         return queueQueue.sync {
             size > 0 && queue.count >= size
         }

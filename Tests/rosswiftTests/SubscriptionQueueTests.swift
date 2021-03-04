@@ -23,20 +23,20 @@ class SubscriptionQueueTests: XCTestCase {
     func testQueueSize() {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 1, allowConcurrentCallbacks: false)
 
-        XCTAssertFalse(queue.full())
+        XCTAssertFalse(queue.full)
 
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
 
         queue.push(helper: helper, deserializer: des)
-        XCTAssert( queue.full() )
+        XCTAssert( queue.full )
         XCTAssertEqual(queue.call(), .success)
-        XCTAssertFalse(queue.full())
+        XCTAssertFalse(queue.full)
         queue.push(helper: helper, deserializer: des)
-        XCTAssert( queue.full() )
-        XCTAssert( queue.ready() )
+        XCTAssert( queue.full )
+        XCTAssert( queue.ready )
         queue.push(helper: helper, deserializer: des)
-        XCTAssert( queue.full() )
+        XCTAssert( queue.full )
         XCTAssertEqual(queue.call(), .success)
         XCTAssertEqual(queue.call(), .invalid)
         XCTAssertEqual(helper.calls, 2)
@@ -45,19 +45,19 @@ class SubscriptionQueueTests: XCTestCase {
     func testInfiniteQueue() {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
 
-        XCTAssertFalse(queue.full())
+        XCTAssertFalse(queue.full)
 
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
 
         queue.push(helper: helper, deserializer: des)
         XCTAssertEqual(queue.call(), .success)
-        XCTAssertFalse(queue.full())
+        XCTAssertFalse(queue.full)
 
         for _ in 0..<10000 {
             queue.push(helper: helper, deserializer: des)
         }
-        XCTAssertFalse(queue.full())
+        XCTAssertFalse(queue.full)
         for _ in 0..<10000 {
             XCTAssertEqual(queue.call(), .success)
         }

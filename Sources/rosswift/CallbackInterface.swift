@@ -13,5 +13,7 @@ public enum CallResult {
 
 public protocol CallbackInterface: class {
     func call() -> CallResult
-    func ready() -> Bool
+    
+    /// Provides the opportunity for specifying that a callback is not ready to be called before call() actually takes place.
+    var ready: Bool { get }
 }
