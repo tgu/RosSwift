@@ -67,7 +67,7 @@ public enum Service {
         let startTime = Time.now
         var printed = false
         var result = false
-        while ros.isRunning {
+        while ros.isRunning.load() {
             if exists(ros: ros, serviceName: serviceName, printFailureReason: !printed) {
                 result = true
                 break
@@ -84,7 +84,7 @@ public enum Service {
             }
         }
 
-        if printed && ros.isRunning {
+        if printed && ros.isRunning.load() {
             ROS_DEBUG("waitForService: Service [\(String(describing: mappedNames))] is now available.")
         }
 

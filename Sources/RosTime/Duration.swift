@@ -29,7 +29,7 @@ public struct Duration: DurationBase {
 
     @discardableResult
     public func sleep() -> Bool {
-        if !Time.useSimTime {
+        if !Time.useSimTime.load() {
             return wallSleep(sec: UInt32(sec), nsec: UInt32(nsec))
         }
 

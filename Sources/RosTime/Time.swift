@@ -7,6 +7,8 @@
 
 import BinaryCoder
 import Foundation
+import NIOConcurrencyHelpers
+
 
 /// Time representation. May either represent wall clock time or ROS clock time.
 ///
@@ -16,7 +18,7 @@ public struct Time: TimeBase {
 
     public let nanoseconds: UInt64
 
-    internal static var useSimTime = true
+    internal static var useSimTime = NIOAtomic.makeAtomic(value: true)
     public static var gStopped = false
     public static var gInitialized = false
     public static var simTime = Time()
@@ -30,7 +32,7 @@ public struct Time: TimeBase {
 
     public static func initialize() {
         gStopped = false
-        useSimTime = false
+        useSimTime.store(false)
         gInitialized = true
     }
 
@@ -40,7 +42,7 @@ public struct Time: TimeBase {
 
 
     public static var isSimTime: Bool {
-        return useSimTime
+        return useSimTime.load()
     }
 
     public static var isSystemTime: Bool {
@@ -51,7 +53,7 @@ public struct Time: TimeBase {
     /// Time is valid if it is non-zero.
 
     public static var isValid: Bool {
-        return !useSimTime || !simTime.isZero
+        return !useSimTime.load() || !Time.simTimeQueue.sync { Time.simTime.isZero }
     }
 
     /// Retrieve the current time. If ROS clock time is in use,
@@ -65,7 +67,7 @@ public struct Time: TimeBase {
                 " communicate over ROS, you may also call Time.initialize()")
         }
 
-        if Time.useSimTime {
+        if Time.useSimTime.load() {
             return Time.simTimeQueue.sync {
                 Time.simTime
             }
@@ -78,7 +80,7 @@ public struct Time: TimeBase {
     public static func setNow(_ now: Time) {
         simTimeQueue.sync {
             simTime = now
-            useSimTime = true
+            useSimTime.store(true)
         }
     }
 

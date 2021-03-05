@@ -44,7 +44,7 @@ public final class NodeHandle {
     /// has not been called on this NodeHandle, to see whether it's yet time to exit.
     /// `ok` is false once either Ros.shutdown() or NodeHandle.shutdown() have been called
 
-    public var isOK: Bool { return ros.isRunning && ok }
+    public var isOK: Bool { return ros.isRunning.load() && ok }
 
     ///  the namespace associated with this NodeHandle.
     public private(set) var namespace: String = "/"
@@ -148,7 +148,7 @@ public final class NodeHandle {
     private func construct(ns: String) {
         namespace = resolveName(name: ns, remap: true) ?? ""
 
-        if ros.nodeReferenceCount.add(1) == 0 && !ros.isStarted {
+        if ros.nodeReferenceCount.add(1) == 0 && !ros.isStarted.load() {
             gNodeStartedByNodeHandle = true
             ros.start()
         }

@@ -10,6 +10,7 @@ import XCTest
 @testable import StdMsgs
 @testable import BinaryCoder
 @testable import RosTime
+import NIOConcurrencyHelpers
 
 class connectionTests: XCTestCase {
 
@@ -26,24 +27,24 @@ class connectionTests: XCTestCase {
         let ros = Ros(name: "testNodeHandleConstructionDestruction")
 
         do {
-            XCTAssertFalse(ros.isStarted)
+            XCTAssertFalse(ros.isStarted.load())
             let n1 = ros.createNode()
-            XCTAssert(ros.isStarted)
+            XCTAssert(ros.isStarted.load())
             XCTAssertEqual(n1.refCount,1)
             XCTAssert(n1.gNodeStartedByNodeHandle)
             do {
                 let n2 = ros.createNode()
-                XCTAssert(ros.isStarted)
+                XCTAssert(ros.isStarted.load())
                 XCTAssertEqual(n2.refCount,2)
                 XCTAssertFalse(n2.gNodeStartedByNodeHandle)
                 do {
                     let n3 = ros.createNode()
-                    XCTAssert(ros.isStarted)
+                    XCTAssert(ros.isStarted.load())
                     XCTAssertEqual(n3.refCount,3)
                     XCTAssertFalse(n3.gNodeStartedByNodeHandle)
                     do {
                         let n4 = ros.createNode()
-                        XCTAssert(ros.isStarted)
+                        XCTAssert(ros.isStarted.load())
                         XCTAssertFalse(n4.gNodeStartedByNodeHandle)
                         XCTAssertEqual(n4.refCount,4)
                     }
@@ -52,18 +53,18 @@ class connectionTests: XCTestCase {
                 XCTAssertEqual(n1.refCount,2)
             }
             XCTAssertEqual(n1.refCount,1)
-            XCTAssert(ros.isStarted)
+            XCTAssert(ros.isStarted.load())
         }
         XCTAssertEqual(ros.nodeReferenceCount.load(), 0)
-        XCTAssertFalse(ros.isStarted)
+        XCTAssertFalse(ros.isStarted.load())
         do {
             let n5 = ros.createNode()
-            XCTAssert(ros.isStarted)
+            XCTAssert(ros.isStarted.load())
             XCTAssertEqual(n5.refCount,1)
             XCTAssert(n5.gNodeStartedByNodeHandle)
         }
         XCTAssertEqual(ros.nodeReferenceCount.load(), 0)
-        XCTAssertFalse(ros.isStarted)
+        XCTAssertFalse(ros.isStarted.load())
         ros.shutdown()
     }
 
@@ -159,10 +160,10 @@ class connectionTests: XCTestCase {
 
 
     class SubscribeHelper {
-        var recv_count_ : Int32 = 0
+        let recv_count_ = NIOAtomic.makeAtomic(value: 0)
 
         func callback(_ f: std_msgs.float64) {
-            recv_count_ = recv_count_ + 1
+            recv_count_.add(1)
         }
     }
 
@@ -180,8 +181,8 @@ class connectionTests: XCTestCase {
             let sub_class = n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
             XCTAssertNotNil(sub_class)
             let d = Duration(milliseconds: 50)
-            var last_class_count = helper.recv_count_
-            while last_class_count == helper.recv_count_ {
+            var last_class_count = helper.recv_count_.load()
+            while last_class_count == helper.recv_count_.load() {
                 pub.publish(message: msg)
                 ros.spinOnce()
                 d.sleep()
@@ -200,8 +201,8 @@ class connectionTests: XCTestCase {
             }
 
             last_fn_count = g_recv_count
-            last_class_count = helper.recv_count_
-            while last_class_count == helper.recv_count_ {
+            last_class_count = helper.recv_count_.load()
+            while last_class_count == helper.recv_count_.load() {
                 pub.publish(message: msg)
                 ros.spinOnce()
                 d.sleep()
@@ -244,22 +245,23 @@ class connectionTests: XCTestCase {
         let ros = Ros(name: "testPublisherCallback")
 
         let n = ros.createNode()
-        var conns = 0
-        var disconns = 0
-        let ops = AdvertiseOptions(topic: "/testCallback", queueSize: 1, latch: false, std_msgs.int8.self, connectCall: { _ in conns += 1 }, disconnectCall: { _ in disconns += 1})
+        let conns = NIOAtomic.makeAtomic(value: 0)
+        let disconns = NIOAtomic.makeAtomic(value: 0)
+
+        let ops = AdvertiseOptions(topic: "/testCallback", queueSize: 1, latch: false, std_msgs.int8.self, connectCall: { _ in conns.add(1) }, disconnectCall: { _ in disconns.add(1)})
 
         let pub = n.advertise(ops: ops)
         do {
             let sub = n.subscribe(topic: "/testCallback") { (msg: Int8) -> Void  in }
             XCTAssertEqual(sub?.publisherCount, 1)
-            XCTAssertEqual(conns, 1)
-            XCTAssertEqual(disconns, 0)
+            XCTAssertEqual(conns.load(), 1)
+            XCTAssertEqual(disconns.load(), 0)
             XCTAssertEqual(pub?.numSubscribers, 1)
         }
 
         XCTAssertEqual(pub?.numSubscribers, 0)
-        XCTAssertEqual(conns, 1)
-        XCTAssertEqual(disconns, 1)
+        XCTAssertEqual(conns.load(), 1)
+        XCTAssertEqual(disconns.load(), 1)
 
     }
 
@@ -274,10 +276,10 @@ class connectionTests: XCTestCase {
 
         let n2 = r2.createNode()
 
-        var received: Int64 = 0
+        let received = NIOAtomic.makeAtomic(value: Int64(0))
 
         let s2 = n2.subscribe(topic: "/ett/test", queueSize: 100) { (msg: Int64) -> Void in
-            received += 1
+            received.add(1)
         }
         XCTAssertNotNil(s2)
 
@@ -296,7 +298,7 @@ class connectionTests: XCTestCase {
         print("elapsed time = \((end-start).toSec()) ")
         WallDuration(milliseconds: 1000).sleep()
 
-        XCTAssertEqual(received, sent)
+        XCTAssertEqual(received.load(), sent)
     }
 
     func testInternal() {
@@ -304,10 +306,10 @@ class connectionTests: XCTestCase {
         let n = r.createNode()
         let p = n.advertise(topic: "/testInternal", message: Int64.self)
 
-        var received: Int64 = 0
+        let received = NIOAtomic.makeAtomic(value: Int64(0))
 
         let s = n.subscribe(topic: "/testInternal", queueSize: 10) { (msg: Int64) -> Void in
-            received += 1
+            received.add(1)
         }
         XCTAssertNotNil(s)
 
@@ -326,7 +328,7 @@ class connectionTests: XCTestCase {
         print("elapsed time = \((end-start).toSec()) ")
         WallDuration(milliseconds: 100).sleep()
 
-        XCTAssertEqual(received, sent)
+        XCTAssertEqual(received.load(), sent)
     }
     
     func testNonLatching() {

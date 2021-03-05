@@ -9,6 +9,7 @@ import XCTest
 @testable import RosSwift
 @testable import RosTime
 @testable import msgs
+import NIOConcurrencyHelpers
 
 class SteadyTimerHelper {
     var expectedPeriod: WallDuration
@@ -100,8 +101,10 @@ class TimerTest: XCTestCase {
 
     func testMultipleSteadyTimeCallbacks() {
         let ros = Ros(name: "testMultipleSteadyTimeCallbacks")
+        XCTAssert(Time.useSimTime.load())
 
         let n = ros.createNode()
+        XCTAssertFalse(Time.useSimTime.load())
         let helpers = (1...10).map {
             SteadyTimerHelper(node: n, Double($0)*0.1)
         }
@@ -125,6 +128,7 @@ class TimerTest: XCTestCase {
     func testSimClock() {
         let ros = Ros(name: "SimTimeTest")
         ros.param.set(key: "/use_sim_time", value: true)
+        XCTAssert(Time.useSimTime.load())
         let n = ros.createNode()
         let pub = n.advertise(topic: "/clock", message: rosgraph_msgs.Clock.self)!
         let start = Time.now
@@ -136,6 +140,7 @@ class TimerTest: XCTestCase {
         ros.spinOnce()
         
         XCTAssertEqual(Time.now.toSec(), 42.0)
+        ros.param.set(key: "/use_sim_time", value: false)
 
     }
     
@@ -148,7 +153,8 @@ class TimerTest: XCTestCase {
     
     func testClockWaitForValid() {
         Time.setNow(Time())
-        
+        XCTAssert(Time.useSimTime.load())
+
         // test timeout
         
         let start = WallTime.now
@@ -156,19 +162,19 @@ class TimerTest: XCTestCase {
         let end = WallTime.now
         XCTAssertGreaterThan(end-start, WallDuration(milliseconds: 1000))
         
-        var done = false
+        let done = NIOAtomic.makeAtomic(value: false)
         
         DispatchQueue(label: "waitThread").async {
             _ = Time.waitForValid()
-            done = true
+            done.store(true)
         }
         
         WallDuration(milliseconds: 1000).sleep()
-        XCTAssertFalse(done)
+        XCTAssertFalse(done.load())
         
         Time.setNow(Time.min)
         
-        while !done {
+        while !done.load() {
             WallDuration(milliseconds: 1000).sleep()
         }
         
@@ -177,20 +183,21 @@ class TimerTest: XCTestCase {
     func testClockSleepFromZero() {
         Time.initialize()
         Time.setNow(Time())
-        var done = false
+        XCTAssert(Time.useSimTime.load())
+        let done = NIOAtomic.makeAtomic(value: false)
         
         DispatchQueue(label: "sleep").async {
         	let ok = Duration(milliseconds: 1000).sleep()
             if !ok {
                 print("!OK")
             }
-            done = true
+            done.store(true)
         }
         
         WallDuration(milliseconds: 1000).sleep()
         let start = WallTime.now
         Time.setNow(Time(nanosec: start.nanoseconds))
-        while !done {
+        while !done.load() {
             WallDuration(milliseconds: 1).sleep()
             let now = WallTime.now
             Time.setNow(Time(nanosec: now.nanoseconds))

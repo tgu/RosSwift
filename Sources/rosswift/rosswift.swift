@@ -43,8 +43,8 @@ public final class Ros: Hashable {
     var fileLog: FileLog?
     var isShutdownRequested = false
     var isShuttingDown = NIOAtomic.makeAtomic(value: false)
-    public private(set) var isRunning = false
-    var isStarted = false
+    public private(set) var isRunning = NIOAtomic.makeAtomic(value: false)
+    var isStarted = NIOAtomic.makeAtomic(value: false)
     #if DEBUG
     let logg = HeliumLogger(.debug)
     #else
@@ -68,7 +68,7 @@ public final class Ros: Hashable {
     internal var globalRemappings = StringStringMap()
     internal var globalUnresolvedRemappings = StringStringMap()
 
-    public var ok: Bool { return isRunning }
+    public var ok: Bool { return isRunning.load() }
 
     /// Alternate ROS initialization function.
     ///
@@ -83,7 +83,7 @@ public final class Ros: Hashable {
         }
 
         initOptions = options
-        isRunning = true
+        isRunning.store(true)
         check_ipv6_environment()
         network = RosNetwork(remappings: remappings)
         
@@ -307,7 +307,7 @@ public final class Ros: Hashable {
     }
 
     public func waitForShutdown() {
-        while isRunning {
+        while isRunning.load() {
             _ = WallDuration(seconds: 0.05).sleep()
         }
     }
@@ -321,15 +321,14 @@ public final class Ros: Hashable {
     }
 
     internal func start() {
-        if isStarted {
+        guard isStarted.compareAndExchange(expected: false, desired: true) else {
             return
         }
 
         ROS_INFO("starting Ros")
 
         isShutdownRequested = false
-        isStarted = true
-        isRunning = true
+        isRunning.store(true)
 
         _ = param.param(name: "/tcp_keepalive", value: &useKeepAlive, defaultValue: useKeepAlive)
 
@@ -407,15 +406,14 @@ public final class Ros: Hashable {
 
         if isShuttingDown.compareAndExchange(expected: false, desired: true) {
             ROS_DEBUG("ros shutdown")
-            if isStarted {
+            if isStarted.load() {
                 topicManager.shutdown()
                 serviceManager.shutdown()
                 connectionManager.shutdown()
                 xmlrpcManager.shutdown()
             }
-
-            isStarted = false
-            isRunning = false
+            isStarted.store(false)
+            isRunning.store(false)
             isShuttingDown.store(false)
         }
     }
@@ -442,7 +440,7 @@ private func basicSigintHandler(signal: Int32) {
 
 private func atexitCallback() {
     Ros.globalRos.forEach { ros in
-        if ros.isRunning && !ros.isShuttingDown.load() {
+        if ros.isRunning.load() && !ros.isShuttingDown.load() {
             ROS_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles")
             ros.shutdown()
         }

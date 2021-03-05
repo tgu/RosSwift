@@ -30,7 +30,7 @@ struct SingleThreadSpinner: Spinner {
         }
 
         let timeout = WallDuration(milliseconds: 100)
-        while ros.isRunning {
+        while ros.isRunning.load() {
             useQueue.callAvailable(timeout: timeout)
         }
         SpinnerMonitor.main.remove(queue: useQueue)
@@ -108,7 +108,7 @@ final class AsyncSpinnner {
         let queue = callbackQueue
         let useCallAvailable = threadCount == 1
         let timeout = WallDuration(milliseconds: 100)
-        while running.load() && ros.isRunning {
+        while running.load() && ros.isRunning.load() {
             if useCallAvailable {
                 queue.callAvailable(timeout: timeout)
             } else {
