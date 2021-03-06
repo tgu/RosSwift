@@ -55,7 +55,7 @@ let package = Package(
         .target( name: "StdMsgs",
                  dependencies: ["RosTime"]),
         .target( name: "RosTime",
-                 dependencies: ["BinaryCoder"]),
+                 dependencies: ["BinaryCoder",.product(name: "NIOConcurrencyHelpers", package: "swift-nio")]),
         .target( name: "rpcobject",
                  dependencies: []),
         .testTarget( name: "rosswiftTests",

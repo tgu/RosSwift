@@ -225,8 +225,9 @@ final class RosMasterHandler {
 
 
     func getSystemState(id: String) -> XmlRpcValue {
-        let state = XmlRpcValue(anyArray: rm.state())
-        return XmlRpcValue(anyArray: [1,"current system state",state])
+        let state = rm.state()
+        let xmlstate = XmlRpcValue(anyArray: state)
+        return XmlRpcValue(anyArray: [1,"current system state",xmlstate])
 
     }
 

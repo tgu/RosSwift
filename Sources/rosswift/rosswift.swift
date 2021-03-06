@@ -41,7 +41,6 @@ public final class Ros: Hashable {
 
     var rosoutAppender: ROSOutAppender?
     var fileLog: FileLog?
-    var isShutdownRequested = false
     var isShuttingDown = NIOAtomic.makeAtomic(value: false)
     public private(set) var isRunning = NIOAtomic.makeAtomic(value: false)
     var isStarted = NIOAtomic.makeAtomic(value: false)
@@ -269,13 +268,33 @@ public final class Ros: Hashable {
     public func createNode(parent: NodeHandle, ns: String = "") -> NodeHandle {
         return NodeHandle(parent: parent, ns: ns)
     }
+    
+    /// Get the list of all topics that are being published by all nodes
+    ///
+    /// This method communicates with the master to retrieve the list of all currently advertised topics
+    ///
+    ///      let ros = Ros(name: "myRos")
+    ///      let topics = try ros.getTopics().wait()
+    ///
+    /// - Returns: a future list of topics
+    
+    public func getTopics() -> EventLoopFuture<[TopicInfo]> {
+        return master.getTopics(callerId: name)
+    }
+    
+    
+    /// Retreives the currently-known list of nodes from the master
+    /// - Returns: future list of nodes
+    public func getNodes() -> EventLoopFuture<[String]> {
+        return master.getNodes(callerId: name)
+    }
+
 
     public func getGlobalCallbackQueue() -> CallbackQueue {
         return gGlobalQueue
     }
 
     func requestShutdown() {
-        isShutdownRequested = true
         shutdown()
     }
 
@@ -315,7 +334,6 @@ public final class Ros: Hashable {
     private func kill() {
         ROS_ERROR("Caught kill, stopping...")
         DispatchQueue.main.async {
-            self.isShutdownRequested = true
             self.requestShutdown()
         }
     }
@@ -327,7 +345,6 @@ public final class Ros: Hashable {
 
         ROS_INFO("starting Ros")
 
-        isShutdownRequested = false
         isRunning.store(true)
 
         _ = param.param(name: "/tcp_keepalive", value: &useKeepAlive, defaultValue: useKeepAlive)

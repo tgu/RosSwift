@@ -149,7 +149,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
         fatalError("subscript accesing \(i)")
     }
 
-    var uncertainString: String? {
+    public var optionalString: String? {
         switch self {
         case .string(let s):
             return s
@@ -313,7 +313,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
 
     func getArray(_ vec: [XmlRpcValue]) -> [String]? {
         let arr = vec.compactMap { d -> String? in
-            d.uncertainString
+            d.optionalString
         }
         guard arr.count == vec.count else {
             return nil
@@ -324,7 +324,7 @@ public enum XmlRpcValue: Equatable, ConvertableToXml {
     func getMap(_ m: [String: XmlRpcValue]) -> [String: String]? {
         var map = [String: String]()
         for k in m {
-            guard let s = k.value.uncertainString else {
+            guard let s = k.value.optionalString else {
                 return nil
             }
             map[k.key] = s

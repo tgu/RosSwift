@@ -16,7 +16,11 @@ import NetService
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-struct TopicInfo {
+/// Topic information
+///
+/// The type is represented in the format "package_name/MessageName"
+
+public struct TopicInfo {
     let name: String
     let dataType: String
 }
@@ -379,5 +383,27 @@ final class Master {
         })
     }
 
+    func getNodes(callerId: String) -> EventLoopFuture<[String]> {
+        let args = XmlRpcValue(strings: callerId)
+        return execute(method: "getSystemState", request: args).map({ (rpc) -> [String] in
+            var nodes = Set<String>()
+            
+            for i in 0..<rpc.size() {
+                for j in 0..<rpc[i].size() {
+                    let val = rpc[i][j][1]
+                    for k in 0..<val.size() {
+                        let name = rpc[i][j][1][k]
+                        nodes.insert(name.string)
+                    }
+                }
+            }
+            
+            
+            return Array(nodes).sorted()
+        })
+    }
+
+
+    
 
 }

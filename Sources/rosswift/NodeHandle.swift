@@ -165,7 +165,8 @@ public final class NodeHandle {
     ///
     /// This version of advertise is a templated convenience function, and can be used like so
     ///
-    /// `let pub = handle.advertise(topic: "my_topic", message: std_msgs.Empty.self)`
+    ///     let pub = node.advertise(topic: "my_topic",
+    ///                              message: std_msgs.Empty.self)
     ///
     /// - Parameters:
     ///     - topic:    Topic to advertise on

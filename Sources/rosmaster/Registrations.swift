@@ -317,9 +317,9 @@ public final class RegistrationManager {
     }
 
     func state() -> [[XmlRpcValue]] {
-        let pub = publishers.getState().map { $0.value }
-        let sub = subscribers.getState().map { $0.value }
-        let srv = services.getState().map { $0.value }
+        let pub = publishers.getState().compactMap { $0.value }
+        let sub = subscribers.getState().compactMap { $0.value }
+        let srv = services.getState().compactMap { $0.value }
         return [pub,sub,srv]
     }
 
