@@ -151,7 +151,7 @@ final class Publication {
         }
 
         subscriberLinksQueue.async {
-            if let it = self.subscriberLinks.firstIndex(where: { $0 === link }) {
+            if let it = self.subscriberLinks.firstIndex(where: { $0.connectionId == link.connectionId }) {
                 self.peerDisconnect(subLink: link)
                 self.subscriberLinks.remove(at: it)
             }
@@ -187,7 +187,7 @@ final class Publication {
         subscriberLinksQueue.sync {
             swap(&localPublishers, &subscriberLinks)
         }
-        localPublishers.forEach { $0.dropPublication() }
+        localPublishers.forEach { $0.dropParentPublication() }
     }
 
     func peerConnect(link: SubscriberLink) {

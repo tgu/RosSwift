@@ -16,11 +16,9 @@ enum DropReason {
     case destructing
 }
 
-final class Connection {
-
-    var channel: Channel
-    var header: Header
-    var isSendingHeaderError = false
+struct Connection {
+    let channel: Channel
+    let header: Header
 
     init(transport: Channel, header: Header) {
         self.channel = transport
@@ -58,7 +56,6 @@ final class Connection {
                 ROS_ERROR("Failure in sendHeaderError: \(error)")
             }
         }
-        isSendingHeaderError = true
     }
 
     func writeHeader(keyVals: StringStringMap) -> EventLoopFuture<Void> {

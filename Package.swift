@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.3
 
 import PackageDescription
 
@@ -83,7 +83,7 @@ let package = Package(
             .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .target(name: "rpcobject")]),
-        .target(name: "rosparam", dependencies: ["rpcclient","RosNetwork"]),
+        .target(name: "rosparam", dependencies: ["RosSwift"]),
         .testTarget(name: "rosmasterTests", dependencies: ["roscore"]),
 
     ]

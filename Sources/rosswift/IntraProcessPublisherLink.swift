@@ -37,18 +37,18 @@ final class IntraProcessPublisherLink: PublisherLink {
                       "type": publisher.dataType,
                       "md5sum": publisher.md5Sum,
                       "message_definition": publisher.messageDefinition,
-                      "latching": publisher.isLatching() ? "1" : "0"
+                      "latching": publisher.isLatching ? "1" : "0"
                     ])
-        return setHeader(ros: ros, header: header)
+        return setHeader(header: header)
     }
 
     func getTransportType() -> String {
         return "INTRAPROCESS"
     }
 
-    func dropLink() {
+    func dropPublisherLink() {
         if isDropped.compareAndExchange(expected: false, desired: true) {
-            publisher?.dropPublication()
+            publisher?.dropParentPublication()
             publisher = nil
             ROS_DEBUG("Connection to local publisher on topic [\(parent.name)] dropped")
 

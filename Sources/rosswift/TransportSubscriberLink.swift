@@ -9,60 +9,44 @@ import Foundation
 import NIO
 import StdMsgs
 
-final class TransportSubscriberLink: SubscriberLink {
-    
+struct TransportSubscriberLink: SubscriberLink {
     weak var parent: Publication!
-    var connectionId: UInt = 0
-    var destinationCallerId: String = ""
-    var topic: String = ""
-    var connection: Connection?
+    let connectionId: UInt
+    let destinationCallerId: String
+    let topic: String
+    let connection: Connection
     let isIntraprocess = false
+    var transportInfo: String { return connection.transportInfo }
 
-    init(connection: Connection) {
+    init?(ros: Ros, connection: Connection, header: Header) {
         self.connection = connection
-    }
-    
-    func dropPublication() {
-        if let conn = connection, !conn.isSendingHeaderError {
-            parent?.removeSubscriberLink(self)
-            connection = nil
-        }
-    }
-    
-    var transportInfo: String { return connection?.transportInfo ?? "" }
-    
-    func handleHeader(ros: Ros, header: Header) -> Bool {
-        guard let connection = connection else {
-            ROS_ERROR("no connection")
-            return false
-        }
-        guard let topic = header["topic"] else {
+        guard let _topic = header["topic"] else {
             let msg = "Header from subscriber did not have the required element: topic"
             ROS_ERROR(msg)
             connection.sendHeaderError(msg)
-            return false
+            return nil
         }
         
         // This will get validated by validateHeader below
         let clientCallerId = header["callerid"] ?? ""
-        guard let pub = ros.topicManager.lookupPublication(topic: topic) else {
-            let msg = "received a connection for a nonexistent topic [\(topic)] " +
+        guard let pub = ros.topicManager.lookupPublication(topic: _topic) else {
+            let msg = "received a connection for a nonexistent topic [\(_topic)] " +
             "from [\(connection.remoteAddress)] [\(clientCallerId)]."
             ROS_ERROR(msg)
             connection.sendHeaderError(msg)
-            return false
+            return nil
         }
         
         var errorMsg = ""
         if !pub.validateHeader(header: header, errorMsg: &errorMsg) {
             ROS_ERROR(errorMsg)
             connection.sendHeaderError(errorMsg)
-            return false
+            return nil
         }
         
         destinationCallerId = clientCallerId
         connectionId = UInt(ros.connectionManager.getNewConnectionID())
-        self.topic = pub.name
+        topic = pub.name
         parent = pub
         
         // Send back a success, with info
@@ -85,12 +69,14 @@ final class TransportSubscriberLink: SubscriberLink {
                 // FIXME: is this correct?
             }
         }
-        
-        return true
+    }
+    
+    func dropParentPublication() {
+        parent?.removeSubscriberLink(self)
     }
     
     func enqueueMessage(m: SerializedMessage) {
-        connection?.write(buffer: m.buf).whenFailure({ error in
+        connection.write(buffer: m.buf).whenFailure({ error in
             ROS_ERROR("writing \(m), \(error)")
         })
     }

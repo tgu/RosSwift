@@ -8,30 +8,26 @@
 import NIOConcurrencyHelpers
 import StdMsgs
 
-final class IntraProcessSubscriberLink: SubscriberLink {
+struct IntraProcessSubscriberLink: SubscriberLink {
     weak var parent: Publication!
-    var connectionId: UInt = 0
-    var destinationCallerId: String = ""
+    let connectionId: UInt
+    let destinationCallerId: String
     let topic: String
     let isIntraprocess = true
     let transportInfo = "INTRAPROCESS"
 
     weak var subscriber: IntraProcessPublisherLink?
     var isDropped = NIOAtomic.makeAtomic(value: false)
+    var isLatching: Bool { parent?.isLatching() ?? false }
 
-    init(parent: Publication) {
+
+
+    init(ros: Ros, parent: Publication, subscriber: IntraProcessPublisherLink) {
         self.parent = parent
         topic = parent.name
-    }
-
-    func setSubscriber(ros: Ros, subscriber: IntraProcessPublisherLink) {
         self.subscriber = subscriber
         connectionId = UInt(ros.connectionManager.getNewConnectionID())
         destinationCallerId = ros.name
-    }
-
-    func isLatching() -> Bool {
-        return parent?.isLatching() ?? false
     }
 
     func enqueueMessage(m: SerializedMessage) {
@@ -46,10 +42,10 @@ final class IntraProcessSubscriberLink: SubscriberLink {
         subscriber?.handleMessage(m: m)
     }
 
-    func dropPublication() {
+    func dropParentPublication() {
         if isDropped.compareAndExchange(expected: false, desired: true) {
-            subscriber?.dropLink()
-            subscriber = nil
+            subscriber?.dropPublisherLink()
+            // subscriber = nil
 
             ROS_DEBUG("Connection to local subscriber on topic [\(topic)] dropped")
             parent.removeSubscriberLink(self)

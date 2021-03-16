@@ -1,37 +1,11 @@
-import rpcclient
-import rpcobject
-import NIO
-import RosNetwork
+import RosSwift
 
-let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+let ros = Ros(name: "rosparam", options: [.anonymousName])
 
-let host = RosNetwork.determineHost()
-let port = 11311
-
-let msg = XmlRpcValue(str: "/rosparam-\(getpid())")
-
-let master = nio.Master(group: threadGroup)
-
-
-guard let client = try? master.connect(host: host, port: Int(port)).wait() else {
-        print("Could not connect to master")
-        exit(1)
+if let result = try? ros.param.getParameterNames().wait() {
+    print(result.map { $0 }.joined(separator: "\n"))
+} else {
+    print("call failed")
 }
 
-print("connected to master")
 
-guard let result = try? client.send(method: "getParamNames", request: msg).wait() else {
-    print("no response")
-    exit(1)
-}
-
-print("result \(result)")
-
-switch result {
-case .success(let response):
-    for parameter in response[2] {
-        print(parameter)
-    }
-case .failure(let error):
-    print("Error in getParamNames: \(error.localizedDescription)")
-}

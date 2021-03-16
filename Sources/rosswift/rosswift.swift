@@ -81,6 +81,16 @@ public final class Ros: Hashable {
             fatalError("The node name must not be empty")
         }
 
+        Log.logger = logg
+        #if os(Linux)
+        logg.colored = true
+        logg.details = true
+        #else
+        logg.colored = !amIBeingDebugged()
+        logg.details = amIBeingDebugged()
+        #endif
+        logg.dateFormat = "HH:mm:ss.SSS"
+
         initOptions = options
         isRunning.store(true)
         check_ipv6_environment()
@@ -115,19 +125,18 @@ public final class Ros: Hashable {
         if !Names.validate(name: ns, error: &error) {
             fatalError("Namespace [\(ns)] is invalid: \(error)")
         }
-
-
+        
         // names must be initialized here, because it requires the namespace
         // to already be known so that it can properly resolve names.
         // It must be done before we resolve g_name, because otherwise the name will not get remapped.
-        for it in remappings {
-            if !it.key.isEmpty && it.key.first! != "_" && it.key != node_name {
-                if let resolvedKey = Names.resolve(ns: ns, name: it.key),
-                    let resolvedName = Names.resolve(ns: ns, name: it.value) {
+        for (key, value) in remappings {
+            if !key.isEmpty && key.first! != "_" && key != node_name {
+                if let resolvedKey = Names.resolve(ns: ns, name: key),
+                    let resolvedName = Names.resolve(ns: ns, name: value) {
                     globalRemappings[resolvedKey] = resolvedName
-                    globalUnresolvedRemappings[it.key] = it.value
+                    globalUnresolvedRemappings[key] = value
                 } else {
-                    ROS_ERROR("remapping \(it.key) to \(it.value) failed")
+                    ROS_ERROR("remapping \(key) to \(value) failed")
                 }
             }
         }
@@ -169,15 +178,6 @@ public final class Ros: Hashable {
 
         Ros.globalRos.insert(self)
 
-        Log.logger = logg
-        #if os(Linux)
-        logg.colored = true
-        logg.details = true
-        #else
-        logg.colored = !amIBeingDebugged()
-        logg.details = amIBeingDebugged()
-        #endif
-        logg.dateFormat = "HH:mm:ss.SSS"
         ROS_INFO("Ros is initializing")
 
 
@@ -469,7 +469,7 @@ private func check_ipv6_environment() {
         let env = String(utf8String: envIPv6)
         let useIPv6 = env == "on"
         if useIPv6 {
-            print("ROS_IPV6 is ignored")
+            ROS_DEBUG("ROS_IPV6 is ignored")
         }
     }
 }

@@ -64,7 +64,7 @@ final class TransportPublisherLink: PublisherLink {
         }
     }
 
-    func dropLink() {
+    func dropPublisherLink() {
         isDropping = true
         parent.remove(publisherLink: self)
         connection?.dropConnection(reason: .destructing)

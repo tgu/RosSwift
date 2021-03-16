@@ -20,10 +20,11 @@ final class ConnectionHandler: ChannelInboundHandler {
         case .serviceCall(let serviceLink):
             serviceLink.dropServiceClient()
         case .subscriber(let subscriber):
-       	 	subscriber.dropPublication()
+       	 	subscriber.dropParentPublication()
         default:
             break
         }
+        state = .inactive
         context.fireChannelInactive()
     }
 
@@ -32,6 +33,7 @@ final class ConnectionHandler: ChannelInboundHandler {
     }
 
     enum ConnectionState {
+        case inactive
         case header
         case subscriber(TransportSubscriberLink)
         case serviceCall(ServiceClientLink)
@@ -43,6 +45,9 @@ final class ConnectionHandler: ChannelInboundHandler {
         var buffer = self.unwrapInboundIn(data)
 
         switch state {
+        case .inactive:
+            ROS_ERROR("Channel is inactive")
+            context.close(promise: nil)
         case .header:
             guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                 fatalError()
@@ -85,11 +90,8 @@ final class ConnectionHandler: ChannelInboundHandler {
             if let topic = readMap["topic"], let remote = context.remoteAddress {
                 let conn = Connection(transport: context.channel, header: header)
                 ROS_DEBUG("Connection: Creating TransportSubscriberLink for topic [\(topic)] connected to [\(remote)]")
-                let subLink = TransportSubscriberLink(connection: conn)
-                if subLink.handleHeader(ros: ros, header: header) {
+                if let subLink = TransportSubscriberLink(ros: ros, connection: conn, header: header) {
                     state = .subscriber(subLink)
-                } else {
-                    subLink.dropPublication()
                 }
             } else if let val = header["service"] {
                 ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: context.remoteAddress!.description))]")

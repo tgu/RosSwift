@@ -17,7 +17,7 @@ internal protocol PublisherLink: class {
     var header: Header? { get set }
     var md5sum: String { get set }
 
-    func dropLink()
+    func dropPublisherLink()
 }
 
     struct Stats {
@@ -28,7 +28,7 @@ internal protocol PublisherLink: class {
 
 extension PublisherLink {
 
-    func setHeader(ros: Ros, header: Header) -> Bool {
+    func setHeader(header: Header) -> Bool {
         guard let newId = header["callerid"] else {
             ROS_ERROR("header did not have required element: callerid")
             return false
@@ -52,7 +52,7 @@ extension PublisherLink {
             latched = true
         }
 
-        connectionId = ros.connectionManager.getNewConnectionID()
+        connectionId = parent.ros.connectionManager.getNewConnectionID()
         self.header = header
 
         parent.headerReceived(link: self, header: header)

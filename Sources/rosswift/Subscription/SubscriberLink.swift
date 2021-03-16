@@ -7,7 +7,7 @@
 
 import StdMsgs
 
-protocol SubscriberLink: class {
+protocol SubscriberLink {
     var connectionId: UInt { get }
     var destinationCallerId: String { get }
     var isIntraprocess: Bool { get }
@@ -15,7 +15,7 @@ protocol SubscriberLink: class {
     var topic: String { get }
     var transportInfo: String { get }
 
-    func dropPublication()
+    func dropParentPublication()
     func enqueueMessage(m: SerializedMessage)
 }
 

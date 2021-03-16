@@ -199,7 +199,7 @@ final class Master {
         if masterURI == nil {
             var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]
             if masterUriEnv == nil {
-                print("ROS_MASTER_URI not set, searching...")
+                ROS_DEBUG("ROS_MASTER_URI not set, searching...")
                 // primitive search for a rosmaster advertised with zeroconf (Bonjour)
                 let browser = RosMasterBrowser()
                 browser.start()

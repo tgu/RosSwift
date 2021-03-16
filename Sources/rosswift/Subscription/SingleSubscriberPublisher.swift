@@ -8,7 +8,7 @@
 import StdMsgs
 
 public struct SingleSubscriberPublisher {
-    var link: SubscriberLink
+    let link: SubscriberLink
 
     public var callerId: String {
         return link.destinationCallerId

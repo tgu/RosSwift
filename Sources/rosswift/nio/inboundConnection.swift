@@ -109,7 +109,7 @@ final class InboundConnection {
             fatalError("onHeaderReceived has no link")
         }
 
-        if !link.setHeader(ros: parent.ros, header: header) {
+        if !link.setHeader(header: header) {
             dropConnection(reason: .headerError)
         }
     }

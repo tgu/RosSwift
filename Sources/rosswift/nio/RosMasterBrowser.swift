@@ -41,7 +41,7 @@ final class RosMasterBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDel
     
     func netServiceDidResolveAddress(_ sender: NetService) {
         if let hostname = sender.hostName {
-            print("rosmaster found: http://\(hostname):\(sender.port)")
+            ROS_DEBUG("rosmaster found: http://\(hostname):\(sender.port)")
             host = hostname
             port = sender.port
         }

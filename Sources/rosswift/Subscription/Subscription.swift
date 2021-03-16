@@ -79,7 +79,7 @@ internal final class Subscription {
     func dropAllConnections() {
         let localSubscribers = publisherLinks.all()
         publisherLinks.removeAll()
-        localSubscribers.forEach { $0.dropLink() }
+        localSubscribers.forEach { $0.dropPublisherLink() }
     }
 
     func headerReceived(link: PublisherLink, header: Header) {
@@ -141,9 +141,9 @@ internal final class Subscription {
         ROS_DEBUG("Creating intraprocess link for topic [\(name)]")
 
         let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: ros.xmlrpcManager.serverURI, transportHints: transportHints)
-        let subLink = IntraProcessSubscriberLink(parent: localConnection)
+        let subLink = IntraProcessSubscriberLink(ros: ros, parent: localConnection, subscriber: pubLink)
         _ = pubLink.setPublisher(ros: ros, publisher: subLink)
-        subLink.setSubscriber(ros: ros, subscriber: pubLink)
+//        subLink.setSubscriber(ros: ros, subscriber: pubLink)
 
         publisherLinks.append(pubLink)
         localConnection.addSubscriberLink(subLink)
@@ -189,7 +189,7 @@ internal final class Subscription {
             let uri = link.publisherXmlrpcUri
             if uri != serverURI {
                 ROS_DEBUG("Disconnecting from publisher [\(link.callerId)] of topic [\(self.name)] at [\(serverURI)]")
-                link.dropLink()
+                link.dropPublisherLink()
             } else {
                 ROS_DEBUG("Disconnect: skipping myself for topic [\(self.name)]")
             }
