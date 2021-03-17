@@ -128,8 +128,8 @@ class TimerTest: XCTestCase {
     func testSimClock() {
         let ros = Ros(name: "SimTimeTest")
         ros.param.set(key: "/use_sim_time", value: true)
-        XCTAssert(Time.useSimTime.load())
         let n = ros.createNode()
+        XCTAssert(Time.useSimTime.load())
         let pub = n.advertise(topic: "/clock", message: rosgraph_msgs.Clock.self)!
         let start = Time.now
         
