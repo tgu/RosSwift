@@ -5,7 +5,7 @@
 //  Created by Thomas Gustafsson on 2018-11-20.
 //
 
-import Deque
+import DequeModule
 import Foundation
 import NIO
 import NIOConcurrencyHelpers
@@ -116,11 +116,7 @@ public final class CallbackQueue: CallbackQueueInterface {
         if let localStorage = tls.currentValue, localStorage.callingInThisThread == info.id {
             info.callingMutex.sync {
                 condition.sync {
-                    for index in (localStorage.callbacksIndex..<callbacks.endIndex).reversed() {
-                        if callbacks[index].removal_id == ownerId {
-                            callbacks.remove(at: index)
-                        }
-                    }
+                    callbacks.removeSubrange(localStorage.callbacksIndex...)
                 }
             }
         }

@@ -8,7 +8,7 @@
 import Foundation
 import StdMsgs
 
-internal protocol ServiceProtocol: class {
+internal protocol ServiceProtocol: AnyObject {
     var name: String { get }
     var isDropped: Bool { get }
     var md5sum: String { get }
@@ -58,32 +58,6 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
         dropAllConnections()
     }
 
-    final class ServiceCallback: CallbackInterface {
-
-        let ready = true
-        
-        func call() -> CallResult {
-            ROS_ERROR("call() not implemented")
-            return .invalid
-        }
-
-        var buffer: [UInt8]
-        var link: ServiceClientLink
-        var hasTrackedObject: Bool
-        var trackedObject: AnyObject?
-
-        init(buf: [UInt8],
-             link: ServiceClientLink,
-             hasTrackedObject: Bool,
-             trackedObject: AnyObject?) {
-
-            self.buffer = buf
-            self.link = link
-            self.hasTrackedObject = hasTrackedObject
-            self.trackedObject = trackedObject
-        }
-    }
-
     func processRequest(buf: [UInt8]) -> Message? {
 
         let m = SerializedMessage(buffer: buf)
@@ -97,10 +71,6 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
         }
 
         return nil
-//
-//        let cb = ServiceCallback(helper: helper_, buf: buf, num_bytes: num_bytes, link: link, has_tracked_object: has_tracked_object, tracked_object: tracked_object_)
-//
-//        callback_queue_?.addCallback(callback: cb, owner_id: hash)
     }
 
     func addServiceClientLink(link: ServiceClientLink) {
@@ -132,7 +102,6 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
             swap(&localLinks, &clientLinks)
         }
 
-//        local_links.forEach { $0.connection?.drop(reason: .Destructing)}
     }
 
 }

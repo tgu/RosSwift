@@ -19,8 +19,8 @@ public struct Time: TimeBase {
     public let nanoseconds: UInt64
 
     internal static var useSimTime = NIOAtomic.makeAtomic(value: true)
-    public static var gStopped = false
-    public static var gInitialized = false
+    public static var gStopped = NIOAtomic.makeAtomic(value: false)
+    public static var gInitialized = NIOAtomic.makeAtomic(value: false)
     public static var simTime = Time()
     public static var simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
     public static let max = Time(nanosec: UInt64.max)
@@ -31,13 +31,13 @@ public struct Time: TimeBase {
     }
 
     public static func initialize() {
-        gStopped = false
+        gStopped.store(false)
         useSimTime.store(false)
-        gInitialized = true
+        gInitialized.store(true)
     }
 
     public static func shutDown() {
-        gStopped = true
+        gStopped.store(true)
     }
 
 
@@ -61,7 +61,7 @@ public struct Time: TimeBase {
     /// Otherwise returns the current wall clock time.
 
     public static var now: Time {
-        guard Time.gInitialized else {
+        guard Time.gInitialized.load() else {
             fatalError("Cannot use Time.now() before the first NodeHandle has been created or Ros.start()" +
                 " has been called. If this is a standalone app or test that just uses Time and does not" +
                 " communicate over ROS, you may also call Time.initialize()")
@@ -88,13 +88,13 @@ public struct Time: TimeBase {
 
     public static func waitForValid(timeout: WallDuration = WallDuration()) -> Bool {
         let start = WallTime.now
-        while !isValid && !gStopped {
+        while !isValid && !gStopped.load() {
             _ = WallDuration(seconds: 0.01).sleep()
             if timeout > WallDuration(sec: 0, nsec: 0) && WallTime.now - start > timeout {
                 return false
             }
         }
-        if gStopped {
+        if gStopped.load() {
             return false
         }
         return true

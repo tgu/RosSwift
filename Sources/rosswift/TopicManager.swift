@@ -421,7 +421,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
             let args = XmlRpcValue(anyArray: [ros.name, topic, xmlrpcManager.serverURI])
             let response = ros.master.execute(method: "unregisterSubscriber", request: args)
             response.whenFailure { error in
-                ROS_ERROR("ouldn't unregister subscriber for topic [\(topic)]: \(error)")
+                ROS_ERROR("Couldn't unregister subscriber for topic [\(topic)]: \(error)")
             }
         }
 

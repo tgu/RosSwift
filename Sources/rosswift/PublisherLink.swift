@@ -6,7 +6,7 @@
 //
 
 
-internal protocol PublisherLink: class {
+internal protocol PublisherLink: AnyObject {
     var parent: Subscription { get }
     var connectionId: Int { get set }
     var publisherXmlrpcUri: String { get }

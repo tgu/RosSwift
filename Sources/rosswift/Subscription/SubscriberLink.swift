@@ -10,7 +10,6 @@ import StdMsgs
 protocol SubscriberLink {
     var connectionId: UInt { get }
     var destinationCallerId: String { get }
-    var isIntraprocess: Bool { get }
     var parent: Publication! { get }
     var topic: String { get }
     var transportInfo: String { get }

@@ -17,8 +17,8 @@ public let defaultMasterPort = 11311
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
 public class Master: NSObject, NetServiceDelegate {
-    let host: String
-    let port: Int
+    public let host: String
+    public let port: Int
     let handler: RosMasterHandler
     let masterNode: XMLRPCServer
     let service: NetService

@@ -43,10 +43,6 @@ class Root<T: ArrayConstructable> {
         children = [Edge<T>]()
     }
 
-    deinit {
-        logger.debug(" Root with \(children.count) removed")
-    }
-
     // Returns the length (in number of edges) of the longest traversal down the tree.
     var height: Int {
         // Base case: no children: the tree has a height of 1

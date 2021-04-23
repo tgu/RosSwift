@@ -96,7 +96,7 @@ class connectionTests: XCTestCase {
     func testgetPublishedTopics() {
         let ros = Ros(name: "testgetPublishedTopics")
         let n = ros.createNode()
-        let advertised_topics = ["/test_topic_1","/test_topic_2","/test_topic_3","/test_topic_4","/test_topic_5","/test_topic_6","/test_topic_7","/test_topic_8"]
+        let advertised_topics = (1...8).map { "/test_topic_\($0)" }
 
         var pubs = [Publisher]()
         for adv_it in advertised_topics {

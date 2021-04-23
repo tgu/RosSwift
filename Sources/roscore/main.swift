@@ -29,7 +29,6 @@ LoggingSystem.bootstrap(MyLog.init)
 
 fileprivate var logger = Logger(label: "roscore")
 
-
 private func trap(signal sig: Signal, handler: @escaping (Signal) -> Void) -> DispatchSourceSignal {
     let queue = DispatchQueue(label: "rosmaster")
     let signalSource = DispatchSource.makeSignalSource(signal: sig.rawValue, queue: queue)
@@ -57,9 +56,7 @@ let master = Master(host: network.gHost, port: defaultMasterPort)
 
 _ = try! master.start().wait()
 
-let message = "started roslaunch server http://\(network.gHost)/".bold()
-logger.info("\(message)")
-logger.info("rosmaster version for Swift 5")
+logger.info("version \(appVersion) listening at http://\(master.host):\(master.port)/")
 
 private let group = DispatchGroup()
 group.enter()

@@ -12,11 +12,11 @@ import Foundation
 fileprivate func wallSleep(sec: UInt32, nsec: UInt32) -> Bool {
     var req = timespec(tv_sec: Int(sec), tv_nsec: Int(nsec))
     var rem = timespec(tv_sec: 0, tv_nsec: 0)
-    while nanosleep(&req, &rem) != 0 && !Time.gStopped {
+    while nanosleep(&req, &rem) != 0 && !Time.gStopped.load() {
         req = rem
 
     }
-    return !Time.gStopped
+    return !Time.gStopped.load()
 }
 
 
@@ -40,7 +40,7 @@ public struct Duration: DurationBase {
         }
 
         var didSleep = false
-        while !Time.gStopped && Time.now < end {
+        while !Time.gStopped.load() && Time.now < end {
             _ = wallSleep(sec: 0, nsec: 1_000_000)
             didSleep = true
             if start.isZero {
@@ -51,7 +51,7 @@ public struct Duration: DurationBase {
                 return false
             }
         }
-        return didSleep && !Time.gStopped
+        return didSleep && !Time.gStopped.load()
     }
 
 }

@@ -61,10 +61,6 @@ public final class SpecializedPublisher<M: Message>: Publisher {
         topicManager.publish(topic: topic, message: message)
     }
 
-//    func incrementSequence() -> UInt32 {
-//        return isValid ? topicManager.incrementSequence(topic: topic) : 0
-//    }
-
     func shutdown() {
         unadvertise()
     }

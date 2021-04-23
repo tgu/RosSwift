@@ -5,7 +5,7 @@
 //  Created by Thomas Gustafsson on 2018-11-20.
 //
 
-import Deque
+import DequeModule
 import Foundation
 import RosTime
 
@@ -58,7 +58,7 @@ internal final class SubscriptionQueue: CallbackInterface {
 
         queueQueue.sync {
             if size > 0 && queue.count >= size {
-                queue.popFirst()
+                _ = queue.popFirst()
                 if !self.wasFull {
                     self.wasFull = true
                     ROS_DEBUG("Incoming queue was full for topic \"\(topic)\". Discarded oldest message (current queue size [\(queue.count)])")

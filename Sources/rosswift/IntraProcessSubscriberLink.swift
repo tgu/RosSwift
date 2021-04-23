@@ -13,7 +13,6 @@ struct IntraProcessSubscriberLink: SubscriberLink {
     let connectionId: UInt
     let destinationCallerId: String
     let topic: String
-    let isIntraprocess = true
     let transportInfo = "INTRAPROCESS"
 
     weak var subscriber: IntraProcessPublisherLink?

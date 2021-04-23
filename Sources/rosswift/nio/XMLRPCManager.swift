@@ -22,7 +22,7 @@ final class XMLRPCManager {
     let server: XMLRPCServer
     let host: String
 
-    var serverPort: Int32 { return Int32(server.channel?.localAddress?.port ?? 0) }
+    var serverPort: Int32 { return server.serverPort }
     var serverURI: String { return "http://\(host):\(serverPort)/" }
 
     internal init(host: String) {

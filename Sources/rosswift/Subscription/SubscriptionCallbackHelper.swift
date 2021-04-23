@@ -8,22 +8,20 @@
 import BinaryCoder
 import StdMsgs
 import RosTime
+import Foundation
 
 protocol SubscriptionCallbackHelper {
-    var id: ObjectIdentifier { get }
+    var id: UUID { get }
     func deserialize(data: [UInt8]) -> Message?
     func call(msg: Message, item: SubscriptionQueue.Item)
 }
 
-final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+struct SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (M) -> Void
 
     let callback: Callback
-
-    var id: ObjectIdentifier {
-        return ObjectIdentifier(self)
-    }
+    let id = UUID()
 
     init(callback: @escaping Callback ) {
         self.callback = callback
@@ -43,15 +41,12 @@ final class SubscriptionCallbackHelperT<M: Message>: SubscriptionCallbackHelper 
 }
 
 
-final class SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
+struct SubscriptionEventCallbackHelperT<M: Message>: SubscriptionCallbackHelper {
 
     typealias Callback = (MessageEvent<M>) -> Void
 
     let callback: Callback
-
-    var id: ObjectIdentifier {
-        return ObjectIdentifier(self)
-    }
+    let id = UUID()
 
     init(callback: @escaping Callback ) {
         self.callback = callback

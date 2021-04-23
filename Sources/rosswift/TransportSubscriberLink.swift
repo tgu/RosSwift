@@ -15,7 +15,6 @@ struct TransportSubscriberLink: SubscriberLink {
     let destinationCallerId: String
     let topic: String
     let connection: Connection
-    let isIntraprocess = false
     var transportInfo: String { return connection.transportInfo }
 
     init?(ros: Ros, connection: Connection, header: Header) {

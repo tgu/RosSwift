@@ -259,10 +259,7 @@ class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible {
 
     var debugDescription: String { return "Fake \(calls)" }
 
-    public var id: ObjectIdentifier {
-        return ObjectIdentifier(self)
-    }
-
+    let id = UUID()
     var calls = 0
     var cb : CallbackProtocol?
     var mutex = DispatchQueue(label: "mutex")

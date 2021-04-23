@@ -12,18 +12,11 @@ import rpcobject
 import RosNetwork
 
     internal final class ServiceManager {
-//        static let instance = ServiceManager()
-
         var isShuttingDown = NIOAtomic.makeAtomic(value: false)
         var servicePublications = SynchronizedArray<ServiceProtocol>()
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 
-        var connectionManager: ConnectionManager { return ros.connectionManager }
-        var xmlrpcManager: XMLRPCManager { return ros.xmlrpcManager }
         unowned var ros: Ros!
-
-        internal init() {
-        }
 
         deinit {
             shutdown()
@@ -73,8 +66,8 @@ import RosNetwork
                                          callback: ops.callback)
             servicePublications.append(pub)
 
-            let uri = "rosrpc://\(ros.network.gHost):\(connectionManager.port)"
-            let params = XmlRpcValue(anyArray: [ros.name, ops.service, uri, xmlrpcManager.serverURI])
+            let uri = "rosrpc://\(ros.network.gHost):\(ros.connectionManager.port)"
+            let params = XmlRpcValue(anyArray: [ros.name, ops.service, uri, ros.xmlrpcManager.serverURI])
             do {
                 let _ = try ros.master.execute(method: "registerService", request: params).wait()
             } catch {
@@ -107,7 +100,7 @@ import RosNetwork
             let args = XmlRpcValue(anyArray:
                 [ros.name,
                 service,
-                "rosrpc://\(ros.network.gHost):\(connectionManager.port)"])
+                "rosrpc://\(ros.network.gHost):\(ros.connectionManager.port)"])
             do {
                 let response = try ros.master.execute(method: "unregisterService", request: args).wait()
                 ROS_DEBUG("response: \(response)")

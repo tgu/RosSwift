@@ -176,10 +176,12 @@ final class HTTPHandler: ChannelInboundHandler {
 }
 
 final class XMLRPCServer {
-    var channel: Channel?
-    var boot: ServerBootstrap?
-    var methods = [String: XMLRPCFunc]()
-    let methodsQueue = DispatchQueue(label: "methodsQueue")
+    private var channel: Channel?
+    private var boot: ServerBootstrap?
+    private var methods = [String: XMLRPCFunc]()
+    private let methodsQueue = DispatchQueue(label: "methodsQueue")
+    
+    var serverPort: Int32 { return Int32(channel?.localAddress?.port ?? 0) }
 
     init(group: EventLoopGroup) {
 
@@ -217,8 +219,7 @@ final class XMLRPCServer {
         var ok = true
         methodsQueue.sync {
             if methods[named] != nil {
-            	ROS_ERROR("function already bound")
-            	ROS_ERROR("\(methods)")
+            	ROS_ERROR("method '\(named)' already bound\n\tregistered methods: \(methods)")
                 ok = false
             } else {
                 methods[named] = method

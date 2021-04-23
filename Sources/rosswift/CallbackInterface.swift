@@ -11,7 +11,7 @@ public enum CallResult {
     case invalid
 }
 
-public protocol CallbackInterface: class {
+public protocol CallbackInterface {
     func call() -> CallResult
     
     /// Provides the opportunity for specifying that a callback is not ready to be called before call() actually takes place.
