@@ -17,12 +17,12 @@ enum DropReason {
 }
 
 struct Connection {
-    let channel: Channel
-    let header: Header
+    private let channel: Channel
+    private let callerID: String
 
     init(transport: Channel, header: Header) {
-        self.channel = transport
-        self.header = header
+        channel = transport
+        callerID = header["callerid"] ?? "unknown"
     }
 
     var remoteAddress: String {
@@ -31,15 +31,7 @@ struct Connection {
         return "\(host):\(port)"
     }
 
-    var callerID: String {
-        if let callerid = header["callerid"] {
-            return callerid
-        }
-
-        return "unknown"
-    }
-
-    var remoteString: String {
+    private var remoteString: String {
         return "callerid=[\(callerID)] address=[\(remoteAddress)]"
     }
 

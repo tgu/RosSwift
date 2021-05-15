@@ -107,17 +107,9 @@ final class Publication {
     }
 
     func removeCallbacks(callback: SubscriberCallbacks) {
-        #if swift(>=4.2)
         callbacksQueue.sync {
             pubCallbacks.removeAll(where: { callback === $0 })
         }
-        #else
-        callbacksQueue.sync {
-            if let index = pubCallbacks.index(where: { callback === $0 }) {
-                pubCallbacks.remove(at: index)
-            }
-        }
-        #endif
     }
 
     func dropPublication() {
