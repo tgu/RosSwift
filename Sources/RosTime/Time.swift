@@ -22,7 +22,7 @@ public struct Time: TimeBase {
     public static var gStopped = NIOAtomic.makeAtomic(value: false)
     public static var gInitialized = NIOAtomic.makeAtomic(value: false)
     public static var simTime = Time()
-    public static var simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
+    public static let simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
     public static let max = Time(nanosec: UInt64.max)
     public static let min = Time(nanosec: 1)
 

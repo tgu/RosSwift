@@ -21,7 +21,7 @@ class CountingCallback: CallbackInterface {
 
 class CallbackQueueTests: XCTestCase {
 
-    static var allTests = [
+    static let allTests = [
         ("testSingleCallback",testSingleCallback)
     ]
 

@@ -65,9 +65,6 @@ public extension TimeBase {
         return TimeInterval(nanoseconds) * 1e-9
     }
 
-//    static var isSystemTime: Bool {
-//        return true
-//    }
 
     static func += (lhs: inout Self, rhs: BasicDurationBase) {
         lhs = lhs + rhs

@@ -18,7 +18,7 @@ typealias SteadyTimerCallback = (SteadyTimerEvent) -> Void
 
 
 public final class SteadyTimer {
-    private static var manager = TimerManager<SteadyTime,WallDuration,SteadyTimerEvent>()
+    private static let manager = TimerManager<SteadyTime,WallDuration,SteadyTimerEvent>()
 
     private var started: Bool = false
     private var timerHandle: TimerHandle = .none

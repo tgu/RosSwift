@@ -45,7 +45,7 @@ func serializeAndDeserialize<T : BinaryCodable>(_ ser_val: T) -> T {
 
 class serializationTests: XCTestCase {
 
-    static var allTests = [
+    static let allTests = [
         ("testPrimitive",testPrimitive),
         ("testBuiltinTypes",testBuiltinTypes)
     ]

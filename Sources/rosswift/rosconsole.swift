@@ -110,7 +110,7 @@ func ROS_LOG_ERROR(_ text: String) {
 internal struct Console {
     static var gInitialized = false
     static var gExtraFixedTokens = StringStringMap()
-    static var gLocationsQueue = DispatchQueue(label: "location_mutex")
+    static let gLocationsQueue = DispatchQueue(label: "location_mutex")
 
     static func initialize() {
 

@@ -19,7 +19,7 @@ typealias WallTimerCallback = (WallTimerEvent) -> Void
 
 
 public final class WallTimer {
-    private static var manager = TimerManager<WallTime,WallDuration,WallTimerEvent>()
+    private static let manager = TimerManager<WallTime,WallDuration,WallTimerEvent>()
 
     private var started: Bool = false
     private var timerHandle: TimerHandle = .none

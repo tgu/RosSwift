@@ -245,9 +245,9 @@ class SubscriptionQueueTests: XCTestCase {
 }
 
 class FakeMessage: Message {
-    static var md5sum: String = ""
-    static var datatype: String = ""
-    static var definition: String = ""
+    static let md5sum: String = ""
+    static let datatype: String = ""
+    static let definition: String = ""
 }
 
 protocol CallbackProtocol {
