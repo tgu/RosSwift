@@ -104,7 +104,6 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
             guard let info = findTimer(handle) else {
                 return
             }
-            //            waitingMutex.sync {
             if reset {
                 info.nextExpected = T.now + period
 
@@ -124,7 +123,6 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
             // In this case, let next_expected be updated only in updateNext
 
             info.period = period
-            //            }
         }
         newTimer.store(true)
         timersCond.broadcast()

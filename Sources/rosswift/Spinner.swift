@@ -37,24 +37,6 @@ struct SingleThreadSpinner: Spinner {
     }
 }
 
-/// Spinner which spins in multiple threads.
-
-struct MultiThreadedSpinner: Spinner {
-    private let threadCount: Int
-
-    ///
-    /// - Parameter threadCount: Number of threads to use for calling callbacks.
-    /// 0 will automatically use however many hardware threads exist on your system.
-
-    init(threadCount: Int = 0) {
-        self.threadCount = threadCount
-    }
-
-    func spin(ros: Ros, queue: CallbackQueue? = nil) {
-
-    }
-}
-
 final class AsyncSpinnner {
     private let mutex = DispatchQueue(label: "mutex")
     private var threads = [Thread]()

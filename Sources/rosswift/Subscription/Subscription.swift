@@ -49,7 +49,6 @@ internal final class Subscription {
     let isShuttingDown = NIOAtomic.makeAtomic(value: false)
     let publisherLinks = SynchronizedArray<PublisherLink>()
     let transportHints: TransportHints
-    let statistics: StatisticLogger?
     let md5sumQueue = DispatchQueue(label: "md5sumQueue")
     let callbacksQueue = DispatchQueue(label: "callbacksQueue")
     var latchedMessages = [ObjectIdentifier: LatchInfo]()
@@ -60,7 +59,6 @@ internal final class Subscription {
         self.datatype = datatype
         self.md5sum = md5sum
         self.transportHints = transportHints
-        self.statistics = nil
         self.ros = ros
     }
 
@@ -143,7 +141,6 @@ internal final class Subscription {
         let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: ros.xmlrpcManager.serverURI, transportHints: transportHints)
         let subLink = IntraProcessSubscriberLink(ros: ros, parent: localConnection, subscriber: pubLink)
         _ = pubLink.setPublisher(ros: ros, publisher: subLink)
-//        subLink.setSubscriber(ros: ros, subscriber: pubLink)
 
         publisherLinks.append(pubLink)
         localConnection.addSubscriberLink(subLink)

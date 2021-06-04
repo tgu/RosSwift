@@ -15,7 +15,7 @@ extension Ros {
 
     /// Get the list of topics subscribed to by this node
 
-    public func getSubscribedTopics(topics: inout [String]) -> [String] {
+    public func getSubscribedTopics() -> [String] {
         return topicManager.getSubscribed()
     }
 

@@ -71,17 +71,6 @@ internal final class ServiceServerLink: ChannelInboundHandler {
 
         }
 
-    #if os(OSX)
-
-        @objc
-        func onConnectionDropped(note: NSNotification) {
-            ROS_ERROR(#""onConnectionDropped" is not fully implemented"#)
-            isDropped = true
-            ros.serviceManager.removeServiceServerLink(client: self)
-        }
-
-    #endif
-
         func isValid() -> Bool {
             return !isDropped
         }
