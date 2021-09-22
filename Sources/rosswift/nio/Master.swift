@@ -196,6 +196,7 @@ final class Master {
     
     static func determineRosMasterAddress(remappings: StringStringMap) -> (host: String, port: UInt16) {
         var masterURI = remappings["__master"]
+#if os(macOS) || os(iOS) || os(tvOS) || os(Linux)
         if masterURI == nil {
             var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]
             if masterUriEnv == nil {
@@ -222,6 +223,7 @@ final class Master {
             }
             masterURI = masterUriEnv
         }
+#endif
 
         // Split URI into
         guard let master = RosNetwork.splitURI(uri: masterURI!) else {

@@ -10,21 +10,15 @@ import XCTest
 @testable import StdMsgs
 @testable import BinaryCoder
 @testable import RosTime
+import RosNetwork
+import rosmaster
 import NIOConcurrencyHelpers
 
-class connectionTests: XCTestCase {
-
-    override func setUp() {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
-
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
+class connectionTests: RosTest {
 
     func testNodeHandleConstructionDestruction() {
 
-        let ros = Ros(name: "testNodeHandleConstructionDestruction")
+        let ros = Ros(master: host)
 
         do {
             XCTAssertFalse(ros.isStarted.load())
@@ -70,7 +64,7 @@ class connectionTests: XCTestCase {
 
 
     func testIntraprocess() {
-        let ros = Ros(name: "testIntraprocess")
+        let ros = Ros(master: host)
         var chatter : Float64 = 0.0
         let n = ros.createNode()
         guard let chatter_pub = n.advertise(topic: "/intrachatter", message: std_msgs.float64.self ) else {
@@ -94,7 +88,7 @@ class connectionTests: XCTestCase {
     }
 
     func testgetPublishedTopics() {
-        let ros = Ros(name: "testgetPublishedTopics")
+        let ros = Ros(master: host)
         let n = ros.createNode()
         let advertised_topics = (1...8).map { "/test_topic_\($0)" }
 
@@ -118,7 +112,7 @@ class connectionTests: XCTestCase {
     }
 
     func testnodeHandleParentWithRemappings() {
-        let ros = Ros(name: "testnodeHandleParentWithRemappings")
+        let ros = Ros(master: host)
         let remappings = ["a":"b", "c":"d"]
         guard let n1 = ros.createNode(ns: "/", remappings: remappings) else {
             XCTFail()
@@ -169,7 +163,7 @@ class connectionTests: XCTestCase {
 
 
     func testSubscriberDestructionMultipleCallbacks() {
-        let ros = Ros(name: "testSubscriberDestructionMultipleCallbacks")
+        let ros = Ros(master: host)
         let n = ros.createNode()
         guard let pub = n.advertise(topic: "test", message: std_msgs.float64.self) else {
             XCTFail()
@@ -213,7 +207,7 @@ class connectionTests: XCTestCase {
     }
 
     func testPublisherMultiple() {
-        let ros = Ros(name: "testPublisherMultiple")
+        let ros = Ros(master: host)
 
         do {
             let n = ros.createNode()
@@ -242,7 +236,7 @@ class connectionTests: XCTestCase {
     }
 
     func testPublisherCallback() {
-        let ros = Ros(name: "testPublisherCallback")
+        let ros = Ros(master: host)
 
         let n = ros.createNode()
         let conns = NIOAtomic.makeAtomic(value: 0)
@@ -268,8 +262,8 @@ class connectionTests: XCTestCase {
 
 
     func testMultipleRos() {
-        let r1 = Ros(name: "testMultipleRos", namespace: "ett")
-        let r2 = Ros(name: "testMultipleRos", namespace: "två")
+        let r1 = Ros(name: "testMultipleRos", namespace: "ett", remappings: remap)
+        let r2 = Ros(name: "testMultipleRos", namespace: "två", remappings: remap)
 
         let n1 = r1.createNode()
         let p1 = n1.advertise(topic: "test", message: Int64.self)
@@ -302,8 +296,8 @@ class connectionTests: XCTestCase {
     }
 
     func testInternal() {
-        let r = Ros(name: "testInternal")
-        let n = r.createNode()
+        let ros = Ros(master: host)
+        let n = ros.createNode()
         let p = n.advertise(topic: "/testInternal", message: Int64.self)
 
         let received = NIOAtomic.makeAtomic(value: Int64(0))
@@ -314,7 +308,7 @@ class connectionTests: XCTestCase {
         XCTAssertNotNil(s)
 
         DispatchQueue(label: "r").async {
-            r.spin()
+            ros.spin()
         }
 
         WallDuration(milliseconds: 100).sleep()
@@ -332,8 +326,8 @@ class connectionTests: XCTestCase {
     }
     
     func testNonLatching() {
-        let ros = Ros(name: "nonlatching")
-        
+        let ros = Ros(master: host)
+
         let n = ros.createNode()
         
         let pub = n.advertise(topic: "/testInternal", latch: false, message: Int64.self)!
@@ -353,8 +347,8 @@ class connectionTests: XCTestCase {
 
     
     func testLatching() {
-        let ros = Ros(name: "latching")
-        
+        let ros = Ros(master: host)
+
         let n = ros.createNode()
         
         let pub = n.advertise(topic: "/testInternal", latch: true, message: Int64.self)!
@@ -372,8 +366,8 @@ class connectionTests: XCTestCase {
     }
     
     func testLatchingMultipleSubscribers() {
-        let ros = Ros(name: "latching")
-        
+        let ros = Ros(master: host)
+
         let n = ros.createNode()
         
         let pub = n.advertise(topic: "/testInternal", latch: true, message: Int64.self)!

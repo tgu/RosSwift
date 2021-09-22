@@ -21,10 +21,13 @@ public class Master: NSObject, NetServiceDelegate {
     public let port: Int
     let handler: RosMasterHandler
     let masterNode: XMLRPCServer
-    let service: NetService
+    let service: NetService?
 
+    public var address: String {
+        "http://\(host):\(port)"
+    }
 
-    public init(host: String, port: Int = defaultMasterPort) {
+    public init(host: String, port: Int = defaultMasterPort, advertise: Bool = true) {
         self.host = host
         self.port = port
 
@@ -37,23 +40,31 @@ public class Master: NSObject, NetServiceDelegate {
         
         // advertise our presense with zeroconf (Bonjour)
         
+        if advertise {
         service = NetService(domain: "local.",
                              type: "_ros._tcp.",
                              name: "rosmaster",
                              port: Int32(port))
+        } else {
+            service = nil
+        }
         
         super.init()
         
-        service.delegate = self
+        if advertise {
+        service?.delegate = self
+        }
     }
     
     public func start() -> EventLoopFuture<XMLRPCServer> {
-        service.publish()
+        service?.publish()
         return self.masterNode.start(host: host, port: port)
     }
 
     public func stop() -> EventLoopFuture<Void> {
-        service.stop()
+        #if !os(Linux)
+        service?.stop()
+        #endif
         return masterNode.stop()
     }
 

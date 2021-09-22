@@ -10,14 +10,15 @@ import XCTest
 @testable import RosTime
 @testable import rpcobject
 
-let ros = Ros(argv: &CommandLine.arguments, name: "paramTests")
 
-class paramTests: XCTestCase {
+class paramTests: RosTest {
+    var ros: Ros!
 
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
 
+        ros = Ros(name: "paramTests", master: host)
 
         ros.param.set(key: "string", value: "test")
         ros.param.set(key: "int", value: Int(10))
@@ -52,11 +53,12 @@ class paramTests: XCTestCase {
     }
 
 
-    @RosParameter(name: "string", ros: ros) var string_param: String
-    @RosParameter(name: "string", ros: ros) var string_param2: String
-    @RosParameter(name: "test_create_parameter", ros: ros) var param3: String
 
     func testPropertyWrapper() {
+        @RosParameter(name: "string", ros: ros) var string_param: String
+        @RosParameter(name: "string", ros: ros) var string_param2: String
+        @RosParameter(name: "test_create_parameter", ros: ros) var param3: String
+
         XCTAssertEqual( string_param, "test" )
         XCTAssertEqual( string_param2,"test" )
 

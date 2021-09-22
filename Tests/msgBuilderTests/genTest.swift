@@ -48,6 +48,10 @@ class GenTest: XCTestCase {
     }
 
     func testLoadMsgString2() {
+        if rosDistSource.isEmpty {
+            return
+        }
+        
         let logmsg = """
             Vector3 translation
             Quaternion rotation
@@ -75,6 +79,9 @@ class GenTest: XCTestCase {
     }
 
     func testLoadSrvFile() {
+        if rosDistSource.isEmpty {
+            return
+        }
         let context = MsgContext(useBuiltin: false)
         let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
                            "control_msgs": ["\(rosDistSource)/src/control_msgs/msg","\(rosDistSource)/src/control_msgs/srv"],
@@ -88,6 +95,9 @@ class GenTest: XCTestCase {
     }
 
     func testLoadFromFile() {
+        if rosDistSource.isEmpty {
+            return
+        }
         let path = "\(rosDistSource)/src/common_msgs/geometry_msgs/msg/Accel.msg"
         let context = MsgContext(useBuiltin: false)
         let spec = context.loadMsg(from: path, full_name: "geometry_msgs/Accel") as? MsgSpec

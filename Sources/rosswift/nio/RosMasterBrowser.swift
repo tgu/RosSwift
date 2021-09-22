@@ -10,6 +10,7 @@ import Foundation
 import NetService
 #endif
 
+#if os(macOS) || os(iOS) || os(tvOS) || os(Linux)
 final class RosMasterBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate  {
     let browser = NetServiceBrowser()
     var host = ""
@@ -48,3 +49,4 @@ final class RosMasterBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDel
     }
     
 }
+#endif

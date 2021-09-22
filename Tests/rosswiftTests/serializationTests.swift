@@ -11,6 +11,8 @@ import XCTest
 @testable import RosTime
 @testable import BinaryCoder
 @testable import msgs
+import rosmaster
+import RosNetwork
 
 
 extension sensor_msgs.Imu: Equatable {
@@ -43,21 +45,12 @@ func serializeAndDeserialize<T : BinaryCodable>(_ ser_val: T) -> T {
     return m
 }
 
-class serializationTests: XCTestCase {
+class serializationTests: RosTest {
 
     static let allTests = [
         ("testPrimitive",testPrimitive),
         ("testBuiltinTypes",testBuiltinTypes)
     ]
-
-
-    override func setUp() {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
-
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
 
     func testPrimitive() {
         XCTAssertEqual(UInt8(5), serializeAndDeserialize(UInt8(5)))
@@ -113,7 +106,7 @@ class serializationTests: XCTestCase {
     }
 
     func testBuiltinTypes() {
-        let ros = Ros(argv: &CommandLine.arguments, name: "builtinTests")
+        let ros = Ros(master: host)
         let n = ros.createNode()
         let p1 = n.advertise(topic: "test_bool", message: Bool.self)
         XCTAssertNotNil(p1)

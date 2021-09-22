@@ -219,6 +219,15 @@ public final class Ros: Hashable {
 
 
     }
+    
+    /// Mainly for testing purpose
+    convenience init(name: String = #function, master: String, port: Int = 11311) {
+        var name = name
+        if let firstpar = name.firstIndex(of: "(") {
+            name = String(name[name.startIndex..<firstpar])
+        }
+        self.init(name: name, remappings: ["__master" : "http://\(master):\(port)"])
+    }
 
     deinit {
         shutdown()

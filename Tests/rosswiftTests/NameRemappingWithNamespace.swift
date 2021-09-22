@@ -7,21 +7,16 @@
 
 import XCTest
 @testable import RosSwift
+import rosmaster
+import RosNetwork
 
-class NameRemappingWithNamespace: XCTestCase {
-
-    override func setUp() {
-    }
-
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
+class NameRemappingWithNamespace: RosTest {
     func testParameterRemapping() {
         var args = CommandLine.arguments + ["/a/test_full:=/b/test_full",
                                             "/a/test_local:=test_local2",
                                             "test_relative:=/b/test_relative",
-                                            "__ns:=a"]
+                                            "__ns:=a",
+                                            "__master:=\(remap["__master"]!)"]
 
         let ros = Ros(argv: &args, name: "testParameterRemapping")
         ros.param.set(key: "/b/test_full", value: "asdf")

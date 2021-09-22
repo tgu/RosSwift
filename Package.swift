@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.4
 
 import PackageDescription
 
@@ -44,13 +44,6 @@ let package = Package(
                                 .product(name: "DequeModule", package: "swift-collections"),
                                 "rpcobject"],
                  path: "Sources/rosswift"),
-        .target( name: "publisher",
-                 dependencies: ["RosSwift","msgs","StdMsgs"],
-                 exclude: ["custom_msgs/srv/AddTwoInts.srv"]),
-        .target( name: "listener",
-                 dependencies: ["RosSwift","msgs","StdMsgs"]),
-        .target( name: "msgbuilder",
-                 dependencies: msgDep),
         .target( name: "msgs",
                  dependencies: ["StdMsgs","RosTime"]),
         .target( name: "StdMsgs",
@@ -64,6 +57,8 @@ let package = Package(
                                     "StdMsgs",
                                     "BinaryCoder",
                                     "rpcobject",
+                                    "rosmaster",
+                                    "RosNetwork",
                                     "msgs",
                                     .product(name: "NIOConcurrencyHelpers", package: "swift-nio")]),
         .testTarget( name: "msgBuilderTests",
@@ -72,9 +67,6 @@ let package = Package(
             .product(name: "Logging", package: "swift-log"),
             .product(name: "NIO", package: "swift-nio")
         ]),
-        .target(name: "roscore", dependencies: [
-            "rosmaster", "RosNetwork",
-            .product(name: "Logging", package: "swift-log")]),
         .target(name: "rosmaster", dependencies: [
             "rpcclient",
             .product(name: "NIOHTTP1", package: "swift-nio"),
@@ -84,7 +76,17 @@ let package = Package(
             .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
             .product(name: "Logging", package: "swift-log"),
             .target(name: "rpcobject")]),
-        .target(name: "rosparam", dependencies: ["RosSwift"]),
+        .executableTarget(name: "rosparam", dependencies: ["RosSwift"]),
+        .executableTarget( name: "publisher",
+                 dependencies: ["RosSwift","msgs","StdMsgs"],
+                 exclude: ["custom_msgs/srv/AddTwoInts.srv"]),
+        .executableTarget( name: "listener",
+                 dependencies: ["RosSwift","msgs","StdMsgs"]),
+        .executableTarget( name: "msgbuilder",
+                 dependencies: msgDep),
+        .executableTarget(name: "roscore", dependencies: [
+            "rosmaster", "RosNetwork",
+            .product(name: "Logging", package: "swift-log")]),
         .testTarget(name: "rosmasterTests", dependencies: ["roscore"]),
 
     ]

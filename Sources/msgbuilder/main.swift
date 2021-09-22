@@ -123,15 +123,3 @@ if last.hasSuffix("_msgs") {
 
 context.load_dir(path: source, package_name: packageName)
 context.genAllMessages(to: destination)
-
-
-
-
-
-
-
-
-
-
-
-

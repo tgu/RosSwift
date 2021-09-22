@@ -10,6 +10,32 @@ import XCTest
 @testable import RosTime
 @testable import msgs
 import NIOConcurrencyHelpers
+import rosmaster
+import RosNetwork
+
+/// Starts and run roscore during testing
+/// 
+class RosTest: XCTestCase {
+    private static var master: rosmaster.Master? = nil
+    var remap: [String:String] {
+        ["__master": RosTest.master!.address]
+    }
+    var host: String {
+        RosTest.master!.host
+    }
+
+    override static func setUp() {
+        let network = RosNetwork(remappings: [:])
+        master = rosmaster.Master(host: network.gHost, port: 11311, advertise: false)
+        _ = try! master?.start().wait()
+    }
+
+    override static func tearDown() {
+        _ = master?.stop()
+    }
+}
+
+
 
 class SteadyTimerHelper {
     var expectedPeriod: WallDuration
@@ -75,17 +101,12 @@ class SteadyTimerHelper {
     }
 }
 
-class TimerTest: XCTestCase {
 
-    override func setUp() {
-    }
 
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
+class TimerTest: RosTest {
+    
     func testSingleSteadyTimeCallback() {
-        let ros = Ros(name: "testSingleSteadyTimeCallback")
+        let ros = Ros(master: host)
         let n = ros.createNode()
 
         let helper = SteadyTimerHelper(node: n, 0.01)
@@ -100,7 +121,7 @@ class TimerTest: XCTestCase {
     }
 
     func testMultipleSteadyTimeCallbacks() {
-        let ros = Ros(name: "testMultipleSteadyTimeCallbacks")
+        let ros = Ros(master: host)
         XCTAssert(Time.useSimTime.load())
 
         let n = ros.createNode()
@@ -126,7 +147,7 @@ class TimerTest: XCTestCase {
 
 
     func testSimClock() {
-        let ros = Ros(name: "SimTimeTest")
+        let ros = Ros(master: host)
         ros.param.set(key: "/use_sim_time", value: true)
         let n = ros.createNode()
         XCTAssert(Time.useSimTime.load())

@@ -9,29 +9,24 @@ import XCTest
 @testable import RosSwift
 @testable import StdMsgs
 @testable import BinaryCoder
+import rosmaster
+import RosNetwork
 
-
-class serviceTests: XCTestCase {
-
-    override func setUp() {
-    }
-
-    override func tearDown() {
-    }
+class serviceTests: RosTest {
 
     func testCallService() {
         func srvCallback(req: TestStringString.Request) -> TestStringString.Response? {
             return TestStringString.Response("A" + req.data)
         }
 
-        let rosProvider = Ros(name: "testCallServiceProvider")
+        let rosProvider = Ros(name: "testCallServiceProvider", remappings: remap)
         let serviceNode = rosProvider.createNode()
         guard let serv = serviceNode.advertise(service: "service_adv", srvFunc: srvCallback) else {
             XCTFail()
             return
         }
 
-        let ros = Ros(name: "testCallService")
+        let ros = Ros(master: host)
         let node = ros.createNode()
 
         var req = TestStringString.Request()
@@ -49,7 +44,7 @@ class serviceTests: XCTestCase {
     }
 
     func testCallEcho() {
-        let ros = Ros(name: "testCallEcho")
+        let ros = Ros(master: host)
         let node = ros.createNode()
 
         var req = TestStringString.Request()
@@ -71,7 +66,7 @@ class serviceTests: XCTestCase {
         }
 
 
-        let ros = Ros(name: "testCallInternalService")
+        let ros = Ros(master: host)
         let n = ros.createNode()
 
         let srv1 = n.advertise(service: "/test_srv", srvFunc: serviceCallback)
@@ -90,11 +85,11 @@ class serviceTests: XCTestCase {
             return TestStringString.Response("test")
         }
 
-        let ros = Ros(name: "testServiceAdvCopy")
+        let ros = Ros(master: host)
         let node = ros.createNode()
         let t = TestStringString.Request()
 
-        let ros2 = Ros(name: "testServiceAdvCopyCaller")
+        let ros2 = Ros(name: "testServiceAdvCopyCaller", remappings: remap)
         let node2 = ros2.createNode()
 
         do {
@@ -141,7 +136,7 @@ class serviceTests: XCTestCase {
             return TestStringString.Response("test")
         }
 
-        let ros = Ros(name: "testServiceAdvMultiple")
+        let ros = Ros(master: host)
         let n = ros.createNode()
 
         let srv = n.advertise(service: "/test_srv_19", srvFunc: serviceCallback1)
@@ -165,7 +160,7 @@ class serviceTests: XCTestCase {
         }
 
 
-        let ros = Ros(name: "testCallSrvMultipleTimes")
+        let ros = Ros(master: host)
         let node = ros.createNode()
         let serv = node.advertise(service: "/service_adv2", srvFunc: srvCallback)
         XCTAssertNotNil(serv)
