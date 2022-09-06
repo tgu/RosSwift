@@ -18,11 +18,6 @@ let package = Package(
         .executable(name: "publisher", targets: ["publisher"]),
         .executable(name: "listener", targets: ["listener"]),
         .executable(name: "msgbuilder", targets: ["msgbuilder"]),
-        .library(name: "msgs", targets: ["msgs"]),
-        .library(name: "StdMsgs", targets: ["StdMsgs"]),
-        .library(name: "RosTime", targets: ["RosTime"]),
-        .library(name: "RosMaster", targets: ["rosmaster"]),
-        .library(name: "RosNetwork", targets: ["RosNetwork"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.41.1"),
@@ -57,18 +52,16 @@ let package = Package(
                  dependencies: []),
         .testTarget( name: "rosswiftTests",
                      dependencies: ["RosSwift",
-                                    "StdMsgs",
                                     "BinaryCoder",
                                     "rpcobject",
                                     "rosmaster",
                                     "RosNetwork",
-                                    "msgs",
                                     swiftAtomics]),
         .testTarget( name: "msgBuilderTests",
                      dependencies: ["msgbuilderLib"]),
         .target(name: "RosNetwork", dependencies: [
             .product(name: "Logging", package: "swift-log"),
-            .product(name: "NIO", package: "swift-nio")
+            .product(name: "NIOCore", package: "swift-nio")
         ]),
         .target(name: "rosmaster", dependencies: [
             "rpcclient",
@@ -79,12 +72,11 @@ let package = Package(
             swiftAtomics,
             .product(name: "Logging", package: "swift-log"),
             .target(name: "rpcobject")]),
-        .executableTarget(name: "rosparam", dependencies: ["RosSwift"]),
         .executableTarget( name: "publisher",
-                 dependencies: ["RosSwift","msgs","StdMsgs"],
+                 dependencies: ["RosSwift"],
                  exclude: ["custom_msgs/srv/AddTwoInts.srv"]),
         .executableTarget( name: "listener",
-                 dependencies: ["RosSwift","msgs","StdMsgs"]),
+                 dependencies: ["RosSwift"]),
         .executableTarget( name: "msgbuilder",
                  dependencies: msgDep),
         .executableTarget(name: "roscore", dependencies: [

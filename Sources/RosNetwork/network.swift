@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import NIO
+import NIOCore
 import Logging
 
 fileprivate let logger = Logger(label: "network")

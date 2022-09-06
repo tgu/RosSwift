@@ -3,9 +3,9 @@ import HeliumLogger
 import LoggerAPI
 import NIO
 import Atomics
-import RosTime
-import StdMsgs
-import msgs
+@_exported import RosTime
+@_exported import StdMsgs
+@_exported import msgs
 import rpcobject
 import RosNetwork
 
