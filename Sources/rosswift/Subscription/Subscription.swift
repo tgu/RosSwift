@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import NIOConcurrencyHelpers
+import Atomics
 import RosTime
 import StdMsgs
 import rpcobject
@@ -45,8 +45,8 @@ internal final class Subscription {
     var md5sum: String
     let name: String
     var callbacks = [CallBackInfo]()
-    let dropped = NIOAtomic.makeAtomic(value: false)
-    let isShuttingDown = NIOAtomic.makeAtomic(value: false)
+    let dropped = ManagedAtomic(false)
+    let isShuttingDown = ManagedAtomic(false)
     let publisherLinks = SynchronizedArray<PublisherLink>()
     let transportHints: TransportHints
     let md5sumQueue = DispatchQueue(label: "md5sumQueue")
@@ -63,13 +63,13 @@ internal final class Subscription {
     }
 
     func shutdown() {
-        if isShuttingDown.compareAndExchange(expected: false, desired: true) {
+        if isShuttingDown.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
             dropSubscription()
         }
     }
 
     func dropSubscription() {
-        if dropped.compareAndExchange(expected: false, desired: true) {
+        if dropped.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
             dropAllConnections()
         }
     }
@@ -132,7 +132,7 @@ internal final class Subscription {
     }
 
     func add(ros: Ros, localConnection: Publication) {
-        if dropped.load() {
+        if dropped.load(ordering: .relaxed) {
             return
         }
 
@@ -147,7 +147,7 @@ internal final class Subscription {
     }
 
     func pubUpdate(newPubs: [String]) -> Bool {
-        if isShuttingDown.load() || dropped.load() {
+        if isShuttingDown.load(ordering: .relaxed) || dropped.load(ordering: .relaxed) {
             return false
         }
 

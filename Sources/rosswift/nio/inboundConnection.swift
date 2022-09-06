@@ -7,7 +7,7 @@
 
 import BinaryCoder
 import NIO
-import NIOConcurrencyHelpers
+import Atomics
 import NIOExtras
 import StdMsgs
 
@@ -18,7 +18,7 @@ enum ConnectionError: Error {
 final class InboundConnection {
 
     var channel: Channel?
-    var dropped = NIOAtomic.makeAtomic(value: false)
+    var dropped = ManagedAtomic<Bool>(false)
     unowned var parent: Subscription!
     unowned var link: TransportPublisherLink!
     let host: String
@@ -85,7 +85,7 @@ final class InboundConnection {
     }
 
     func dropConnection(reason: DropReason) {
-        if dropped.compareAndExchange(expected: false, desired: true) {
+        if dropped.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
             // capture the address before closing the channel
             let remote = self.remoteAddress
             ROS_DEBUG("Connection::drop - \(reason)")

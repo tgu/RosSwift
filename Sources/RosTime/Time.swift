@@ -7,7 +7,7 @@
 
 import BinaryCoder
 import Foundation
-import NIOConcurrencyHelpers
+import Atomics
 
 
 /// Time representation. May either represent wall clock time or ROS clock time.
@@ -18,9 +18,9 @@ public struct Time: TimeBase {
 
     public let nanoseconds: UInt64
 
-    internal static var useSimTime = NIOAtomic.makeAtomic(value: true)
-    public static var gStopped = NIOAtomic.makeAtomic(value: false)
-    public static var gInitialized = NIOAtomic.makeAtomic(value: false)
+    internal static var useSimTime = ManagedAtomic(true)
+    public static var gStopped = ManagedAtomic(false)
+    public static var gInitialized = ManagedAtomic(false)
     public static var simTime = Time()
     public static let simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
     public static let max = Time(nanosec: UInt64.max)
@@ -31,18 +31,18 @@ public struct Time: TimeBase {
     }
 
     public static func initialize() {
-        gStopped.store(false)
-        useSimTime.store(false)
-        gInitialized.store(true)
+        gStopped.store(false, ordering: .relaxed)
+        useSimTime.store(false, ordering: .relaxed)
+        gInitialized.store(true, ordering: .relaxed)
     }
 
     public static func shutDown() {
-        gStopped.store(true)
+        gStopped.store(true, ordering: .relaxed)
     }
 
 
     public static var isSimTime: Bool {
-        return useSimTime.load()
+        return useSimTime.load(ordering: .relaxed)
     }
 
     public static var isSystemTime: Bool {
@@ -53,7 +53,7 @@ public struct Time: TimeBase {
     /// Time is valid if it is non-zero.
 
     public static var isValid: Bool {
-        return !useSimTime.load() || !Time.simTimeQueue.sync { Time.simTime.isZero }
+        return !useSimTime.load(ordering: .relaxed) || !Time.simTimeQueue.sync { Time.simTime.isZero }
     }
 
     /// Retrieve the current time. If ROS clock time is in use,
@@ -61,13 +61,13 @@ public struct Time: TimeBase {
     /// Otherwise returns the current wall clock time.
 
     public static var now: Time {
-        guard Time.gInitialized.load() else {
+        guard Time.gInitialized.load(ordering: .relaxed) else {
             fatalError("Cannot use Time.now() before the first NodeHandle has been created or Ros.start()" +
                 " has been called. If this is a standalone app or test that just uses Time and does not" +
                 " communicate over ROS, you may also call Time.initialize()")
         }
 
-        if Time.useSimTime.load() {
+        if Time.useSimTime.load(ordering: .relaxed) {
             return Time.simTimeQueue.sync {
                 Time.simTime
             }
@@ -80,7 +80,7 @@ public struct Time: TimeBase {
     public static func setNow(_ now: Time) {
         simTimeQueue.sync {
             simTime = now
-            useSimTime.store(true)
+            useSimTime.store(true, ordering: .relaxed)
         }
     }
 
@@ -88,13 +88,13 @@ public struct Time: TimeBase {
 
     public static func waitForValid(timeout: WallDuration = WallDuration()) -> Bool {
         let start = WallTime.now
-        while !isValid && !gStopped.load() {
+        while !isValid && !gStopped.load(ordering: .relaxed) {
             _ = WallDuration(seconds: 0.01).sleep()
             if timeout > WallDuration(sec: 0, nsec: 0) && WallTime.now - start > timeout {
                 return false
             }
         }
-        if gStopped.load() {
+        if gStopped.load(ordering: .relaxed) {
             return false
         }
         return true

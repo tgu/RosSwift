@@ -5,7 +5,7 @@
 //  Created by Thomas Gustafsson on 2018-10-23.
 //
 
-import NIOConcurrencyHelpers
+import Atomics
 import StdMsgs
 
 struct IntraProcessSubscriberLink: SubscriberLink {
@@ -16,7 +16,7 @@ struct IntraProcessSubscriberLink: SubscriberLink {
     let transportInfo = "INTRAPROCESS"
 
     weak var subscriber: IntraProcessPublisherLink?
-    var isDropped = NIOAtomic.makeAtomic(value: false)
+    var isDropped = ManagedAtomic(false)
     var isLatching: Bool { parent?.isLatching() ?? false }
 
 
@@ -30,7 +30,7 @@ struct IntraProcessSubscriberLink: SubscriberLink {
     }
 
     func enqueueMessage(m: SerializedMessage) {
-        if isDropped.load() {
+        if isDropped.load(ordering: .relaxed) {
             return
         }
 
@@ -42,7 +42,7 @@ struct IntraProcessSubscriberLink: SubscriberLink {
     }
 
     func dropParentPublication() {
-        if isDropped.compareAndExchange(expected: false, desired: true) {
+        if isDropped.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
             subscriber?.dropPublisherLink()
             // subscriber = nil
 

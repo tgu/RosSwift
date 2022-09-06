@@ -12,7 +12,7 @@ import XCTest
 @testable import RosTime
 import RosNetwork
 import rosmaster
-import NIOConcurrencyHelpers
+import Atomics
 
 class connectionTests: RosTest {
 
@@ -21,24 +21,24 @@ class connectionTests: RosTest {
         let ros = Ros(master: host)
 
         do {
-            XCTAssertFalse(ros.isStarted.load())
+            XCTAssertFalse(ros.isStarted.load(ordering: .relaxed))
             let n1 = ros.createNode()
-            XCTAssert(ros.isStarted.load())
+            XCTAssert(ros.isStarted.load(ordering: .relaxed))
             XCTAssertEqual(n1.refCount,1)
             XCTAssert(n1.gNodeStartedByNodeHandle)
             do {
                 let n2 = ros.createNode()
-                XCTAssert(ros.isStarted.load())
+                XCTAssert(ros.isStarted.load(ordering: .relaxed))
                 XCTAssertEqual(n2.refCount,2)
                 XCTAssertFalse(n2.gNodeStartedByNodeHandle)
                 do {
                     let n3 = ros.createNode()
-                    XCTAssert(ros.isStarted.load())
+                    XCTAssert(ros.isStarted.load(ordering: .relaxed))
                     XCTAssertEqual(n3.refCount,3)
                     XCTAssertFalse(n3.gNodeStartedByNodeHandle)
                     do {
                         let n4 = ros.createNode()
-                        XCTAssert(ros.isStarted.load())
+                        XCTAssert(ros.isStarted.load(ordering: .relaxed))
                         XCTAssertFalse(n4.gNodeStartedByNodeHandle)
                         XCTAssertEqual(n4.refCount,4)
                     }
@@ -47,18 +47,18 @@ class connectionTests: RosTest {
                 XCTAssertEqual(n1.refCount,2)
             }
             XCTAssertEqual(n1.refCount,1)
-            XCTAssert(ros.isStarted.load())
+            XCTAssert(ros.isStarted.load(ordering: .relaxed))
         }
-        XCTAssertEqual(ros.nodeReferenceCount.load(), 0)
-        XCTAssertFalse(ros.isStarted.load())
+        XCTAssertEqual(ros.nodeReferenceCount.load(ordering: .relaxed), 0)
+        XCTAssertFalse(ros.isStarted.load(ordering: .relaxed))
         do {
             let n5 = ros.createNode()
-            XCTAssert(ros.isStarted.load())
+            XCTAssert(ros.isStarted.load(ordering: .relaxed))
             XCTAssertEqual(n5.refCount,1)
             XCTAssert(n5.gNodeStartedByNodeHandle)
         }
-        XCTAssertEqual(ros.nodeReferenceCount.load(), 0)
-        XCTAssertFalse(ros.isStarted.load())
+        XCTAssertEqual(ros.nodeReferenceCount.load(ordering: .relaxed), 0)
+        XCTAssertFalse(ros.isStarted.load(ordering: .relaxed))
         ros.shutdown()
     }
 
@@ -154,10 +154,10 @@ class connectionTests: RosTest {
 
 
     class SubscribeHelper {
-        let recv_count_ = NIOAtomic.makeAtomic(value: 0)
+        let recv_count_ = ManagedAtomic(0)
 
         func callback(_ f: std_msgs.float64) {
-            recv_count_.add(1)
+            recv_count_.wrappingIncrement(ordering: .relaxed)
         }
     }
 
@@ -175,8 +175,8 @@ class connectionTests: RosTest {
             let sub_class = n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
             XCTAssertNotNil(sub_class)
             let d = Duration(milliseconds: 50)
-            var last_class_count = helper.recv_count_.load()
-            while last_class_count == helper.recv_count_.load() {
+            var last_class_count = helper.recv_count_.load(ordering: .relaxed)
+            while last_class_count == helper.recv_count_.load(ordering: .relaxed) {
                 pub.publish(message: msg)
                 ros.spinOnce()
                 d.sleep()
@@ -195,8 +195,8 @@ class connectionTests: RosTest {
             }
 
             last_fn_count = g_recv_count
-            last_class_count = helper.recv_count_.load()
-            while last_class_count == helper.recv_count_.load() {
+            last_class_count = helper.recv_count_.load(ordering: .relaxed)
+            while last_class_count == helper.recv_count_.load(ordering: .relaxed) {
                 pub.publish(message: msg)
                 ros.spinOnce()
                 d.sleep()
@@ -239,23 +239,34 @@ class connectionTests: RosTest {
         let ros = Ros(master: host)
 
         let n = ros.createNode()
-        let conns = NIOAtomic.makeAtomic(value: 0)
-        let disconns = NIOAtomic.makeAtomic(value: 0)
+        let conns = ManagedAtomic(0)
+        let disconns = ManagedAtomic(0)
 
-        let ops = AdvertiseOptions(topic: "/testCallback", queueSize: 1, latch: false, std_msgs.int8.self, connectCall: { _ in conns.add(1) }, disconnectCall: { _ in disconns.add(1)})
-
+        let ops = AdvertiseOptions(
+            topic: "/testCallback",
+            queueSize: 1,
+            latch: false,
+            std_msgs.int8.self,
+            connectCall: { _ in
+                conns.wrappingIncrement(ordering: .relaxed)
+            },
+            disconnectCall: { _ in
+                disconns.wrappingIncrement(ordering: .relaxed)
+            }
+        )
+        
         let pub = n.advertise(ops: ops)
         do {
             let sub = n.subscribe(topic: "/testCallback") { (msg: Int8) -> Void  in }
             XCTAssertEqual(sub?.publisherCount, 1)
-            XCTAssertEqual(conns.load(), 1)
-            XCTAssertEqual(disconns.load(), 0)
+            XCTAssertEqual(conns.load(ordering: .relaxed), 1)
+            XCTAssertEqual(disconns.load(ordering: .relaxed), 0)
             XCTAssertEqual(pub?.numSubscribers, 1)
         }
 
         XCTAssertEqual(pub?.numSubscribers, 0)
-        XCTAssertEqual(conns.load(), 1)
-        XCTAssertEqual(disconns.load(), 1)
+        XCTAssertEqual(conns.load(ordering: .relaxed), 1)
+        XCTAssertEqual(disconns.load(ordering: .relaxed), 1)
 
     }
 
@@ -270,10 +281,10 @@ class connectionTests: RosTest {
 
         let n2 = r2.createNode()
 
-        let received = NIOAtomic.makeAtomic(value: Int64(0))
+        let received = ManagedAtomic<Int64>(0)
 
         let s2 = n2.subscribe(topic: "/ett/test", queueSize: 100) { (msg: Int64) -> Void in
-            received.add(1)
+            received.wrappingIncrement(ordering: .relaxed)
         }
         XCTAssertNotNil(s2)
 
@@ -292,7 +303,7 @@ class connectionTests: RosTest {
         print("elapsed time = \((end-start).toSec()) ")
         WallDuration(milliseconds: 1000).sleep()
 
-        XCTAssertEqual(received.load(), sent)
+        XCTAssertEqual(received.load(ordering: .relaxed), sent)
     }
 
     func testInternal() {
@@ -300,10 +311,10 @@ class connectionTests: RosTest {
         let n = ros.createNode()
         let p = n.advertise(topic: "/testInternal", message: Int64.self)
 
-        let received = NIOAtomic.makeAtomic(value: Int64(0))
+        let received = ManagedAtomic<Int64>(0)
 
         let s = n.subscribe(topic: "/testInternal", queueSize: 10) { (msg: Int64) -> Void in
-            received.add(1)
+            received.wrappingIncrement(ordering: .relaxed)
         }
         XCTAssertNotNil(s)
 
@@ -322,7 +333,7 @@ class connectionTests: RosTest {
         print("elapsed time = \((end-start).toSec()) ")
         WallDuration(milliseconds: 100).sleep()
 
-        XCTAssertEqual(received.load(), sent)
+        XCTAssertEqual(received.load(ordering: .relaxed), sent)
     }
     
     func testNonLatching() {

@@ -5,7 +5,7 @@
 //  Created by Thomas Gustafsson on 2018-10-23.
 //
 
-import NIOConcurrencyHelpers
+import Atomics
 import StdMsgs
 
 final class IntraProcessPublisherLink: PublisherLink {
@@ -20,7 +20,7 @@ final class IntraProcessPublisherLink: PublisherLink {
     var md5sum: String = ""
 
     var publisher: IntraProcessSubscriberLink?
-    let isDropped = NIOAtomic.makeAtomic(value: false)
+    let isDropped = ManagedAtomic(false)
 
     init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
         self.parent = parent
@@ -47,7 +47,7 @@ final class IntraProcessPublisherLink: PublisherLink {
     }
 
     func dropPublisherLink() {
-        if isDropped.compareAndExchange(expected: false, desired: true) {
+        if isDropped.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
             publisher?.dropParentPublication()
             publisher = nil
             ROS_DEBUG("Connection to local publisher on topic [\(parent.name)] dropped")
@@ -57,7 +57,7 @@ final class IntraProcessPublisherLink: PublisherLink {
     }
 
     func handleMessage(m: SerializedMessage) {
-        if isDropped.load() {
+        if isDropped.load(ordering: .relaxed) {
             return
         }
 

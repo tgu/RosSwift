@@ -88,7 +88,7 @@ internal final class TopicManager {
             
             advertisedTopicsMutex.sync {
                 advertisedTopics.forEach {
-                    if !$0.isDropped.load() {
+                    if !$0.isDropped.load(ordering: .relaxed) {
                         ROS_DEBUG("shutting down \($0.name)")
                         _ = unregisterPublisher(topic: $0.name)
                     }
@@ -220,7 +220,7 @@ internal final class TopicManager {
             }
             ROS_DEBUG("Received update for topic [\(topic)] (\(pubs.count) publishers)")
             return subscriptions.first(where: { s -> Bool in
-                !s.dropped.load() && s.name == topic
+                !s.dropped.load(ordering: .relaxed) && s.name == topic
             })
         }
         
@@ -276,7 +276,7 @@ internal final class TopicManager {
         }
         
         guard let sub = subscriptions.first(where: {
-            !$0.dropped.load() && $0.name == ops.topic
+            !$0.dropped.load(ordering: .relaxed) && $0.name == ops.topic
         }) else {
             return false
         }
@@ -399,7 +399,7 @@ internal final class TopicManager {
         // Figure out if we have a local publisher
         
         let pub = advertisedTopicsMutex.sync {
-            advertisedTopics.first(where: {$0.name == s.name && !$0.isDropped.load()})
+            advertisedTopics.first(where: {$0.name == s.name && !$0.isDropped.load(ordering: .relaxed)})
         }
         
         if let localPub = pub {
@@ -482,7 +482,7 @@ internal final class TopicManager {
         
         subsQueue.sync                 {
             if let it = subscriptions.first(where: { s -> Bool in
-                s.name == ops.topic && md5sumsMatch(lhs: s.md5sum, rhs: M.md5sum) && !s.dropped.load()
+                s.name == ops.topic && md5sumsMatch(lhs: s.md5sum, rhs: M.md5sum) && !s.dropped.load(ordering: .relaxed)
             }) {
                 DispatchQueue(label: "adding").async {
                     it.add(ros: self.ros, localConnection: pub)
@@ -506,7 +506,7 @@ internal final class TopicManager {
         var pub: Publication?
         advertisedTopicsMutex.sync {
             if !shuttingDown {
-                pub = advertisedTopics.first(where: { $0.name == topic && !$0.isDropped.load() })
+                pub = advertisedTopics.first(where: { $0.name == topic && !$0.isDropped.load(ordering: .relaxed) })
             }
         }
         
@@ -522,7 +522,7 @@ internal final class TopicManager {
             if p.numCallbacks == 0 {
                 _ = unregisterPublisher(topic: p.name)
                 p.dropPublication()
-                advertisedTopics.removeAll(where: { $0.name == topic && !$0.isDropped.load() })
+                advertisedTopics.removeAll(where: { $0.name == topic && !$0.isDropped.load(ordering: .relaxed) })
                 advertisedTopicNames.remove(where: { $0 == topic })
             }
         }
@@ -575,7 +575,7 @@ internal final class TopicManager {
         
         return subsQueue.sync {
             if let sub = subscriptions.first(where: { sub -> Bool in
-                !sub.dropped.load() && sub.name == topic
+                !sub.dropped.load(ordering: .relaxed) && sub.name == topic
             }) {
                 return sub.getNumPublishers()
             }

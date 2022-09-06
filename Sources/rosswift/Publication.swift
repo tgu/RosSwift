@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import NIOConcurrencyHelpers
+import Atomics
 import StdMsgs
 import rpcobject
 
@@ -53,11 +53,11 @@ final class Publication {
     let datatype: String
     let md5sum: String
     let messageDefinition: String
-    var sequenceNr = NIOAtomic.makeAtomic(value: UInt32(0))
+    var sequenceNr = ManagedAtomic<UInt32>(0)
     var pubCallbacks = [SubscriberCallbacks]()
     var subscriberLinks = [SubscriberLink]()
     let latch: Bool
-    var isDropped = NIOAtomic.makeAtomic(value: false)
+    var isDropped = ManagedAtomic(false)
     var lastMessage: SerializedMessage?
 
     let callbacksQueue = DispatchQueue(label: "callbacksQueue")
@@ -113,13 +113,13 @@ final class Publication {
     }
 
     func dropPublication() {
-        if isDropped.compareAndExchange(expected: false, desired: true) {
+        if isDropped.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
             dropAllConnections()
         }
     }
 
     func addSubscriberLink(_ link: SubscriberLink) {
-        if isDropped.load() {
+        if isDropped.load(ordering: .relaxed) {
             return
         }
 
@@ -138,7 +138,7 @@ final class Publication {
     }
 
     func removeSubscriberLink(_ link: SubscriberLink) {
-        if isDropped.load() {
+        if isDropped.load(ordering: .relaxed) {
             return
         }
 
@@ -215,7 +215,7 @@ final class Publication {
 
     @discardableResult
     func incrementSequence() -> UInt32 {
-        return sequenceNr.add(1)
+        return sequenceNr.loadThenWrappingIncrement(ordering: .relaxed)
     }
 
     func getNumSubscribers() -> Int {
@@ -255,7 +255,7 @@ final class Publication {
         // advertised_topics through a call to unadvertise(), which could
         // have happened while we were waiting for the subscriber to
         // provide the md5sum.
-        if isDropped.load() {
+        if isDropped.load(ordering: .relaxed) {
             errorMsg = "received a tcpros connection for a nonexistent topic [\(topic)] from [\(callerid)"
             ROS_DEBUG(errorMsg)
             return false

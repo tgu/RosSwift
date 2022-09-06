@@ -6,13 +6,13 @@
 //
 
 import NIO
-import NIOConcurrencyHelpers
+import Atomics
 import StdMsgs
 import rpcobject
 import RosNetwork
 
     internal final class ServiceManager {
-        var isShuttingDown = NIOAtomic.makeAtomic(value: false)
+        var isShuttingDown = ManagedAtomic(false)
         var servicePublications = SynchronizedArray<ServiceProtocol>()
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 
@@ -24,12 +24,12 @@ import RosNetwork
 
         func start(ros: Ros) {
             self.ros = ros
-            isShuttingDown.store(false)
+            isShuttingDown.store(false, ordering: .relaxed)
             ROS_DEBUG("servicemanager start")
         }
 
         func shutdown() {
-            guard isShuttingDown.compareAndExchange(expected: false, desired: true) else {
+            guard isShuttingDown.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged else {
                 return
             }
 
@@ -52,7 +52,7 @@ import RosNetwork
         }
 
         func advertiseService<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>(_ ops: AdvertiseServiceOptions<MReq, MRes>) -> Bool {
-            if isShuttingDown.load() {
+            if isShuttingDown.load(ordering: .relaxed) {
                 return false
             }
 
@@ -79,7 +79,7 @@ import RosNetwork
         }
 
         func unadvertiseService(name: String) -> Bool {
-            if isShuttingDown.load() {
+            if isShuttingDown.load(ordering: .relaxed) {
                 return false
             }
 
@@ -131,7 +131,7 @@ import RosNetwork
                                      responseMd5sum: String,
                                      headerValues: StringStringMap?) -> ServiceServerLink? {
 
-            if isShuttingDown.load() {
+            if isShuttingDown.load(ordering: .relaxed) {
                 return nil
             }
 
@@ -163,7 +163,7 @@ import RosNetwork
         }
 
         func removeServiceServerLink(client: ServiceServerLink) {
-            if !isShuttingDown.load() {
+            if !isShuttingDown.load(ordering: .relaxed) {
                 serviceServerLinks.remove(where: { $0 === client })
             }
         }

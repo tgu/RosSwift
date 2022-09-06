@@ -465,7 +465,7 @@ public final class Param {
 
         // Caching only works when ros is started and xmlrpcManager is running
         
-        if useCache && ros.isStarted.load() {
+        if useCache && ros.isStarted.load(ordering: .relaxed) {
             parameterQueue.sync {
                 if gSubscribedParameters.keys.contains(mappedKey) {
                     if let it = gParameters[mappedKey] {

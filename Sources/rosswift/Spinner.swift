@@ -7,7 +7,7 @@
 
 import Foundation
 import NIO
-import NIOConcurrencyHelpers
+import Atomics
 import RosTime
 
 /// Protocol for classes which spin on a callback queue.
@@ -30,7 +30,7 @@ struct SingleThreadSpinner: Spinner {
         }
 
         let timeout = WallDuration(milliseconds: 100)
-        while ros.isRunning.load() {
+        while ros.isRunning.load(ordering: .relaxed) {
             useQueue.callAvailable(timeout: timeout)
         }
         SpinnerMonitor.main.remove(queue: useQueue)
@@ -42,7 +42,7 @@ final class AsyncSpinnner {
     private var threads = [Thread]()
     private let threadCount: Int
     private let callbackQueue: CallbackQueue
-    private var running = NIOAtomic.makeAtomic(value: false)
+    private var running = ManagedAtomic(false)
     private let ros: Ros
 
     init(ros: Ros, threadCount: Int, queue: CallbackQueue? = nil) {
@@ -56,7 +56,7 @@ final class AsyncSpinnner {
     }
 
     func start() {
-        guard running.compareAndExchange(expected: false, desired: true) else {
+        guard running.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged else {
             return
         }
 
@@ -75,7 +75,7 @@ final class AsyncSpinnner {
     }
 
     func stop() {
-        guard running.compareAndExchange(expected: true, desired: false) else {
+        guard running.compareExchange(expected: true, desired: false, ordering: .relaxed).exchanged else {
             return
         }
 
@@ -90,7 +90,7 @@ final class AsyncSpinnner {
         let queue = callbackQueue
         let useCallAvailable = threadCount == 1
         let timeout = WallDuration(milliseconds: 100)
-        while running.load() && ros.isRunning.load() {
+        while running.load(ordering: .relaxed) && ros.isRunning.load(ordering: .relaxed) {
             if useCallAvailable {
                 queue.callAvailable(timeout: timeout)
             } else {

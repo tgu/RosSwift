@@ -8,6 +8,8 @@ let msgDep: [Target.Dependency] = ["OpenSSL","StdMsgs","msgbuilderLib"]
 let msgDep: [Target.Dependency] = ["StdMsgs","msgbuilderLib"]
 #endif
 
+let swiftAtomics: PackageDescription.Target.Dependency = .product(name: "Atomics", package: "swift-atomics")
+
 let package = Package(
     name: "RosSwift",
     platforms: [.macOS(.v10_14), .iOS(.v10), .tvOS(.v10), .watchOS(.v3)],
@@ -23,12 +25,13 @@ let package = Package(
         .library(name: "RosNetwork", targets: ["RosNetwork"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.27.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.41.1"),
         .package(url: "https://github.com/tgu/BinaryCoder.git", from: "1.1.0"),
-        .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.0"),
-        .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.1"),
-        .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.8.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.4.2"),
+        .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.200"),
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.3"),
+        .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.13.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.4.4"),
+        .package(url: "https://github.com/apple/swift-atomics.git", from: "1.0.2"),
     ],
     targets: [
         .target( name: "RosSwift",
@@ -49,7 +52,7 @@ let package = Package(
         .target( name: "StdMsgs",
                  dependencies: ["RosTime"]),
         .target( name: "RosTime",
-                 dependencies: ["BinaryCoder",.product(name: "NIOConcurrencyHelpers", package: "swift-nio")]),
+                 dependencies: ["BinaryCoder",swiftAtomics]),
         .target( name: "rpcobject",
                  dependencies: []),
         .testTarget( name: "rosswiftTests",
@@ -60,7 +63,7 @@ let package = Package(
                                     "rosmaster",
                                     "RosNetwork",
                                     "msgs",
-                                    .product(name: "NIOConcurrencyHelpers", package: "swift-nio")]),
+                                    swiftAtomics]),
         .testTarget( name: "msgBuilderTests",
                      dependencies: ["msgbuilderLib"]),
         .target(name: "RosNetwork", dependencies: [
@@ -73,7 +76,7 @@ let package = Package(
             .product(name: "Logging", package: "swift-log")]),
         .target(name: "rpcclient", dependencies: [
             .product(name: "NIO", package: "swift-nio"),
-            .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
+            swiftAtomics,
             .product(name: "Logging", package: "swift-log"),
             .target(name: "rpcobject")]),
         .executableTarget(name: "rosparam", dependencies: ["RosSwift"]),

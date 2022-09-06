@@ -6,7 +6,7 @@
 //
 
 import RosTime
-import NIOConcurrencyHelpers
+import Atomics
 
 public typealias TimerCallback = (TimerEvent) -> Void
 
@@ -23,10 +23,10 @@ enum TimerHandle: Equatable, Hashable {
         }
     }
 
-    static let id = NIOAtomic.makeAtomic(value: UInt32(0))
+    static let id = ManagedAtomic<UInt32>(0)
 
     static func getNextHandler() -> TimerHandle {
-        return TimerHandle.some(TimerHandle.id.add(1))
+        return TimerHandle.some(TimerHandle.id.loadThenWrappingIncrement(ordering: .relaxed))
     }
 
 }

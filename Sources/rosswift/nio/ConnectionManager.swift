@@ -6,7 +6,7 @@
 
 import BinaryCoder
 import NIO
-import NIOConcurrencyHelpers
+import Atomics
 import StdMsgs
 
 final class ConnectionHandler: ChannelInboundHandler {
@@ -155,10 +155,10 @@ internal final class ConnectionManager {
 
     // The connection ID counter, used to assign unique ID to each inbound or
     // outbound connection.  Access via getNewConnectionID()
-    private var connectionIdCounter = NIOAtomic.makeAtomic(value: 0)
+    private var connectionIdCounter = ManagedAtomic<Int>(0)
 
     func getNewConnectionID() -> Int {
-        return connectionIdCounter.add(1)
+        return connectionIdCounter.loadThenWrappingIncrement(ordering: .relaxed)
     }
 
     func start(ros: Ros) {

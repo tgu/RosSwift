@@ -1,6 +1,6 @@
 import Foundation
 import RosTime
-import NIOConcurrencyHelpers
+import Atomics
 
 let gTimerManager = InternalTimerManager()
 
@@ -14,7 +14,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
     var timers: [TimerHandle: TimerInfo] = [:]
     let timersMutex = DispatchQueue(label: "TimerManager", attributes: .concurrent)
     let timersCond = NSCondition()
-    var newTimer = NIOAtomic.makeAtomic(value: false)
+    var newTimer = ManagedAtomic(false)
     let waitingMutex = DispatchQueue(label: "waitingMutex")
     var waiting = Set<TimerHandle>()
 
@@ -62,7 +62,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                 return false
             }
 
-            return info.nextExpected <= T.now || info.waitingCallbacks.load() != 0
+            return info.nextExpected <= T.now || info.waitingCallbacks.load(ordering: .relaxed) != 0
         }
     }
 
@@ -93,7 +93,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
             }
         }
 
-        newTimer.store(true)
+        newTimer.store(true, ordering: .relaxed)
         timersCond.broadcast()
 
         return handle
@@ -124,7 +124,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
 
             info.period = period
         }
-        newTimer.store(true)
+        newTimer.store(true, ordering: .relaxed)
         timersCond.broadcast()
     }
 
@@ -164,7 +164,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
             }
         }
 
-        newTimer.store(true)
+        newTimer.store(true, ordering: .relaxed)
         timersCond.broadcast()
     }
 
@@ -208,7 +208,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                 }
             }
             
-            while !newTimer.load() && T.now < sleep_end && !quit {
+            while !newTimer.load(ordering: .relaxed) && T.now < sleep_end && !quit {
                 // detect backwards jump in time
                 if T.now < current {
                     ROS_DEBUG("Time jumped backwards, breaking out of sleep")
@@ -229,7 +229,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                     _ = timersCond.wait(until: Date(timeIntervalSinceNow: remainingTime))
                 }
             }
-            newTimer.store(false)
+            newTimer.store(false, ordering: .relaxed)
         }
     }
 
@@ -254,7 +254,7 @@ extension TimerManager {
         var removed: Bool = false
         let trackedObject: AnyObject?
         var hasTrackedObject: Bool { return trackedObject != nil }
-        var waitingCallbacks = NIOAtomic.makeAtomic(value: 0)
+        var waitingCallbacks = ManagedAtomic(0)
 
         let oneshot: Bool
 
@@ -332,11 +332,11 @@ extension TimerManager {
             self.called = false
             self.currentExpired = currentExpired
 
-            _ = info.waitingCallbacks.add(1)
+            info.waitingCallbacks.wrappingIncrement(ordering: .relaxed)
         }
 
         deinit {
-            _ = info.waitingCallbacks.sub(1)
+            info.waitingCallbacks.wrappingDecrement(ordering: .relaxed)
         }
 
         func call() -> CallResult {
