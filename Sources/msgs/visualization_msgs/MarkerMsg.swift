@@ -79,7 +79,7 @@ extension visualization_msgs {
 		public var pose: geometry_msgs.Pose
 		public var scale: geometry_msgs.Vector3
 		public var color: std_msgs.ColorRGBA
-		public var lifetime: Duration
+		public var lifetime: RosDuration
 		public var frame_locked: Bool
 		public var points: [geometry_msgs.Point]
 		public var colors: [std_msgs.ColorRGBA]
@@ -87,7 +87,7 @@ extension visualization_msgs {
 		public var mesh_resource: String
 		public var mesh_use_embedded_materials: Bool
 
-		public init(header: std_msgs.Header, ns: String, id: Int32, type: Int32, action: Int32, pose: geometry_msgs.Pose, scale: geometry_msgs.Vector3, color: std_msgs.ColorRGBA, lifetime: Duration, frame_locked: Bool, points: [geometry_msgs.Point], colors: [std_msgs.ColorRGBA], text: String, mesh_resource: String, mesh_use_embedded_materials: Bool) {
+		public init(header: std_msgs.Header, ns: String, id: Int32, type: Int32, action: Int32, pose: geometry_msgs.Pose, scale: geometry_msgs.Vector3, color: std_msgs.ColorRGBA, lifetime: RosDuration, frame_locked: Bool, points: [geometry_msgs.Point], colors: [std_msgs.ColorRGBA], text: String, mesh_resource: String, mesh_use_embedded_materials: Bool) {
 			self.header = header
 			self.ns = ns
 			self.id = id
@@ -114,7 +114,7 @@ extension visualization_msgs {
 			pose = geometry_msgs.Pose()
 			scale = geometry_msgs.Vector3()
 			color = std_msgs.ColorRGBA()
-			lifetime = Duration()
+			lifetime = RosDuration()
 			frame_locked = Bool()
 			points = [geometry_msgs.Point]()
 			colors = [std_msgs.ColorRGBA]()

@@ -42,9 +42,9 @@ extension gazebo_msgs {
 			public var reference_point: geometry_msgs.Point
 			public var wrench: geometry_msgs.Wrench
 			public var start_time: Time
-			public var duration: Duration
+			public var duration: RosDuration
 	
-			public init(body_name: String, reference_frame: String, reference_point: geometry_msgs.Point, wrench: geometry_msgs.Wrench, start_time: Time, duration: Duration) {
+			public init(body_name: String, reference_frame: String, reference_point: geometry_msgs.Point, wrench: geometry_msgs.Wrench, start_time: Time, duration: RosDuration) {
 				self.body_name = body_name
 				self.reference_frame = reference_frame
 				self.reference_point = reference_point
@@ -59,7 +59,7 @@ extension gazebo_msgs {
 				reference_point = geometry_msgs.Point()
 				wrench = geometry_msgs.Wrench()
 				start_time = Time()
-				duration = Duration()
+				duration = RosDuration()
 			}
 		}
 

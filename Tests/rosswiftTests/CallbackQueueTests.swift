@@ -213,7 +213,7 @@ class CallbackQueueTests: XCTestCase {
         }
         let start = WallTime.now
         var i = 0
-        while (WallTime.now - start).nanoseconds < Duration(seconds: 5).nanoseconds {
+        while (WallTime.now - start).nanoseconds < RosDuration(seconds: 5).nanoseconds {
             queue.addCallback(callback: cb)
             i += 1
         }

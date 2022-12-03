@@ -96,7 +96,7 @@ class SteadyTimerHelper {
     }
 
     func pretendWork(_ t: Double) {
-        var r = Rate(duration: Duration(seconds: t))
+        var r = Rate(duration: RosDuration(seconds: t))
         r.sleep()
     }
 }
@@ -208,7 +208,7 @@ class TimerTest: RosTest {
         let done = ManagedAtomic(false)
         
         DispatchQueue(label: "sleep").async {
-        	let ok = Duration(milliseconds: 1000).sleep()
+        	let ok = RosDuration(milliseconds: 1000).sleep()
             if !ok {
                 print("!OK")
             }

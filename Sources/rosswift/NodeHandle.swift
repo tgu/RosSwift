@@ -316,7 +316,7 @@ public final class NodeHandle {
     ///     - autostart: If true (default), return timer that is already started
 
 
-    public func createTimer(period: Duration,
+    public func createTimer(period: RosDuration,
                      oneshot: Bool = false,
                      autostart: Bool = true,
                      trackedObject: AnyObject? = nil,

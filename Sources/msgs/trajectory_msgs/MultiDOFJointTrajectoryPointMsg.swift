@@ -23,9 +23,9 @@ extension trajectory_msgs {
 		public var transforms: [geometry_msgs.Transform]
 		public var velocities: [geometry_msgs.Twist]
 		public var accelerations: [geometry_msgs.Twist]
-		public var time_from_start: Duration
+		public var time_from_start: RosDuration
 
-		public init(transforms: [geometry_msgs.Transform], velocities: [geometry_msgs.Twist], accelerations: [geometry_msgs.Twist], time_from_start: Duration) {
+		public init(transforms: [geometry_msgs.Transform], velocities: [geometry_msgs.Twist], accelerations: [geometry_msgs.Twist], time_from_start: RosDuration) {
 			self.transforms = transforms
 			self.velocities = velocities
 			self.accelerations = accelerations
@@ -36,7 +36,7 @@ extension trajectory_msgs {
 			transforms = [geometry_msgs.Transform]()
 			velocities = [geometry_msgs.Twist]()
 			accelerations = [geometry_msgs.Twist]()
-			time_from_start = Duration()
+			time_from_start = RosDuration()
 		}
 	}
 }

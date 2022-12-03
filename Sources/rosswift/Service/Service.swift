@@ -52,7 +52,7 @@ public enum Service {
     ///   - timeout: The amount of time to wait for, in milliseconds.  If timeout is -1, waits until the node is shutdown
     /// - Returns: true on success, false otherwise
     public static func waitForService(ros: Ros, serviceName: String, timeout: Int32) -> Bool {
-        let dur = Duration(milliseconds: timeout)
+        let dur = RosDuration(milliseconds: timeout)
         return waitForService(ros: ros, serviceName: serviceName, timeout: dur )
     }
 
@@ -62,7 +62,7 @@ public enum Service {
     /// - Parameter timeout: The amount of time to wait for before timing out.  If timeout is -1 (default),
     /// waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    public static func waitForService(ros: Ros, serviceName: String, timeout: Duration = Duration()) -> Bool {
+    public static func waitForService(ros: Ros, serviceName: String, timeout: RosDuration = RosDuration()) -> Bool {
         let mappedNames = ros.resolve(name: serviceName)
         let startTime = Time.now
         var printed = false
@@ -80,7 +80,7 @@ public enum Service {
                     }
                 }
 
-                Duration(milliseconds: 20).sleep()
+                RosDuration(milliseconds: 20).sleep()
             }
         }
 

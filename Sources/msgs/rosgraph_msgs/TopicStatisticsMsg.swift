@@ -54,14 +54,14 @@ extension rosgraph_msgs {
 		public var delivered_msgs: Int32
 		public var dropped_msgs: Int32
 		public var traffic: Int32
-		public var period_mean: Duration
-		public var period_stddev: Duration
-		public var period_max: Duration
-		public var stamp_age_mean: Duration
-		public var stamp_age_stddev: Duration
-		public var stamp_age_max: Duration
+		public var period_mean: RosDuration
+		public var period_stddev: RosDuration
+		public var period_max: RosDuration
+		public var stamp_age_mean: RosDuration
+		public var stamp_age_stddev: RosDuration
+		public var stamp_age_max: RosDuration
 
-		public init(topic: String, node_pub: String, node_sub: String, window_start: Time, window_stop: Time, delivered_msgs: Int32, dropped_msgs: Int32, traffic: Int32, period_mean: Duration, period_stddev: Duration, period_max: Duration, stamp_age_mean: Duration, stamp_age_stddev: Duration, stamp_age_max: Duration) {
+		public init(topic: String, node_pub: String, node_sub: String, window_start: Time, window_stop: Time, delivered_msgs: Int32, dropped_msgs: Int32, traffic: Int32, period_mean: RosDuration, period_stddev: RosDuration, period_max: RosDuration, stamp_age_mean: RosDuration, stamp_age_stddev: RosDuration, stamp_age_max: RosDuration) {
 			self.topic = topic
 			self.node_pub = node_pub
 			self.node_sub = node_sub
@@ -87,12 +87,12 @@ extension rosgraph_msgs {
 			delivered_msgs = Int32()
 			dropped_msgs = Int32()
 			traffic = Int32()
-			period_mean = Duration()
-			period_stddev = Duration()
-			period_max = Duration()
-			stamp_age_mean = Duration()
-			stamp_age_stddev = Duration()
-			stamp_age_max = Duration()
+			period_mean = RosDuration()
+			period_stddev = RosDuration()
+			period_max = RosDuration()
+			stamp_age_mean = RosDuration()
+			stamp_age_stddev = RosDuration()
+			stamp_age_max = RosDuration()
 		}
 	}
 }

@@ -174,7 +174,7 @@ class connectionTests: RosTest {
             let helper = SubscribeHelper()
             let sub_class = n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
             XCTAssertNotNil(sub_class)
-            let d = Duration(milliseconds: 50)
+            let d = RosDuration(milliseconds: 50)
             var last_class_count = helper.recv_count_.load(ordering: .relaxed)
             while last_class_count == helper.recv_count_.load(ordering: .relaxed) {
                 pub.publish(message: msg)

@@ -48,11 +48,11 @@ extension visualization_msgs {
 		public var outline_color: std_msgs.ColorRGBA
 		public var filled: UInt8
 		public var fill_color: std_msgs.ColorRGBA
-		public var lifetime: Duration
+		public var lifetime: RosDuration
 		public var points: [geometry_msgs.Point]
 		public var outline_colors: [std_msgs.ColorRGBA]
 
-		public init(header: std_msgs.Header, ns: String, id: Int32, type: Int32, action: Int32, position: geometry_msgs.Point, scale: Float32, outline_color: std_msgs.ColorRGBA, filled: UInt8, fill_color: std_msgs.ColorRGBA, lifetime: Duration, points: [geometry_msgs.Point], outline_colors: [std_msgs.ColorRGBA]) {
+		public init(header: std_msgs.Header, ns: String, id: Int32, type: Int32, action: Int32, position: geometry_msgs.Point, scale: Float32, outline_color: std_msgs.ColorRGBA, filled: UInt8, fill_color: std_msgs.ColorRGBA, lifetime: RosDuration, points: [geometry_msgs.Point], outline_colors: [std_msgs.ColorRGBA]) {
 			self.header = header
 			self.ns = ns
 			self.id = id
@@ -79,7 +79,7 @@ extension visualization_msgs {
 			outline_color = std_msgs.ColorRGBA()
 			filled = UInt8()
 			fill_color = std_msgs.ColorRGBA()
-			lifetime = Duration()
+			lifetime = RosDuration()
 			points = [geometry_msgs.Point]()
 			outline_colors = [std_msgs.ColorRGBA]()
 		}

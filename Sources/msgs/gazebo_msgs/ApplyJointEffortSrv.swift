@@ -29,9 +29,9 @@ extension gazebo_msgs {
 			public var joint_name: String
 			public var effort: Float64
 			public var start_time: Time
-			public var duration: Duration
+			public var duration: RosDuration
 	
-			public init(joint_name: String, effort: Float64, start_time: Time, duration: Duration) {
+			public init(joint_name: String, effort: Float64, start_time: Time, duration: RosDuration) {
 				self.joint_name = joint_name
 				self.effort = effort
 				self.start_time = start_time
@@ -42,7 +42,7 @@ extension gazebo_msgs {
 				joint_name = String()
 				effort = Float64()
 				start_time = Time()
-				duration = Duration()
+				duration = RosDuration()
 			}
 		}
 

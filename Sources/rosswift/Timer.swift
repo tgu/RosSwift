@@ -40,19 +40,19 @@ enum TimerHandle: Equatable, Hashable {
 
 
 public final class Timer {
-    private static let manager = TimerManager<Time,Duration,TimerEvent>()
+    private static let manager = TimerManager<Time,RosDuration,TimerEvent>()
     
     private var started: Bool = false
     private var timerHandle: TimerHandle = .none
 
-    private var period: Duration
+    private var period: RosDuration
     let callback: TimerCallback
     let callbackQueue: CallbackQueueInterface
     let trackedObject: AnyObject?
     let hasTrackedObject: Bool
     let oneShot: Bool
 
-    internal init(period: Duration,
+    internal init(period: RosDuration,
                   callback: @escaping TimerCallback,
                   callbackQueue: CallbackQueueInterface,
                   trackedObject: AnyObject?,
@@ -105,7 +105,7 @@ public final class Timer {
         return Timer.manager.hasPending(handle: timerHandle)
     }
 
-    func setPeriod(period: Duration, reset: Bool = true) {
+    func setPeriod(period: RosDuration, reset: Bool = true) {
         self.period = period
         Timer.manager.setPeriod(handle: timerHandle, period: period, reset: reset)
     }

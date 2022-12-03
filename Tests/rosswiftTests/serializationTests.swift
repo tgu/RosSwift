@@ -67,7 +67,7 @@ class serializationTests: RosTest {
         XCTAssertEqual(Float64(5), serializeAndDeserialize(Float64(5)))
         XCTAssertEqual(Double(5), serializeAndDeserialize(Double(5)))
         XCTAssertEqual(Time(sec: 100, nsec: 234), serializeAndDeserialize(Time(sec: 100, nsec: 234)))
-        XCTAssertEqual(Duration(nanosec: 12234), serializeAndDeserialize(Duration(nanosec: 12234)))
+        XCTAssertEqual(RosDuration(nanosec: 12234), serializeAndDeserialize(RosDuration(nanosec: 12234)))
         XCTAssertEqual("string", serializeAndDeserialize("string"))
         var str = "hello world"
         str.append("hello world22")

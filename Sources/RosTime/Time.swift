@@ -100,12 +100,12 @@ public struct Time: TimeBase {
         return true
     }
 
-    public static func + (lhs: Time, rhs: Duration) -> Time {
+    public static func + (lhs: Time, rhs: RosDuration) -> Time {
         return Time(nanosec: lhs.nanoseconds + UInt64(rhs.nanoseconds))
     }
 
-    public static func - (lhs: Time, rhs: Time) -> Duration {
-        return Duration(nanosec: Int64(lhs.nanoseconds) - Int64(rhs.nanoseconds))
+    public static func - (lhs: Time, rhs: Time) -> RosDuration {
+        return RosDuration(nanosec: Int64(lhs.nanoseconds) - Int64(rhs.nanoseconds))
     }
 
 }

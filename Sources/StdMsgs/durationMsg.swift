@@ -8,9 +8,9 @@ extension std_msgs {
 		public static let datatype = "std_msgs/Duration"
 		public static let definition = "duration data"
 
-		public var data: Duration
+		public var data: RosDuration
 
-		public init(_ value: Duration) {
+		public init(_ value: RosDuration) {
 			self.data = value
 		}
 	}

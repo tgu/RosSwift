@@ -25,9 +25,9 @@ extension trajectory_msgs {
 		public var velocities: [Float64]
 		public var accelerations: [Float64]
 		public var effort: [Float64]
-		public var time_from_start: Duration
+		public var time_from_start: RosDuration
 
-		public init(positions: [Float64], velocities: [Float64], accelerations: [Float64], effort: [Float64], time_from_start: Duration) {
+		public init(positions: [Float64], velocities: [Float64], accelerations: [Float64], effort: [Float64], time_from_start: RosDuration) {
 			self.positions = positions
 			self.velocities = velocities
 			self.accelerations = accelerations
@@ -40,7 +40,7 @@ extension trajectory_msgs {
 			velocities = [Float64]()
 			accelerations = [Float64]()
 			effort = [Float64]()
-			time_from_start = Duration()
+			time_from_start = RosDuration()
 		}
 	}
 }

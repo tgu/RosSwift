@@ -9,19 +9,19 @@ import Foundation
 
 public struct Rate {
     var start: Time
-    let expectedCycleTime: Duration
-    var actualCycleTime: Duration
+    let expectedCycleTime: RosDuration
+    var actualCycleTime: RosDuration
 
     public init(frequency: Double) {
         start = Time.now
-        expectedCycleTime = Duration(seconds: 1.0 / frequency)
-        actualCycleTime = Duration()
+        expectedCycleTime = RosDuration(seconds: 1.0 / frequency)
+        actualCycleTime = RosDuration()
     }
 
-    public init(duration: Duration) {
+    public init(duration: RosDuration) {
         start = Time.now
         expectedCycleTime = duration
-        actualCycleTime = Duration()
+        actualCycleTime = RosDuration()
     }
 
     @discardableResult
@@ -34,7 +34,7 @@ public struct Rate {
         let sleepTime = expectedEnd - actualEnd
         actualCycleTime = actualEnd - start
         start = expectedEnd
-        if sleepTime <= Duration() {
+        if sleepTime <= RosDuration() {
             if actualEnd > expectedEnd + expectedCycleTime {
                 start = actualEnd
             }
@@ -48,7 +48,7 @@ public struct Rate {
         start = Time.now
     }
 
-    public func cycleTime() -> Duration {
+    public func cycleTime() -> RosDuration {
         return actualCycleTime
     }
 }

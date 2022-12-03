@@ -25,7 +25,7 @@ extension control_msgs {
 			"""
 
 		public var header: std_msgs.Header
-		public var timestep: Duration
+		public var timestep: RosDuration
 		public var error: Float64
 		public var error_dot: Float64
 		public var p_error: Float64
@@ -38,7 +38,7 @@ extension control_msgs {
 		public var i_min: Float64
 		public var output: Float64
 
-		public init(header: std_msgs.Header, timestep: Duration, error: Float64, error_dot: Float64, p_error: Float64, i_error: Float64, d_error: Float64, p_term: Float64, i_term: Float64, d_term: Float64, i_max: Float64, i_min: Float64, output: Float64) {
+		public init(header: std_msgs.Header, timestep: RosDuration, error: Float64, error_dot: Float64, p_error: Float64, i_error: Float64, d_error: Float64, p_term: Float64, i_term: Float64, d_term: Float64, i_max: Float64, i_min: Float64, output: Float64) {
 			self.header = header
 			self.timestep = timestep
 			self.error = error
@@ -56,7 +56,7 @@ extension control_msgs {
 
 		public init() {
 			header = std_msgs.Header()
-			timestep = Duration()
+			timestep = RosDuration()
 			error = Float64()
 			error_dot = Float64()
 			p_error = Float64()

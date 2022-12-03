@@ -20,7 +20,7 @@ fileprivate func wallSleep(sec: UInt32, nsec: UInt32) -> Bool {
 }
 
 
-public struct Duration: DurationBase {
+public struct RosDuration: DurationBase {
     public let nanoseconds: Int64
 
     public init(nanosec: Int64) {
