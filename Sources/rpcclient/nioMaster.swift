@@ -402,7 +402,7 @@ struct XMLRPCClient {
         }
 
         private var _state = State.initializing
-        private let lock = Lock()
+        private let lock = NIOLock()
         private var state: State {
             get {
                 return self.lock.withLock {

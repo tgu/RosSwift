@@ -170,7 +170,7 @@ final class Master {
     let group: EventLoopGroup
     var bootstrap: ClientBootstrap?
     var handlers = [ObjectIdentifier: XmlRpcHandler]()
-    let lock = Lock()
+    let lock = NIOLock()
     
     var path: String {
         return "\(masterHost):\(masterPort)"
