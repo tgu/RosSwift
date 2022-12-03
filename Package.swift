@@ -12,7 +12,7 @@ let swiftAtomics: PackageDescription.Target.Dependency = .product(name: "Atomics
 
 let package = Package(
     name: "RosSwift",
-    platforms: [.macOS(.v10_14), .iOS(.v10), .tvOS(.v10), .watchOS(.v3)],
+    platforms: [.macOS(.v10_15), .iOS(.v11), .tvOS(.v11), .watchOS(.v4)],
     products: [
         .library(name: "RosSwift", targets: ["RosSwift"]),
         .executable(name: "publisher", targets: ["publisher"]),

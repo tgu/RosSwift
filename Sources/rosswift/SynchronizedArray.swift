@@ -274,11 +274,7 @@ extension SynchronizedArray {
 extension SynchronizedArray where Element: Equatable {
     func firstIndex(of element: Element) -> Int? {
         var result: Int?
-        #if swift(>=4.2)
         queue.sync { result = self.array.firstIndex(of: element) }
-        #else
-        queue.sync { result = self.array.index(where: { $0 == element }) }
-        #endif
         return result
     }
 

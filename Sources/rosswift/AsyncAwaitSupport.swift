@@ -1,6 +1,3 @@
-#if compiler(>=5.5.2) && canImport(_Concurrency)
-
-
 import rpcobject
 
 extension Master {
@@ -25,5 +22,3 @@ extension Ros {
 
 
 }
-
-#endif

@@ -81,15 +81,9 @@ internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: Servi
 
     func removeServiceClientLink(_ link: ServiceClientLink) {
         clientLinksQueue.sync {
-            #if swift(>=4.2)
             if let it = clientLinks.firstIndex(where: { $0 === link }) {
                 clientLinks.remove(at: it)
             }
-            #else
-            if let index = clientLinks.index(where: { $0 === link }) {
-                clientLinks.remove(at: index)
-            }
-            #endif
         }
     }
 

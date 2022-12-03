@@ -24,7 +24,7 @@ extension Data {
         
         digest.withUnsafeMutableBytes { (digestBytes) in
             self.withUnsafeBytes { (messageBytes) in
-                let length = CC_LONG(self.count)
+                let length = CC_LONG(messageBytes.count)
                 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
                 CC_MD5(messageBytes.baseAddress!, length, digestBytes.bindMemory(to: UInt8.self).baseAddress!)
                 #elseif os(Linux)
