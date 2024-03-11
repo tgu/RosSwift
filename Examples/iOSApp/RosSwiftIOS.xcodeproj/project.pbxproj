@@ -1,0 +1,412 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		83930BA62B9F388B0059E4B9 /* RosSwiftIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83930BA52B9F388B0059E4B9 /* RosSwiftIOSApp.swift */; };
+		83930BA82B9F388B0059E4B9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83930BA72B9F388B0059E4B9 /* ContentView.swift */; };
+		83930BAA2B9F388D0059E4B9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 83930BA92B9F388D0059E4B9 /* Assets.xcassets */; };
+		83930BAD2B9F388D0059E4B9 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 83930BAC2B9F388D0059E4B9 /* Preview Assets.xcassets */; };
+		83930BB52B9F38D70059E4B9 /* RosNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = 83930BB42B9F38D70059E4B9 /* RosNetwork */; };
+		83930BB72B9F38D70059E4B9 /* RosSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 83930BB62B9F38D70059E4B9 /* RosSwift */; };
+		83930BB92B9F38D70059E4B9 /* RosTime in Frameworks */ = {isa = PBXBuildFile; productRef = 83930BB82B9F38D70059E4B9 /* RosTime */; };
+		83930BBB2B9F38D70059E4B9 /* StdMsgs in Frameworks */ = {isa = PBXBuildFile; productRef = 83930BBA2B9F38D70059E4B9 /* StdMsgs */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		83930BA22B9F388B0059E4B9 /* RosSwiftIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RosSwiftIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		83930BA52B9F388B0059E4B9 /* RosSwiftIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RosSwiftIOSApp.swift; sourceTree = "<group>"; };
+		83930BA72B9F388B0059E4B9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		83930BA92B9F388D0059E4B9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		83930BAC2B9F388D0059E4B9 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		83930BBC2B9F60590059E4B9 /* RosSwiftIOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RosSwiftIOS.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		83930B9F2B9F388B0059E4B9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				83930BBB2B9F38D70059E4B9 /* StdMsgs in Frameworks */,
+				83930BB92B9F38D70059E4B9 /* RosTime in Frameworks */,
+				83930BB52B9F38D70059E4B9 /* RosNetwork in Frameworks */,
+				83930BB72B9F38D70059E4B9 /* RosSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		83930B992B9F388B0059E4B9 = {
+			isa = PBXGroup;
+			children = (
+				83930BA42B9F388B0059E4B9 /* RosSwiftIOS */,
+				83930BA32B9F388B0059E4B9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		83930BA32B9F388B0059E4B9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				83930BA22B9F388B0059E4B9 /* RosSwiftIOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		83930BA42B9F388B0059E4B9 /* RosSwiftIOS */ = {
+			isa = PBXGroup;
+			children = (
+				83930BBC2B9F60590059E4B9 /* RosSwiftIOS.entitlements */,
+				83930BA52B9F388B0059E4B9 /* RosSwiftIOSApp.swift */,
+				83930BA72B9F388B0059E4B9 /* ContentView.swift */,
+				83930BA92B9F388D0059E4B9 /* Assets.xcassets */,
+				83930BAB2B9F388D0059E4B9 /* Preview Content */,
+			);
+			path = RosSwiftIOS;
+			sourceTree = "<group>";
+		};
+		83930BAB2B9F388D0059E4B9 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				83930BAC2B9F388D0059E4B9 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		83930BA12B9F388B0059E4B9 /* RosSwiftIOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 83930BB02B9F388D0059E4B9 /* Build configuration list for PBXNativeTarget "RosSwiftIOS" */;
+			buildPhases = (
+				83930B9E2B9F388B0059E4B9 /* Sources */,
+				83930B9F2B9F388B0059E4B9 /* Frameworks */,
+				83930BA02B9F388B0059E4B9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RosSwiftIOS;
+			packageProductDependencies = (
+				83930BB42B9F38D70059E4B9 /* RosNetwork */,
+				83930BB62B9F38D70059E4B9 /* RosSwift */,
+				83930BB82B9F38D70059E4B9 /* RosTime */,
+				83930BBA2B9F38D70059E4B9 /* StdMsgs */,
+			);
+			productName = RosSwiftIOS;
+			productReference = 83930BA22B9F388B0059E4B9 /* RosSwiftIOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		83930B9A2B9F388B0059E4B9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1530;
+				LastUpgradeCheck = 1530;
+				TargetAttributes = {
+					83930BA12B9F388B0059E4B9 = {
+						CreatedOnToolsVersion = 15.3;
+					};
+				};
+			};
+			buildConfigurationList = 83930B9D2B9F388B0059E4B9 /* Build configuration list for PBXProject "RosSwiftIOS" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 83930B992B9F388B0059E4B9;
+			packageReferences = (
+				83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */,
+			);
+			productRefGroup = 83930BA32B9F388B0059E4B9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				83930BA12B9F388B0059E4B9 /* RosSwiftIOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		83930BA02B9F388B0059E4B9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				83930BAD2B9F388D0059E4B9 /* Preview Assets.xcassets in Resources */,
+				83930BAA2B9F388D0059E4B9 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		83930B9E2B9F388B0059E4B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				83930BA82B9F388B0059E4B9 /* ContentView.swift in Sources */,
+				83930BA62B9F388B0059E4B9 /* RosSwiftIOSApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		83930BAE2B9F388D0059E4B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				XROS_DEPLOYMENT_TARGET = 1.1;
+			};
+			name = Debug;
+		};
+		83930BAF2B9F388D0059E4B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+				XROS_DEPLOYMENT_TARGET = 1.1;
+			};
+			name = Release;
+		};
+		83930BB12B9F388D0059E4B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RosSwiftIOS/RosSwiftIOS.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"RosSwiftIOS/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = demo.demo.RosSwiftIOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Debug;
+		};
+		83930BB22B9F388D0059E4B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RosSwiftIOS/RosSwiftIOS.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"RosSwiftIOS/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = demo.demo.RosSwiftIOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		83930B9D2B9F388B0059E4B9 /* Build configuration list for PBXProject "RosSwiftIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83930BAE2B9F388D0059E4B9 /* Debug */,
+				83930BAF2B9F388D0059E4B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		83930BB02B9F388D0059E4B9 /* Build configuration list for PBXNativeTarget "RosSwiftIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83930BB12B9F388D0059E4B9 /* Debug */,
+				83930BB22B9F388D0059E4B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tgu/RosSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		83930BB42B9F38D70059E4B9 /* RosNetwork */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */;
+			productName = RosNetwork;
+		};
+		83930BB62B9F38D70059E4B9 /* RosSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */;
+			productName = RosSwift;
+		};
+		83930BB82B9F38D70059E4B9 /* RosTime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */;
+			productName = RosTime;
+		};
+		83930BBA2B9F38D70059E4B9 /* StdMsgs */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */;
+			productName = StdMsgs;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 83930B9A2B9F388B0059E4B9 /* Project object */;
+}

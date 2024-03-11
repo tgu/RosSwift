@@ -7,9 +7,9 @@ There are some unimplemented features, basic publishing, subscription, services 
 
 ## Compability
 
-Minimum SDK10.14 on OSX, also works on iOS14
+Minimum SDK10.15 on OSX, also works on iOS14
 
-Swift 5.3 on Raspberry, tested with Ubuntu 20.10
+Swift 5.9 on Raspberry, tested with Ubuntu 20.10
 
 It can be necessary to allow arbitary loads in the Info.plist file for iOS and macOS
 
@@ -30,7 +30,7 @@ The package include ``msgbuilder`` to generate code for custom messages.
 
 The package include ``roscore``  that is a swift implementation of the ros master. The master advertises its presense with Bonjour on Apple devices and with Avahi on Linux devices. A client initialization of Ros will search for the master unless the url is specified with remapping ``ros = Ros(name: "phone", remappings: ["__master":"http://10.0.1.23:11311"])``  or with the environment variable ``ROS_MASTER_URI``
 
-For service discovery in iOS14 Client app, add NSBonjourServices to your Info.plist
+For service discovery in iOS Client app, add NSBonjourServices to your Info.plist
 
 ```
 <key>NSBonjourServices</key>
