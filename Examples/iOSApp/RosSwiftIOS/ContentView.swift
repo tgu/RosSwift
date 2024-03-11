@@ -3,7 +3,7 @@ import RosSwift
 
 struct ContentView: View {
     @Environment(NodeWrapper.self) var ros: NodeWrapper
-    @State private var master: String = "172.16.1.158"
+    @State private var master: String = "127.0.0.1"
     @State private var message: String = ""
     @State private var subscriber: Subscriber?
 
