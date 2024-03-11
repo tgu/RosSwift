@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.9
 
 import PackageDescription
 
@@ -12,7 +12,7 @@ let swiftAtomics: PackageDescription.Target.Dependency = .product(name: "Atomics
 
 let package = Package(
     name: "RosSwift",
-    platforms: [.macOS(.v10_15), .iOS(.v11), .tvOS(.v11), .watchOS(.v4)],
+    platforms: [.macOS(.v10_15), .iOS(.v12), .tvOS(.v12), .watchOS(.v4), .visionOS(.v1)],
     products: [
         .library(name: "RosSwift", targets: ["RosSwift"]),
         .executable(name: "publisher", targets: ["publisher"]),

@@ -3,7 +3,7 @@ import Foundation
 let swiftType = ["int8": "Int8", "int16": "Int16", "int32": "Int32",
                  "int64": "Int64", "uint8": "UInt8", "uint16": "UInt16",
                  "uint32": "UInt32", "uint64": "UInt64", "string": "String",
-                 "byte": "Int8", "char": "UInt8", "duration": "Duration",
+                 "byte": "Int8", "char": "UInt8", "duration": "RosDuration",
                  "time": "Time", "bool": "Bool", "float32": "Float32",
                  "float64": "Float64", "empty": "Empty", "Header": "std_msgs.Header"]
 
