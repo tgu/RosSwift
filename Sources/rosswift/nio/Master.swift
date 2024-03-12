@@ -21,8 +21,8 @@ let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 /// The type is represented in the format "package_name/MessageName"
 
 public struct TopicInfo {
-    let name: String
-    let dataType: String
+    public let name: String
+    public let dataType: String
 }
 
 let xmlrpcVersion = "XMLRPC++ 0.7"
