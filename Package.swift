@@ -30,13 +30,6 @@ var targets: [Target] = [
     .target( name: "StdMsgs", dependencies: ["RosTime"]),
     .target( name: "RosTime", dependencies: ["BinaryCoder",swiftAtomics]),
     .target( name: "rpcobject", dependencies: []),
-    .testTarget( name: "rosswiftTests",
-                 dependencies: ["RosSwift",
-                                "BinaryCoder",
-                                "rpcobject",
-                                "rosmaster",
-                                "RosNetwork",
-                                swiftAtomics]),
     .target(name: "RosNetwork", dependencies: [
         .product(name: "Logging", package: "swift-log"),
         .product(name: "NIOCore", package: "swift-nio")
@@ -78,6 +71,13 @@ targets.append(.target(name: "rpcclient", dependencies: [
     swiftAtomics,
     .product(name: "Logging", package: "swift-log"),
     .target(name: "rpcobject")]))
+targets.append(.testTarget( name: "rosswiftTests",
+                                dependencies: ["RosSwift",
+                                               "BinaryCoder",
+                                               "rpcobject",
+                                               "rosmaster",
+                                               "RosNetwork",
+                                               swiftAtomics]))
 #endif
 
 #if os(Linux)

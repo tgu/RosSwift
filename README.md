@@ -1,4 +1,9 @@
 # RosSwift
+
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Ftgu%2FRosSwift%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/tgu/RosSwift)
+
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Ftgu%2FRosSwift%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/tgu/RosSwift)
+
 ROS Robotic Operating System - Swift implementation of core client libraries. Based on roscpp.
 
 RosSwift is a Swift implementation of ROS. It provides a Swift library based on Swift-NIO that enables Swift programmers to interface to ROS. It is tested on OSX and Linux (Raspberry Stretch, Ubuntu) and should also work on all platforms that are supported by Swift-NIO.
