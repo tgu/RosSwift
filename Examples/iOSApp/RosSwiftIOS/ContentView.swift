@@ -1,11 +1,27 @@
 import SwiftUI
 import RosSwift
 
+extension TopicInfo: Identifiable, Hashable {
+    public static func == (lhs: TopicInfo, rhs: TopicInfo) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    public var id: String {
+        name
+    }
+}
+
 struct ContentView: View {
     @Environment(NodeWrapper.self) var ros: NodeWrapper
     @State private var master: String = "127.0.0.1"
     @State private var message: String = ""
+    @State private var topics: [TopicInfo] = []
     @State private var subscriber: Subscriber?
+    @State private var selectedTopic: String?
 
     func callback(msg: String) {
         message = msg
@@ -28,8 +44,8 @@ struct ContentView: View {
                     } else {
                         Button("connect") {
                             ros.connect("http://\(master):11311")
-                            if let node = ros.node {
-                                subscriber = node.subscribe(topic: "/chatter", queueSize: 1, callback: callback)
+                            Task.detached {
+                                topics = (try? await ros.node?.ros.getTopics().get()) ?? []
                             }
                         }
                     }
@@ -38,12 +54,21 @@ struct ContentView: View {
 
             if ros.isRunning {
                 Section(header: Label("Topics", systemImage: "tree").bold()) {
-                    Text("message: \(message)")
+                    List(topics, selection: $selectedTopic) { (topic: TopicInfo) in
+                        Text("\(topic.name): \(topic.dataType)")
+                    }.refreshable {
+                        topics = (try? await ros.node?.ros.getTopics().get()) ?? []
+                    }
+                }
+
+                Section(header: Label("Chatter", systemImage: "tree").bold()) {
+                    Text(message)
+                }.task {
+                    subscriber = ros.node?.subscribe(topic: "/chatter", queueSize: 1, callback: callback)
                 }
             }
 
-        }
-        .padding()
+        }.padding()
     }
 }
 

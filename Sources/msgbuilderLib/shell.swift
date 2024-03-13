@@ -38,6 +38,7 @@ public struct Shell {
     }
 
     func shell(url: URL, args: [String], environment: [String:String] = [:]) -> String {
+#if os(Linux) || os(macOS)
         let task = Process()
         task.executableURL = url
         task.arguments = args
@@ -58,6 +59,9 @@ public struct Shell {
             print(error.localizedDescription)
             return ""
         }
+#else
+        	return ""
+#endif
 
     }
 }
