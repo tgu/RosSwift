@@ -8,8 +8,9 @@
 import Foundation
 import NIO
 
-#if os(Linux)
-import NetService
+#if os(Linux) || os(watchOS)
+//import NetService
+protocol NetServiceDelegate {}
 #endif
 
 
@@ -21,7 +22,9 @@ public class Master: NSObject, NetServiceDelegate {
     public let port: Int
     let handler: RosMasterHandler
     let masterNode: XMLRPCServer
+    #if !(os(Linux) || os(watchOS))
     let service: NetService?
+    #endif
 
     public var address: String {
         "http://\(host):\(port)"
@@ -40,6 +43,7 @@ public class Master: NSObject, NetServiceDelegate {
         
         // advertise our presense with zeroconf (Bonjour)
         
+        #if !(os(Linux)  || os(watchOS))
         if advertise {
         service = NetService(domain: "local.",
                              type: "_ros._tcp.",
@@ -48,21 +52,26 @@ public class Master: NSObject, NetServiceDelegate {
         } else {
             service = nil
         }
-        
+        #endif
+
         super.init()
         
+        #if !(os(Linux) || os(watchOS))
         if advertise {
         service?.delegate = self
         }
+        #endif
     }
     
     public func start() -> EventLoopFuture<XMLRPCServer> {
+        #if !(os(Linux) || os(watchOS))
         service?.publish()
+        #endif
         return self.masterNode.start(host: host, port: port)
     }
 
     public func stop() -> EventLoopFuture<Void> {
-        #if !os(Linux)
+        #if !(os(Linux) || os(watchOS))
         service?.stop()
         #endif
         return masterNode.stop()

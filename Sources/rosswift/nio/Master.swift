@@ -11,7 +11,7 @@ import NIOConcurrencyHelpers
 import rpcobject
 import RosNetwork
 #if os(Linux)
-import NetService
+//import NetService
 #endif
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -196,7 +196,7 @@ final class Master {
     
     static func determineRosMasterAddress(remappings: StringStringMap) -> (host: String, port: UInt16) {
         var masterURI = remappings["__master"]
-#if os(macOS) || os(iOS) || os(tvOS) || os(Linux)
+#if os(macOS) || os(iOS) || os(tvOS)
         if masterURI == nil {
             var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]
             if masterUriEnv == nil {

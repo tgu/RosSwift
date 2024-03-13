@@ -3,12 +3,14 @@
 import PackageDescription
 
 #if os(Linux)
-let msgDep: [Target.Dependency] = ["OpenSSL","StdMsgs","msgbuilderLib"]
+let msgDep: [Target.Dependency] = [
+//    "OpenSSL",
+    "StdMsgs","msgbuilderLib"]
 #else
 let msgDep: [Target.Dependency] = ["StdMsgs","msgbuilderLib"]
 #endif
 
-let swiftAtomics: PackageDescription.Target.Dependency = .product(name: "Atomics", package: "swift-atomics")
+let swiftAtomics: Target.Dependency = .product(name: "Atomics", package: "swift-atomics")
 
 var products: [Product] = [.library(name: "RosSwift", targets: ["RosSwift"])]
 
@@ -81,15 +83,16 @@ targets.append(.testTarget( name: "rosswiftTests",
 #endif
 
 #if os(Linux)
-dependencies.append(
-    .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "2.2.2"))
+//dependencies.append(
+//    .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "2.2.2"))
 targets.append(
     .target( name: "msgbuilderLib",
-             dependencies: ["StdMsgs","OpenSSL",
+             dependencies: ["StdMsgs",
+//                            "OpenSSL",
                             "msgs"]))
-dependencies.append(.package(url: "https://github.com/Bouke/NetService.git", from: "0.7.0"))
-targets.first(where: { $0.name == "rosmaster" })!.dependencies.append("NetService")
-targets.first(where: { $0.name == "RosSwift" })!.dependencies.append("NetService")
+//dependencies.append(.package(url: "https://github.com/Bouke/NetService.git", from: "0.7.0"))
+//targets.first(where: { $0.name == "rosmaster" })!.dependencies.append("NetService")
+//targets.first(where: { $0.name == "RosSwift" })!.dependencies.append("NetService")
 #endif
 
 #if os(macOS)

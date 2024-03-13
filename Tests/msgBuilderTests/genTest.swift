@@ -151,8 +151,9 @@ class GenTest: XCTestCase {
         let text = "953b798c0f514ff060a53a3498ce6246 pose".hashed()
         XCTAssertEqual(text, "4f3e0bbe7a24e1f929488cd1970222d3")
 
-        let t2 = "953b798c0f514ff060a53a3498ce6246 pose".data(using: .utf8)!.md5
-        XCTAssertEqual(t2, "4f3e0bbe7a24e1f929488cd1970222d3")
+        let t3 = "953b798c0f514ff060a53a3498ce6246 pose".md5
+        XCTAssertEqual(t3, "4f3e0bbe7a24e1f929488cd1970222d3")
+
     }
 
 }

@@ -7,10 +7,10 @@
 
 import Foundation
 #if os(Linux)
-import NetService
+//import NetService
 #endif
 
-#if os(macOS) || os(iOS) || os(tvOS) || os(Linux)
+#if os(macOS) || os(iOS) || os(tvOS)
 final class RosMasterBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate  {
     let browser = NetServiceBrowser()
     var host = ""
