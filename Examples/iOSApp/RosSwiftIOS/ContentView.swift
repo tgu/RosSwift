@@ -34,19 +34,19 @@ struct ContentView: View {
                     TextField(
                         "master IP:",
                         text: $master
-                    ).autocorrectionDisabled(true)
+                    )
+                    .autocorrectionDisabled(true)
+                    .onSubmit {
+                        ros.connect("http://\(master):11311")
+                        Task.detached {
+                            topics = (try? await ros.node?.ros.getTopics().get()) ?? []
+                        }
+                    }
 
                     if ros.isRunning {
                         Button("disconnect") {
                             subscriber = nil
                             ros.node = nil
-                        }
-                    } else {
-                        Button("connect") {
-                            ros.connect("http://\(master):11311")
-                            Task.detached {
-                                topics = (try? await ros.node?.ros.getTopics().get()) ?? []
-                            }
                         }
                     }
                 }

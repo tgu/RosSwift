@@ -50,7 +50,7 @@ public final class NodeHandle {
     public private(set) var namespace: String = "/"
 
     /// the namespace associated with this NodeHandle as it was passed in (before it was resolved)
-    public private(set) var unresolvedNamespace = ""
+    public let unresolvedNamespace: String
 
     public private(set) var remappings = StringStringMap()
 
