@@ -12,7 +12,7 @@ import rpcobject
 import RosNetwork
 
     internal final class ServiceManager {
-        var isShuttingDown = ManagedAtomic(false)
+        let isShuttingDown = ManagedAtomic(false)
         var servicePublications = SynchronizedArray<ServiceProtocol>()
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 

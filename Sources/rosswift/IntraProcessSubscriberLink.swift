@@ -16,7 +16,7 @@ struct IntraProcessSubscriberLink: SubscriberLink {
     let transportInfo = "INTRAPROCESS"
 
     weak var subscriber: IntraProcessPublisherLink?
-    var isDropped = ManagedAtomic(false)
+    let isDropped = ManagedAtomic(false)
     var isLatching: Bool { parent?.isLatching() ?? false }
 
 

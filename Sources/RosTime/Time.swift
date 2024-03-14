@@ -18,9 +18,9 @@ public struct Time: TimeBase {
 
     public let nanoseconds: UInt64
 
-    internal static var useSimTime = ManagedAtomic(true)
-    public static var gStopped = ManagedAtomic(false)
-    public static var gInitialized = ManagedAtomic(false)
+    internal static let useSimTime = ManagedAtomic(true)
+    public static let gStopped = ManagedAtomic(false)
+    public static let gInitialized = ManagedAtomic(false)
     public static var simTime = Time()
     public static let simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
     public static let max = Time(nanosec: UInt64.max)

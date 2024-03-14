@@ -53,11 +53,11 @@ final class Publication {
     let datatype: String
     let md5sum: String
     let messageDefinition: String
-    var sequenceNr = ManagedAtomic<UInt32>(0)
+    let sequenceNr = ManagedAtomic<UInt32>(0)
     var pubCallbacks = [SubscriberCallbacks]()
     var subscriberLinks = [SubscriberLink]()
     let latch: Bool
-    var isDropped = ManagedAtomic(false)
+    let isDropped = ManagedAtomic(false)
     var lastMessage: SerializedMessage?
 
     let callbacksQueue = DispatchQueue(label: "callbacksQueue")

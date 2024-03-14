@@ -18,7 +18,7 @@ enum ConnectionError: Error {
 final class InboundConnection {
 
     var channel: Channel?
-    var dropped = ManagedAtomic<Bool>(false)
+    let dropped = ManagedAtomic<Bool>(false)
     unowned var parent: Subscription!
     unowned var link: TransportPublisherLink!
     let host: String

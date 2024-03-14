@@ -10,7 +10,7 @@ import Atomics
 public final class ServiceServer {
     public let service: String
     unowned var node: NodeHandle
-    var isUnadvertised = ManagedAtomic(false)
+    let isUnadvertised = ManagedAtomic(false)
 
     internal init(service: String, node: NodeHandle) {
         self.service = service

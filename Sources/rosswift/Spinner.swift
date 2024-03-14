@@ -42,7 +42,7 @@ final class AsyncSpinnner {
     private var threads = [Thread]()
     private let threadCount: Int
     private let callbackQueue: CallbackQueue
-    private var running = ManagedAtomic(false)
+    private let running = ManagedAtomic(false)
     private let ros: Ros
 
     init(ros: Ros, threadCount: Int, queue: CallbackQueue? = nil) {

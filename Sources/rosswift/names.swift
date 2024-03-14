@@ -117,7 +117,7 @@ extension Ros {
 
 /// Contains functions which allow you to manipulate ROS names.
 
-struct Names {
+enum Names {
 
     /// Append one name to another.
 
