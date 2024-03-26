@@ -12,7 +12,12 @@ let msgDep: [Target.Dependency] = ["StdMsgs","msgbuilderLib"]
 
 let swiftAtomics: Target.Dependency = .product(name: "Atomics", package: "swift-atomics")
 
-var products: [Product] = [.library(name: "RosSwift", targets: ["RosSwift"])]
+var products: [Product] = [
+    .library(name: "RosSwift", targets: ["RosSwift"]),
+    .library(name: "msgs", targets: ["msgs"]),
+    .library(name: "StdMsgs", targets: ["StdMsgs"]),
+    .library(name: "RosTime", targets: ["RosTime"]),
+]
 
 var targets: [Target] = [
     .target( name: "RosSwift",
