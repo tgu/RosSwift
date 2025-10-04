@@ -13,7 +13,7 @@ protocol ConvertableToXml {
 
 /// Remote Procedure Call (RPC) Object
 
-public enum XmlRpcValue: Equatable, ConvertableToXml {
+public enum XmlRpcValue: Equatable, ConvertableToXml, Sendable {
     case invalid
     case boolean(Bool)
     case int(Int)

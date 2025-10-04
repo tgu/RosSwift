@@ -242,8 +242,10 @@ final class Master {
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                channel.pipeline.addHandlers([ByteToMessageHandler(XmlRpcMessageDelimiterCodec()),
-                                              XmlRpcHandler(owner: self)])
+                channel.eventLoop.makeCompletedFuture {
+                    try channel.pipeline.syncOperations.addHandlers([ByteToMessageHandler(XmlRpcMessageDelimiterCodec()),
+                                                                 XmlRpcHandler(owner: self)])
+                }
         }
         
         ROS_DEBUG("master on host: \(masterHost), port: \(masterPort)")

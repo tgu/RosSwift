@@ -28,7 +28,7 @@ class DecoderTest: XCTestCase {
 
     func testHeaderWithData() {
         self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
+        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
 
         let dataLength: UInt32 = 5
 
@@ -50,7 +50,7 @@ class DecoderTest: XCTestCase {
     func testDecodeTwoFrames() throws {
 
         self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
+        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
 
         let firstFrameDataLength: UInt32 = 5
         let secondFrameDataLength: UInt32 = 3
@@ -79,7 +79,7 @@ class DecoderTest: XCTestCase {
     func testDecodeSplitIncomingData() throws {
 
         self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
+        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
 
         let frameDataLength: UInt32 = 5
 
@@ -131,7 +131,7 @@ class DecoderTest: XCTestCase {
     func testEmptyBuffer() throws {
 
         self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
+        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
 
         let buffer = self.channel.allocator.buffer(capacity: 1)
         XCTAssertTrue(try self.channel.writeInbound(buffer).isEmpty)

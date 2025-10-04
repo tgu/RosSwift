@@ -181,9 +181,11 @@ internal final class ConnectionManager {
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_KEEPALIVE), value: 1)
 
             // Set the handlers that are appled to the accepted Channels
-            .childChannelInitializer {
-                $0.pipeline.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
-                                         ConnectionHandler(ros: self.ros)])
+            .childChannelInitializer { channel in
+                channel.eventLoop.makeCompletedFuture {
+                    try channel.pipeline.syncOperations.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
+                                                  ConnectionHandler(ros: self.ros)])
+                }
             }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels

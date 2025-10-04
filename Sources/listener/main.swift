@@ -1,6 +1,7 @@
 import RosSwift
 
-let ros = Ros(argv: &CommandLine.arguments, name: "listener", options: [.anonymousName])
+var args = CommandLine.arguments
+let ros = Ros(argv: &args, name: "listener", options: [.anonymousName])
 let n = ros.createNode()
 
 

@@ -44,6 +44,8 @@ public protocol ServiceProt {
 
 // Builtin native types
 
+extension Bool: @retroactive BinaryDecodable {}
+extension Bool: @retroactive BinaryEncodable {}
 extension Bool: Message {
     public static let md5sum = std_msgs.bool.md5sum
     public static let datatype = std_msgs.bool.datatype

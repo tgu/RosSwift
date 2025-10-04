@@ -307,9 +307,12 @@ struct XMLRPCClient {
                 // Enable SO_REUSEADDR.
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { channel in
-                    channel.pipeline.addHandlers([ByteToMessageHandler(XmlRpcMessageDelimiterCodec()),
-                                                  RPCCodec(),
-                                                  XmlRpcHandler()])
+                    channel.eventLoop.makeCompletedFuture {
+
+                        try channel.pipeline.syncOperations.addHandlers([ByteToMessageHandler(XmlRpcMessageDelimiterCodec()),
+                                                      RPCCodec(),
+                                                      XmlRpcHandler()])
+                    }
             }
             self.state = .connecting("\(host):\(port)")
 
