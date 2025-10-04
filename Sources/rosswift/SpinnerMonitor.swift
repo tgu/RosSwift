@@ -40,7 +40,7 @@ final class SpinnerMonitor {
         }
     }
 
-    static var main = SpinnerMonitor()
+    nonisolated(unsafe) static var main = SpinnerMonitor()
 
     private init() {}
 

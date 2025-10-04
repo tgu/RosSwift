@@ -3,7 +3,8 @@ import Foundation
 
 // Initiate ros before using any other part of RosSwift
 
-let ros = Ros(argv: &CommandLine.arguments, name: "talker")
+var args = CommandLine.arguments
+let ros = Ros(argv: &args, name: "talker")
 
 // createNode returns nil if the namespace passed is not a valid graph resource name
 

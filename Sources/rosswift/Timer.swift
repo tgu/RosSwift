@@ -40,7 +40,7 @@ enum TimerHandle: Equatable, Hashable {
 
 
 public final class Timer {
-    private static let manager = TimerManager<Time,RosDuration,TimerEvent>()
+    nonisolated(unsafe) private static let manager = TimerManager<Time,RosDuration,TimerEvent>()
     
     private var started: Bool = false
     private var timerHandle: TimerHandle = .none

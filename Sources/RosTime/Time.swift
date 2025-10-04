@@ -14,14 +14,14 @@ import Atomics
 ///
 /// `TimeBase` provides most of its functionality.
 
-public struct Time: TimeBase {
+public struct Time: TimeBase, Sendable {
 
     public let nanoseconds: UInt64
 
     internal static let useSimTime = ManagedAtomic(true)
     public static let gStopped = ManagedAtomic(false)
     public static let gInitialized = ManagedAtomic(false)
-    public static var simTime = Time()
+    nonisolated(unsafe) public static var simTime = Time()
     public static let simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
     public static let max = Time(nanosec: UInt64.max)
     public static let min = Time(nanosec: 1)

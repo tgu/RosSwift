@@ -2,7 +2,7 @@ import Foundation
 import RosTime
 import Atomics
 
-let gTimerManager = InternalTimerManager()
+nonisolated(unsafe) let gTimerManager = InternalTimerManager()
 
 func getInternalTimerManager() -> InternalTimerManager {
     return gTimerManager

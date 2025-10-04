@@ -7,6 +7,7 @@
 
 import Foundation
 import LoggerAPI
+import Atomics
 
 let rosPackageName: String? = nil
 
@@ -108,8 +109,8 @@ func ROS_LOG_ERROR(_ text: String) {
 }
 
 internal struct Console {
-    static var gInitialized = false
-    static var gExtraFixedTokens = StringStringMap()
+    static let gInitialized = ManagedAtomic(false)
+    nonisolated(unsafe) static var gExtraFixedTokens = StringStringMap()
     static let gLocationsQueue = DispatchQueue(label: "location_mutex")
 
     static func initialize() {

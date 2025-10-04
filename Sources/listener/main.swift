@@ -16,7 +16,7 @@ config.value = 12
 
 struct B {
     let value : Double
-    func chatterCallback(msg: String) {
+    @MainActor func chatterCallback(msg: String) {
         print("I [the struct \(config.value)] saw: [\(msg)]")
     }
 }

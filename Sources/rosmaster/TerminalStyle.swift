@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Atomics
 
 public typealias TerminalStyleCode = (open: String, close: String)
 
@@ -61,7 +62,7 @@ public struct TerminalStyle {
 extension String {
 
     /// Enable/disable colorization
-    public static var isColorizationEnabled = true
+    public static let isColorizationEnabled = ManagedAtomic(true)
 
     public func bold() -> String {
         return applyStyle(TerminalStyle.bold)
@@ -96,7 +97,7 @@ extension String {
     }
 
     public func reset() -> String {
-        guard String.isColorizationEnabled else { return self }
+        guard String.isColorizationEnabled.load(ordering: .relaxed) else { return self }
         return  "\u{001B}[0m" + self
     }
 
@@ -113,7 +114,7 @@ extension String {
     }
 
     fileprivate func applyStyle(_ codeStyle: TerminalStyleCode) -> String {
-        guard String.isColorizationEnabled else { return self }
+        guard String.isColorizationEnabled.load(ordering: .relaxed) else { return self }
         let str = self.replacingOccurrences(of: TerminalStyle.reset.open, with: TerminalStyle.reset.open + codeStyle.open)
 
         return codeStyle.open + str + TerminalStyle.reset.open

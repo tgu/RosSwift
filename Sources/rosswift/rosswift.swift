@@ -8,10 +8,11 @@ import Atomics
 @_exported import msgs
 import rpcobject
 import RosNetwork
+import Atomics
 
 public typealias StringStringMap = [String: String]
 
-public final class Ros: Hashable {
+public final class Ros: Hashable, @unchecked Sendable {
 
     public static func == (lhs: Ros, rhs: Ros) -> Bool {
         return lhs === rhs
@@ -29,8 +30,8 @@ public final class Ros: Hashable {
         case noRosout
     }
 
-    fileprivate static var globalRos = Set<Ros>()
-    fileprivate static var atexitRegistered = false
+    nonisolated(unsafe) fileprivate static var globalRos = Set<Ros>()
+    fileprivate static let atexitRegistered = ManagedAtomic(false)
 
     public typealias InitOption = Set<InitOptions>
 
@@ -170,8 +171,8 @@ public final class Ros: Hashable {
 
         fileLog = FileLog(thisNodeName: name, remappings: remappings)
 
-        if !Ros.atexitRegistered {
-            Ros.atexitRegistered = true
+        if !Ros.atexitRegistered.load(ordering: .relaxed) {
+            Ros.atexitRegistered.store(true, ordering: .relaxed)
             atexit(atexitCallback)
         }
 
@@ -341,8 +342,8 @@ public final class Ros: Hashable {
 
     private func kill() {
         ROS_ERROR("Caught kill, stopping...")
-        DispatchQueue.main.async {
-            self.requestShutdown()
+        DispatchQueue.main.async { [weak self] in
+            self?.requestShutdown()
         }
     }
 

@@ -3,7 +3,7 @@ import Logging
 import rosmaster
 import RosNetwork
 
-public class MyLog: LogHandler {
+public final class MyLog: LogHandler {
     let label: String
 
     public func log(level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, source: String, file: String, function: String, line: UInt) {
