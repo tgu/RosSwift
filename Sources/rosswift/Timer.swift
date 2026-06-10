@@ -5,31 +5,37 @@
 //  Created by Thomas Gustafsson on 2019-04-24.
 //
 
+import Foundation
 import RosTime
 import Atomics
 
-public typealias TimerCallback = (TimerEvent) -> Void
+public protocol TrackableObject: AnyObject, Sendable {}
+public typealias TimerCallback = @Sendable (TimerEvent) -> Void
 
-enum TimerHandle: Equatable, Hashable {
-    case none
-    case some(UInt32)
+typealias TimerHandle = UUID
 
-    var isNone: Bool {
-        switch self {
-        case .none:
-            return true
-        default:
-            return false
-        }
-    }
-
-    static let id = ManagedAtomic<UInt32>(0)
-
-    static func getNextHandler() -> TimerHandle {
-        return TimerHandle.some(TimerHandle.id.loadThenWrappingIncrement(ordering: .relaxed))
-    }
-
-}
+/*
+ enum TimerHandle: Equatable, Hashable, Sendable {
+ case none
+ case some(UInt32)
+ 
+ var isNone: Bool {
+ switch self {
+ case .none:
+ return true
+ default:
+ return false
+ }
+ }
+ 
+ static let id = ManagedAtomic<UInt32>(0)
+ 
+ static func getNextHandler() -> TimerHandle {
+ return TimerHandle.some(TimerHandle.id.loadThenWrappingIncrement(ordering: .relaxed))
+ }
+ 
+ }
+ */
 
 /// Manages a timer callback.
 ///
@@ -38,24 +44,23 @@ enum TimerHandle: Equatable, Hashable {
 /// callback associated with that handle will stop being called.
 
 
-
-public final class Timer {
-    nonisolated(unsafe) private static let manager = TimerManager<Time,RosDuration,TimerEvent>()
+public actor Timer {
+    private static let manager = TimerManager<Time,TimerEvent>()
     
-    private var started: Bool = false
-    private var timerHandle: TimerHandle = .none
-
+    private var started = false
+    private var timerHandle: TimerHandle? = nil
+    
     private var period: RosDuration
     let callback: TimerCallback
-    let callbackQueue: CallbackQueueInterface
-    let trackedObject: AnyObject?
+    let callbackQueue: AsyncCallbackQueue
+    weak var trackedObject: TrackableObject?
     let hasTrackedObject: Bool
     let oneShot: Bool
-
+    
     internal init(period: RosDuration,
                   callback: @escaping TimerCallback,
-                  callbackQueue: CallbackQueueInterface,
-                  trackedObject: AnyObject?,
+                  callbackQueue: AsyncCallbackQueue,
+                  trackedObject: TrackableObject?,
                   oneshot: Bool) {
         self.period = period
         self.callback = callback
@@ -64,52 +69,62 @@ public final class Timer {
         self.callbackQueue = callbackQueue
         self.oneShot = oneshot
     }
-
+    
     deinit {
         ROS_DEBUG("Timer deregistering callbacks")
-        stop()
+        if started, let handle = timerHandle {
+            Task {
+                await Timer.manager.remove(timerHandle: handle)
+            }
+        }
     }
-
+    
     func hasStarted() -> Bool {
         return started
     }
-
+    
     func isValid() -> Bool {
         return !period.isZero()
     }
-
-    func start() {
+    
+    func start() async {
         if !started {
-            timerHandle = Timer.manager.add(period: period,
-                                            callback: callback,
-                                            callbackQueue: callbackQueue,
-                                            trackedObject: trackedObject,
-                                            oneshot: oneShot)
+            timerHandle = await Timer.manager.add(period: period,
+                                                  callback: callback,
+                                                  callbackQueue: callbackQueue,
+                                                  trackedObject: trackedObject,
+                                                  oneshot: oneShot)
             started = true
         }
     }
-
-    func stop() {
+    
+    func stop() async {
         if started {
             started = false
-            Timer.manager.remove(timerHandle: timerHandle)
-            timerHandle = .none
+            if let handle = timerHandle {
+                await Timer.manager.remove(timerHandle: handle)
+                timerHandle = .none
+            }
         }
     }
-
-    func hasPending() -> Bool {
-        if !isValid() || timerHandle.isNone {
+    
+    func hasPending() async -> Bool {
+        if !isValid() {
+            return false
+        } else if let handle = timerHandle {
+            return await Timer.manager.hasPending(handle: handle)
+        } else {
             return false
         }
-
-        return Timer.manager.hasPending(handle: timerHandle)
     }
-
-    func setPeriod(period: RosDuration, reset: Bool = true) {
+    
+    func setPeriod(period: RosDuration, reset: Bool = true) async  {
         self.period = period
-        Timer.manager.setPeriod(handle: timerHandle, period: period, reset: reset)
+        if let handle = timerHandle {
+            await Timer.manager.setPeriod(handle: handle, period: period, reset: reset)
+        }
     }
-
+    
 }
 
 

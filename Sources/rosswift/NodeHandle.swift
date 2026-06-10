@@ -8,6 +8,8 @@
 import NIOConcurrencyHelpers
 import StdMsgs
 import RosTime
+import Atomics
+import Synchronization
 
 
 /// Interface for creating subscribers, publishers, etc.
@@ -35,8 +37,9 @@ import RosTime
 /// ## Parameters:
 ///     `get(...)`
 ///     `set(...)`
+///
 
-public final class NodeHandle {
+public final class NodeHandle: Sendable {
 
     /// Check whether it's time to exit.
     ///
@@ -44,33 +47,54 @@ public final class NodeHandle {
     /// has not been called on this NodeHandle, to see whether it's yet time to exit.
     /// `ok` is false once either Ros.shutdown() or NodeHandle.shutdown() have been called
 
-    public var isOK: Bool { return ros.isRunning.load(ordering: .relaxed) && ok }
+    public var isOK: Bool { return ros.isRunning.load(ordering: .relaxed) && ok.load(ordering: .relaxed) }
 
     ///  the namespace associated with this NodeHandle.
-    public private(set) var namespace: String = "/"
+    public var namespace: String { state.withLock { $0.namespace } }
 
     /// the namespace associated with this NodeHandle as it was passed in (before it was resolved)
     public let unresolvedNamespace: String
 
-    public private(set) var remappings = StringStringMap()
+    /// The name remappings in effect for this handle (resolved keys → values).
+    public var remappings: StringStringMap { state.withLock { $0.remappings } }
 
-    public private(set) var unresolvedRemappings = StringStringMap()
+    /// The name remappings as originally passed in, before resolution.
+    public var unresolvedRemappings: StringStringMap { state.withLock { $0.unresolvedRemappings } }
 
 
-    public private(set) var ok = true
+    /// Per-handle "is open" flag; cleared by ``shutdown()``. Combined with the
+    /// node's running state in ``isOK``.
+    public let ok = ManagedAtomic(true)
 
-    public private(set) var gNodeStartedByNodeHandle = false
-    private var callbackQueue: CallbackQueueInterface?
+    /// Backing flag recording whether this handle was the one that started the node.
+    public let _gNodeStartedByNodeHandle = ManagedAtomic(false)
+    /// Whether this handle triggered the node's lazy start (and is therefore
+    /// responsible for shutting it down when the last handle is released).
+    public var gNodeStartedByNodeHandle: Bool { _gNodeStartedByNodeHandle.load(ordering: .relaxed)}
 
+    /// The current number of live `NodeHandle`s sharing this node.
     public var refCount: UInt {
         return ros.nodeReferenceCount.load(ordering: .relaxed)
     }
 
-    public let ros: Ros
-    
+    /// The node this handle belongs to.
+    public unowned let ros: Ros
+
+    /// The `host:port` of the ROS master this node is connected to.
     public var rosMasterPath: String {
         return ros.master.path
     }
+
+    /// Mutable state that the protocol exposes via `var ... { get set }`-like
+    /// public getters, plus the optional callback queue. Set during init and
+    /// `initRemappings`; locked for reads to satisfy checked `Sendable`.
+    private struct State: Sendable {
+        var namespace: String = "/"
+        var remappings = StringStringMap()
+        var unresolvedRemappings = StringStringMap()
+        var callbackQueue: AsyncCallbackQueue?
+    }
+    private let state = Mutex(State())
 
     // MARK: Life
 
@@ -94,17 +118,17 @@ public final class NodeHandle {
     /// all topics/services/parameters will be prefixed with "/a/b/"
     ///     - remappings:    Remappings for this NodeHandle.
 
-    internal init?(ros: Ros, ns: String = "", remappings: StringStringMap = [:]) {
+    internal init?(ros: Ros, ns: String = "", remappings: StringStringMap = [:]) async {
         self.ros = ros
-        namespace = ros.namespace
-        unresolvedNamespace = ns
+        self.unresolvedNamespace = ns
+        state.withLock { $0.namespace = ros.namespace }
         if ns.starts(with: "~") {
             guard let resolved = ros.resolve(name: ns) else {
                 return nil
             }
-            construct(ns: resolved)
+            await construct(ns: resolved)
         } else {
-            construct(ns: ns)
+            await construct(ns: ns)
         }
 
         initRemappings(remappings: remappings)
@@ -128,29 +152,38 @@ public final class NodeHandle {
     /// all topics/services/parameters will be prefixed with "/a/b/"
     ///     - remappings:    Remappings for this NodeHandle.
 
-    internal init(parent: NodeHandle, ns: String = "", remappings: StringStringMap = [:]) {
+    internal init(parent: NodeHandle, ns: String = "", remappings: StringStringMap = [:]) async {
         self.ros = parent.ros
-        self.namespace = parent.namespace
-        self.remappings = parent.remappings
-        self.callbackQueue = parent.callbackQueue
-        unresolvedNamespace = parent.unresolvedNamespace
-        unresolvedRemappings = parent.unresolvedRemappings
-        construct(ns: ns)
+        self.unresolvedNamespace = parent.unresolvedNamespace
+        let parentSnapshot = parent.state.withLock {
+            (namespace: $0.namespace,
+             remappings: $0.remappings,
+             unresolvedRemappings: $0.unresolvedRemappings,
+             callbackQueue: $0.callbackQueue)
+        }
+        state.withLock {
+            $0.namespace = parentSnapshot.namespace
+            $0.remappings = parentSnapshot.remappings
+            $0.unresolvedRemappings = parentSnapshot.unresolvedRemappings
+            $0.callbackQueue = parentSnapshot.callbackQueue
+        }
+        await construct(ns: ns)
         initRemappings(remappings: remappings)
     }
 
     deinit {
-        if ros.nodeReferenceCount.loadThenWrappingDecrement(ordering: .relaxed) == 1 && gNodeStartedByNodeHandle {
+        if ros.nodeReferenceCount.loadThenWrappingDecrement(ordering: .relaxed) == 1 && _gNodeStartedByNodeHandle.load(ordering: .relaxed) {
             ros.shutdown()
         }
     }
 
-    private func construct(ns: String) {
-        namespace = resolveName(name: ns, remap: true) ?? ""
+    private func construct(ns: String) async {
+        let resolved = resolveName(name: ns, remap: true) ?? ""
+        state.withLock { $0.namespace = resolved }
 
-        if ros.nodeReferenceCount.loadThenWrappingIncrement(ordering: .relaxed) == 0 && !ros.isStarted.load(ordering: .relaxed) {
-            gNodeStartedByNodeHandle = true
-            ros.start()
+        if ros.nodeReferenceCount.loadThenWrappingIncrement(ordering: .relaxed) == 0 && !ros.isStarted {
+            _gNodeStartedByNodeHandle.store(true, ordering: .relaxed)
+            await ros.start()
         }
     }
 
@@ -178,9 +211,9 @@ public final class NodeHandle {
     /// a reference on this advertisement.
 
 
-    public func advertise<M: Message>(topic: String, queueSize: UInt = 0, latch: Bool = false, message: M.Type) -> Publisher? {
-        let ops = AdvertiseOptions(topic: topic, queueSize: queueSize, latch: latch, M.self)
-        return advertise(ops: ops)
+    public func advertise<M: Message>(topic: String, queueSize: UInt = 0, connectCall: SubscriberStatusCallback? = nil, disconnectCall: SubscriberStatusCallback? = nil, latch: Bool = false, message: M.Type, tracked_object: TrackableObject? = nil) async -> SpecializedPublisher<M>? {
+        let ops = AdvertiseOptions(topic: topic, queueSize: queueSize, latch: latch, M.self, connectCall: connectCall, disconnectCall: disconnectCall, tracked_object: tracked_object)
+        return await advertise(ops: ops)
     }
 
     /// Advertise a topic, with full range of AdvertiseOptions.
@@ -194,22 +227,21 @@ public final class NodeHandle {
     /// a reference on this advertisement.
 
 
-    public func advertise<M: Message>(ops: AdvertiseOptions<M>) -> Publisher? {
+    public func advertise<M: Message>(ops: AdvertiseOptions<M>) async -> SpecializedPublisher<M>? {
         guard let topic = resolveName(name: ops.topic) else {
             return nil
         }
 
-        var options = ops
-        options.topic = topic
+        var options = ops.set(topic: topic)
         if options.callbackQueue == nil {
-            options.callbackQueue = getCallbackQueue()
+            options = options.set(callbackQueue: getCallbackQueue())
         }
         let callbacks = SubscriberCallbacks(connect: options.connectCallBack,
                                             disconnect: options.disconnectCallBack,
                                             hasTrackedObject: options.trackedObject != nil,
                                             trackedObject: options.trackedObject)
 
-        if ros.topicManager.advertise(ops: options, callbacks: callbacks) {
+        if await ros.topicManager.advertise(ops: options, callbacks: callbacks) {
             let pub = SpecializedPublisher(topicManager: ros.topicManager, topic: options.topic, message: M.self, callbacks: callbacks)
 
             return pub
@@ -238,10 +270,12 @@ public final class NodeHandle {
 
     public func advertise<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>(
         service: String,
-        srvFunc: @escaping (MReq) -> MRes?) -> ServiceServer? {
+        srvFunc: @escaping @Sendable (MReq) -> MRes?,
+        tracked_object: TrackableObject? = nil
+    ) async -> ServiceServer? {
 
-        let ops = AdvertiseServiceOptions(service: service, callback: srvFunc)
-        return advertiseService(ops: ops)
+        let ops = AdvertiseServiceOptions(service: service, callback: srvFunc, trackedObject: tracked_object)
+        return await advertiseService(ops: ops)
     }
 
     /// Advertise a service with full range of *AdvertiseServiceOptions*.
@@ -258,19 +292,18 @@ public final class NodeHandle {
     ///
 
 
-    func advertiseService<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>(ops: AdvertiseServiceOptions<MReq, MRes>) -> ServiceServer? {
+    func advertiseService<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>(ops: AdvertiseServiceOptions<MReq, MRes>) async -> ServiceServer? {
         var options = ops
         guard let service = resolveName(name: ops.service) else {
             return nil
         }
-        options.service = service
+        options = options.set(service: service)
 
         if options.callbackQueue == nil {
-            options.callbackQueue = getCallbackQueue()
+            options = options.set(callbackQueue: getCallbackQueue())
         }
-        if ros.serviceManager.advertiseService(options) {
-            let service = ServiceServer(service: options.service, node: self)
-            return service
+        if await ros.serviceManager.advertiseService(options) {
+            return ServiceServer(service: options.service, manager: ros.serviceManager)
         }
         return nil
     }
@@ -290,8 +323,8 @@ public final class NodeHandle {
     func createSteadyTimer(period: WallDuration,
                            oneshot: Bool = false,
                            autostart: Bool = true,
-                           trackedObject: AnyObject? = nil,
-                           callback: @escaping (SteadyTimerEvent) -> Void) -> SteadyTimer  {
+                           trackedObject: TrackableObject? = nil,
+                           callback: @escaping @Sendable (SteadyTimerEvent) async -> Void) async -> SteadyTimer  {
 
         let timer = SteadyTimer(period: period,
                                 callback: callback,
@@ -300,7 +333,7 @@ public final class NodeHandle {
                                 oneshot: oneshot)
 
         if autostart {
-            timer.start()
+            await timer.start()
         }
         return timer
     }
@@ -319,8 +352,8 @@ public final class NodeHandle {
     public func createTimer(period: RosDuration,
                      oneshot: Bool = false,
                      autostart: Bool = true,
-                     trackedObject: AnyObject? = nil,
-                     callback: @escaping TimerCallback) -> Timer  {
+                     trackedObject: TrackableObject? = nil,
+                     callback: @escaping TimerCallback) async -> Timer  {
 
         let timer = Timer(period: period,
                           callback: callback,
@@ -329,29 +362,48 @@ public final class NodeHandle {
                           oneshot: oneshot)
 
         if autostart {
-            timer.start()
+            await timer.start()
         }
         return timer
 
     }
 
-    /// Create a timer which will call a callback at the specified rate, using wall time to determine when to
-    /// call the callback instead of ROS time.
+    /// Create a timer that fires at the given `Rate` (ROS time).
     ///
-    /// When the Timer (and all copies of it) returned goes out of scope, the timer will automatically be
-    /// stopped, and the callback will no longer be called.
+    /// Convenience over ``createTimer(period:oneshot:autostart:trackedObject:callback:)``
+    /// using the rate's expected cycle time. The timer stops when the returned
+    /// `Timer` (and all copies) go out of scope.
     ///
     /// - Parameters:
-    ///     - period: The period at which to call the callback
-    ///     - oneshot: If true, this timer will only fire once
-    ///     - autostart: If true (default), return timer that is already started
+    ///     - rate: The rate at which to call the callback.
+    ///     - oneshot: If true, the timer fires only once.
+    ///     - autostart: If true (default), the returned timer is already started.
+    public func createTimer(rate: Rate,
+                     oneshot: Bool = false,
+                     autostart: Bool = true,
+                     trackedObject: TrackableObject? = nil,
+                     callback: @escaping TimerCallback) async -> Timer  {
+
+        await createTimer(period: rate.expectedCycleTime, oneshot: oneshot, autostart: autostart, trackedObject: trackedObject, callback: callback)
+
+    }
 
 
+    /// Create a timer that uses wall-clock time (rather than ROS time) to
+    /// decide when to call the callback.
+    ///
+    /// The timer stops when the returned `WallTimer` (and all copies) go out of
+    /// scope.
+    ///
+    /// - Parameters:
+    ///     - period: The period at which to call the callback.
+    ///     - oneshot: If true, the timer fires only once.
+    ///     - autostart: If true (default), the returned timer is already started.
     public func createWallTimer(period: WallDuration,
                          oneshot: Bool = false,
                          autostart: Bool = true,
-                         trackedObject: AnyObject? = nil,
-                         callback: @escaping (WallTimerEvent) -> Void) -> WallTimer  {
+                         trackedObject: TrackableObject? = nil,
+                         callback: @escaping @Sendable (WallTimerEvent) -> Void) async -> WallTimer  {
 
         let timer = WallTimer(period: period,
                               callback: callback,
@@ -360,7 +412,7 @@ public final class NodeHandle {
                               oneshot: oneshot)
 
         if autostart {
-            timer.start()
+            await timer.start()
         }
         return timer
     }
@@ -371,19 +423,19 @@ public final class NodeHandle {
     /// - Parameters:
     ///     - parameter: The parameter to delete
 
-    func delete(paramter: String) -> Bool {
+    func delete(paramter: String) async -> Bool {
         guard let name = resolveName(name: paramter) else {
             return false
         }
 
-        return ros.param.del(key: name)
+        return await ros.param.del(key: name)
     }
 
     /// Returns the callback queue associated with this NodeHandle.
     /// If none has been explicitly set, returns the global queue
 
-    public func getCallbackQueue() -> CallbackQueueInterface {
-        return callbackQueue != nil ? callbackQueue! : ros.getGlobalCallbackQueue()
+    public func getCallbackQueue() -> AsyncCallbackQueue {
+        return state.withLock { $0.callbackQueue } ?? ros.getGlobalCallbackQueue()
     }
 
 
@@ -395,9 +447,9 @@ public final class NodeHandle {
     ///
     /// - Returns: `true` if the parameter value was retrieved, `false` otherwise
 
-    public func get<T>(parameter: String, value: inout T) -> Bool {
+    public func get<T: Sendable>(parameter: String, value: inout T) async -> Bool {
         if let resolvedName = resolveName(name: parameter) {
-            return ros.param.get(resolvedName, &value)
+            return await ros.param.get(resolvedName, &value)
         }
         return false
     }
@@ -417,8 +469,8 @@ public final class NodeHandle {
     ///
     /// - Returns: `true` if the parameter value was retrieved, `false` otherwise
 
-    func getCached<T>(parameter: String, value: inout T) -> Bool {
-        return ros.param.getCached(parameter, &value) {_ in }
+    func getCached<T: Sendable>(parameter: String, value: inout T) async -> Bool {
+        return await ros.param.getCached(parameter, &value) {_ in }
     }
 
     /// Check whether a parameter exists on the parameter server.
@@ -428,13 +480,13 @@ public final class NodeHandle {
     ///
     /// - Returns: `true` if the parameter exists, `false` otherwise
 
-    public func has(parameter: String) -> Bool {
+    public func has(parameter: String) async -> Bool {
         guard let name = resolveName(name: parameter) else {
             return false
         }
 
 
-        return ros.param.has(key: name)
+        return await ros.param.has(key: name)
     }
 
     /// Return value from parameter server, or default if unavailable.
@@ -450,9 +502,9 @@ public final class NodeHandle {
     /// - Returns: `true` if the parameter was retrieved from the server, `false` otherwise
 
 
-    public func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
-        if has(parameter: name) {
-            if get(parameter: name, value: &value) {
+    public func param<T: Sendable>(name: String, value: inout T, defaultValue: T) async -> Bool {
+        if await has(parameter: name) {
+            if await get(parameter: name, value: &value) {
                 return true
             }
         }
@@ -474,9 +526,9 @@ public final class NodeHandle {
     /// or `defaultValue` if unavailable
 
 
-    func param<T>(name: String, defaultValue: T) -> T {
+    func param<T: Sendable>(name: String, defaultValue: T) async -> T {
         var paramVal = defaultValue
-        _ = param(name: name, value: &paramVal, defaultValue: defaultValue)
+        _ = await param(name: name, value: &paramVal, defaultValue: defaultValue)
         return paramVal
     }
 
@@ -500,8 +552,12 @@ public final class NodeHandle {
             return nil
         }
 
+        // Snapshot namespace once per call to avoid re-acquiring the state lock
+        // and to keep both reads consistent.
+        let snapshotNamespace = state.withLock { $0.namespace }
+
         if name.isEmpty {
-            return namespace
+            return snapshotNamespace
         }
 
         var final = name
@@ -517,8 +573,8 @@ public final class NodeHandle {
             return nil
         } else if final.starts(with: "/") {
             // do nothing
-        } else if !namespace.isEmpty {
-            final = Names.append(namespace, final)
+        } else if !snapshotNamespace.isEmpty {
+            final = Names.append(snapshotNamespace, final)
         }
 
         final = Names.clean(final)
@@ -545,7 +601,7 @@ public final class NodeHandle {
     /// - Returns: `true` if the parameter was found, `false` otherwise
 
 
-    public func search(parameter: String, result: inout String) -> Bool {
+    public func search(parameter: String, result: inout String) async -> Bool {
         // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
         // resolved one.
 
@@ -558,7 +614,7 @@ public final class NodeHandle {
             return false
         }
 
-        return ros.param.search(ns: namespace, key: remapped, result: &result)
+        return await ros.param.search(ns: namespace, key: remapped, result: &result)
     }
 
     /// Create a client for a service
@@ -580,11 +636,11 @@ public final class NodeHandle {
     public func serviceClient(service: String,
                        md5sum: String,
                        persistent: Bool = false,
-                       headerValues: StringStringMap? = nil) -> ServiceClient {
+                              headerValues: StringStringMap? = nil) async -> ServiceClient {
 
         /// FIXME: Find a better way to deal with wrong names
         let name = resolveName(name: service) ?? service
-        let client = ServiceClient(ros: ros, name: name, md5sum: md5sum, persistent: persistent, headerValues: headerValues)
+        let client = await ServiceClient(ros: ros, name: name, md5sum: md5sum, persistent: persistent, headerValues: headerValues)
 
         if !client.isValid() {
             ROS_ERROR("invalid client")
@@ -593,25 +649,15 @@ public final class NodeHandle {
         return client
     }
 
-    /// Set the default callback queue to be used by this NodeHandle.
-    ///
-    /// Setting this will cause any callbacks from advertisements/subscriptions/services/etc.
-    /// to happen through the use of the specified queue. `nil` (the default) causes
-    /// the global queue (serviced by `Ros.spin()` and `Ros.spinOnce()`) to be used.
-
-    func setCallbackQueue(queue: CallbackQueueInterface) {
-        callbackQueue = queue
-    }
-
     /// Set a value on the parameter server.
     ///
     /// - Parameters:
     ///     - parameter: The key to be used in the parameter server's
     ///     - value: The value to be inserted.
 
-    public func set<T>(parameter: String, value: T) {
+    public func set<T: Sendable>(parameter: String, value: T) async {
         if let name = resolveName(name: parameter) {
-            ros.param.set(key: name, value: value)
+            await ros.param.set(key: name, value: value)
         }
     }
 
@@ -623,7 +669,7 @@ public final class NodeHandle {
     ///
 
     func shutdown() {
-        ok = false
+        ok.store(false, ordering: .relaxed)
     }
 
 
@@ -647,9 +693,9 @@ public final class NodeHandle {
 
     public func subscribe<M: Message>(topic: String,
                                       queueSize: UInt32,
-                                      callback: @escaping (MessageEvent<M>) -> Void) -> Subscriber? {
+                                      callback: @escaping @Sendable (MessageEvent<M>) -> Void) async -> Subscriber? {
         let ops = SubscribeOptions(topic: topic, queueSize: queueSize, queue: ros.gGlobalQueue, callback: callback)
-        return subscribeWith(options: ops)
+        return await subscribeWith(options: ops)
     }
 
     /// Subscribe to a topic.
@@ -671,26 +717,70 @@ public final class NodeHandle {
 
     public func subscribe<M: Message>(topic: String,
                                       queueSize: UInt32 = 1,
-                                      callback: @escaping (M) -> Void) -> Subscriber? {
-        let ops = SubscribeOptions(topic: topic, queueSize: queueSize,  queue: ros.gGlobalQueue, callback: callback)
-        return subscribeWith(options: ops)
+                                      callback: @escaping @Sendable (M) -> Void,
+                                      tracked_object: TrackableObject? = nil) async -> Subscriber? {
+        let ops = SubscribeOptions(
+            topic: topic,
+            queueSize: queueSize,
+            queue: ros.gGlobalQueue,
+            trackedObject: tracked_object,
+            callback: callback)
+        return await subscribeWith(options: ops)
     }
 
-    public func spinThread() {
-        ros.spin()
+    /// Subscribes to `topic` and delivers messages as an `AsyncStream`.
+    ///
+    /// An ergonomic alternative to the callback-based `subscribe`: iterate the
+    /// returned stream with `for await msg in …`. The underlying subscription
+    /// lives as long as the stream is being consumed; cancel the consuming task
+    /// to unsubscribe.
+    ///
+    /// - Parameters:
+    ///     - topic: The topic name to subscribe to.
+    ///     - queueSize: Incoming message queue depth (default 1).
+    ///     - msg: The message type to receive.
+    /// - Returns: A stream of incoming messages.
+    public func subscribe<M: Message>(topic: String,
+                                      queueSize: UInt32 = 1,
+                                      msg: M.Type
+                                      ) -> AsyncStream<M> {
+        AsyncStream { continuation in
+            Task {
+                let vab = await self.subscribe(topic: topic, queueSize: queueSize) { (msg: M) in
+                    continuation.yield(msg)
+                }
+
+                extendLifetime(vab)
+
+                while Task.isCancelled == false {
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
+        }
+    }
+
+
+    /// Processes this node's callback queue until shutdown (delegates to
+    /// ``Ros/spin()``). Run it from a dedicated task.
+    public func spinThread() async {
+        await ros.spin()
     }
 
 
     // MARK: private functions
 
     private func initRemappings(remappings: StringStringMap) {
-        remappings.forEach {
-            if let resolvedKey = resolveName(name: $0.key, remap: false ),
-                let resolvedName = resolveName(name: $0.value, remap: false) {
-                self.remappings[resolvedKey] = resolvedName
-                unresolvedRemappings[$0.key] = $0.value
+        for (key, value) in remappings {
+            // resolveName reads state under the lock; resolve OUTSIDE the
+            // write-lock acquire below to avoid re-entrant locking.
+            if let resolvedKey = resolveName(name: key, remap: false),
+               let resolvedName = resolveName(name: value, remap: false) {
+                state.withLock {
+                    $0.remappings[resolvedKey] = resolvedName
+                    $0.unresolvedRemappings[key] = value
+                }
             } else {
-                ROS_ERROR("remapping \($0.key) to \($0.value) failed")
+                ROS_ERROR("remapping \(key) to \(value) failed")
             }
         }
     }
@@ -701,9 +791,8 @@ public final class NodeHandle {
         }
 
         // First search any remappings that were passed in specifically for this NodeHandle
-        if let it = remappings[resolved] {
-            // ROSCPP_LOG_DEBUG("found 'local' remapping: %s", it->second.c_str());
-            return it
+        if let mapped = state.withLock({ $0.remappings[resolved] }) {
+            return mapped
         }
 
         // If not in our local remappings, perhaps in the global ones
@@ -712,14 +801,14 @@ public final class NodeHandle {
 
 
 
-    private func subscribeWith<M: Message>(options: SubscribeOptions<M>) -> Subscriber? {
+    private func subscribeWith<M: Message>(options: SubscribeOptions<M>) async -> Subscriber? {
         var options = options
         guard let topic = resolveName(name: options.topic) else {
             return nil
         }
         options.topic = topic
 
-        if ros.topicManager.subscribeWith(options: options) {
+        if await ros.topicManager.subscribeWith(options: options) {
             let sub = Subscriber(topic: options.topic, node: self, helper: options.helper)
             return sub
         }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Synchronization
 
 /// Class to monitor running single-threaded spinners.
 ///
@@ -20,80 +21,82 @@ import Foundation
 ///  If the spinner is multi-threaded, the stored thread-id is NULL and future SingleThreadedSpinners
 ///  should not spin this queue. However, other multi-threaded spinners are allowed.
 
-final class SpinnerMonitor {
-
+final class SpinnerMonitor: Sendable {
+    
     /// store spinner information per callback queue:
     /// Only alike spinners (single-threaded or multi-threaded) are allowed on a callback queue.
     /// For single-threaded spinners we store their thread id.
     /// We store the number of alike spinners operating on the callback queue.
-    struct Entry {
+    struct Entry: Sendable {
 
-        /// proper thread id of single-threaded spinner
-        let tid: Thread?
+        /// identity of the single-threaded spinner's thread (nil for
+        /// multi-threaded). Stored as an `ObjectIdentifier` rather than the
+        /// `Thread` itself so the entry is `Sendable` and can live inside the
+        /// `Mutex`.
+        let tid: ObjectIdentifier?
 
         /// number of (alike) spinners serving this queue
         var num: Int
 
-        init(threadID: Thread?) {
+        init(threadID: ObjectIdentifier?) {
             self.tid = threadID
             self.num = 0
         }
     }
-
-    nonisolated(unsafe) static var main = SpinnerMonitor()
-
+    
+    static let main = SpinnerMonitor()
+    
     private init() {}
-
-    var spinningQueues = [ObjectIdentifier: Entry]()
-    let mutex = DispatchQueue(label: "mutex")
+    
+    // Internal mutable state is protected by a Mutex, which keeps the whole
+    // monitor checked-`Sendable`.
+    private let spinningQueues = Mutex<[ObjectIdentifier: Entry]>([:])
 
     /// add a queue to the list
-    func add(queue: CallbackQueue, singleThreaded: Bool) -> Bool {
-        var thread: Thread?  // current thread id for single-threaded spinners, nil for multi-threaded ones
-        if singleThreaded {
-            thread = Thread.current
-        }
+    func add(queue: AsyncCallbackQueue, singleThreaded: Bool) -> Bool {
+        // current thread identity for single-threaded spinners, nil for multi-threaded ones
+        let thread: ObjectIdentifier? = singleThreaded ? ObjectIdentifier(Thread.current) : nil
 
-        var success = true
-
-        mutex.sync {
-            if let entry = spinningQueues[ObjectIdentifier(queue)] {
+        return spinningQueues.withLock { queues in
+            let key = ObjectIdentifier(queue)
+            if let entry = queues[key] {
                 // spinner must be alike (all multi-threaded: 0, or single-threaded on same thread id)
                 if entry.tid == thread {
-                    spinningQueues[ObjectIdentifier(queue)]?.num += 1
+                    queues[key]?.num += 1
+                    return true
                 } else {
-                    success = false
+                    return false
                 }
             } else {
                 // we will spin on any new queue
                 var newEntry = Entry(threadID: thread)
                 newEntry.num += 1
-                spinningQueues[ObjectIdentifier(queue)] = newEntry
+                queues[key] = newEntry
+                return true
             }
         }
-
-        return success
     }
 
 
     /// remove a queue from the list
 
-    func remove(queue: CallbackQueue) {
-        mutex.sync {
-            guard let entry = spinningQueues[ObjectIdentifier(queue)] else {
+    func remove(queue: AsyncCallbackQueue) {
+        spinningQueues.withLock { queues in
+            let key = ObjectIdentifier(queue)
+            guard let entry = queues[key] else {
                 fatalError("Call to SpinnerMonitor::remove() without matching call to add().")
             }
 
-            if let tid = entry.tid, tid != Thread.current {
-                print("SpinnerMonitor::remove() called from different thread than add().")
+            if let tid = entry.tid, tid != ObjectIdentifier(Thread.current) {
+                ROS_WARNING("SpinnerMonitor::remove() called from different thread than add().")
             }
 
             guard entry.num > 0 else {
                 fatalError("Call to SpinnerMonitor::remove() without matching call to add().")
             }
-            spinningQueues[ObjectIdentifier(queue)]?.num -= 1
-            if spinningQueues[ObjectIdentifier(queue)]?.num == 0 {
-                spinningQueues.removeValue(forKey: ObjectIdentifier(queue))
+            queues[key]?.num -= 1
+            if queues[key]?.num == 0 {
+                queues.removeValue(forKey: key)
             }
         }
     }

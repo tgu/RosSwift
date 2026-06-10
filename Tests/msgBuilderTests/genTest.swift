@@ -1,18 +1,13 @@
-import XCTest
+import Testing
 import Foundation
 @testable import msgbuilderLib
 
 let rosDistSource = ProcessInfo.processInfo.environment["ROS_DIST_SOURCE"] ?? ""
 
-class GenTest: XCTestCase {
+@Suite("Message builder tests")
+struct GenTest {
 
-    override func setUp() {
-    }
-
-    override func tearDown() {
-    }
-
-    func testLoadMsgString() {
+    @Test func loadMsgString() throws {
         let logmsg = """
             ##
             ## Severity level constants
@@ -35,23 +30,20 @@ class GenTest: XCTestCase {
             string[] topics # topic names that the node publishes
             """
 
-
-        if let spec = MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log", messageType: .message, generate: true) {
-            XCTAssertEqual(spec.constants.count, 5)
-            let names = spec.variables.map { $0.name }
-            XCTAssertEqual(names, ["header","level","name","msg","file","function","line","topics"])
-            let types = spec.variables.map { $0.field_type }
-            XCTAssertEqual(types, ["std_msgs/Header","byte","string","string","string","string","uint32","string[]"])
-        } else {
-            XCTFail("'rosgraph_msgs/Log' not found")
-        }
+        let spec = try #require(MsgSpec(text: logmsg, full_name: "rosgraph_msgs/Log", messageType: .message, generate: true),
+                                "'rosgraph_msgs/Log' not found")
+        #expect(spec.constants.count == 5)
+        let names = spec.variables.map { $0.name }
+        #expect(names == ["header","level","name","msg","file","function","line","topics"])
+        let types = spec.variables.map { $0.field_type }
+        #expect(types == ["std_msgs/Header","byte","string","string","string","string","uint32","string[]"])
     }
 
-    func testLoadMsgString2() {
+    @Test func loadMsgString2() throws {
         if rosDistSource.isEmpty {
             return
         }
-        
+
         let logmsg = """
             Vector3 translation
             Quaternion rotation
@@ -61,24 +53,21 @@ class GenTest: XCTestCase {
         let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
                            "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
 
-        guard let spec = MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel", messageType: .message, generate: true) else {
-            XCTFail()
-            return
-        }
-        XCTAssertEqual(spec.constants.count, 0)
+        let spec = try #require(MsgSpec(text: logmsg, full_name: "geometry_msgs/Accel", messageType: .message, generate: true))
+        #expect(spec.constants.count == 0)
         let names = spec.variables.map { $0.name }
-        XCTAssertEqual(names, ["translation","rotation"])
+        #expect(names == ["translation","rotation"])
         let types = spec.variables.map { $0.field_type }.sorted()
-        XCTAssertEqual(types, ["geometry_msgs/Quaternion", "geometry_msgs/Vector3"])
+        #expect(types == ["geometry_msgs/Quaternion", "geometry_msgs/Vector3"])
 
         let specs = context.load_msg_depends(spec: spec, search_path: search_path)
         let deps = specs.map { $0.full_name }.sorted()
-        XCTAssertEqual(deps,types)
+        #expect(deps == types)
 
-        XCTAssertEqual(spec.compute_md5(msg_context: context), "ac9eff44abf714214112b05d54a3cf9b")
+        #expect(spec.compute_md5(msg_context: context) == "ac9eff44abf714214112b05d54a3cf9b")
     }
 
-    func testLoadSrvFile() {
+    @Test func loadSrvFile() throws {
         if rosDistSource.isEmpty {
             return
         }
@@ -86,30 +75,26 @@ class GenTest: XCTestCase {
         let search_path = ["std_msgs": ["\(rosDistSource)/src/std_msgs/msg"],
                            "control_msgs": ["\(rosDistSource)/src/control_msgs/msg","\(rosDistSource)/src/control_msgs/srv"],
                             "geometry_msgs": ["\(rosDistSource)/src/common_msgs/geometry_msgs/msg"]]
-        guard let srv = context.load_srv_by_type(srv_type: "control_msgs/QueryTrajectoryState", search_path: search_path) else {
-            XCTFail()
-            return
-        }
-        XCTAssertEqual(srv.request.full_name, "control_msgs/QueryTrajectoryStateRequest")
-        XCTAssertEqual(srv.response.full_name, "control_msgs/QueryTrajectoryStateResponse")
+        let srv = try #require(context.load_srv_by_type(srv_type: "control_msgs/QueryTrajectoryState", search_path: search_path))
+        #expect(srv.request.full_name == "control_msgs/QueryTrajectoryStateRequest")
+        #expect(srv.response.full_name == "control_msgs/QueryTrajectoryStateResponse")
     }
 
-    func testLoadFromFile() {
+    @Test func loadFromFile() {
         if rosDistSource.isEmpty {
             return
         }
         let path = "\(rosDistSource)/src/common_msgs/geometry_msgs/msg/Accel.msg"
         let context = MsgContext(useBuiltin: false)
         let spec = context.loadMsg(from: path, full_name: "geometry_msgs/Accel") as? MsgSpec
-        XCTAssertEqual(spec?.constants.count, 0)
+        #expect(spec?.constants.count == 0)
         let names = spec?.variables.map { $0.name }
-        XCTAssertEqual(names, ["linear","angular"])
+        #expect(names == ["linear","angular"])
         let types = spec?.variables.map { $0.field_type }
-        XCTAssertEqual(types, ["geometry_msgs/Vector3","geometry_msgs/Vector3"])
+        #expect(types == ["geometry_msgs/Vector3","geometry_msgs/Vector3"])
     }
 
-    func testGenMD5() {
-
+    @Test func genMD5() {
         let cleaned = """
             byte DEBUG=1
             byte INFO=2
@@ -128,8 +113,8 @@ class GenTest: XCTestCase {
 
         do {
             let md5 = cleaned.hashed()
-            XCTAssertNotNil(md5)
-            XCTAssertEqual(md5, "acffd30cd6b6de30f120938c17c593fb")
+            #expect(md5 != nil)
+            #expect(md5 == "acffd30cd6b6de30f120938c17c593fb")
         }
 
         let transf = """
@@ -137,23 +122,18 @@ class GenTest: XCTestCase {
             a779879fadf0160734f906b8c19c7004 rotation
             """
 
-
         do {
             let md5 = transf.hashed()
-            XCTAssertNotNil(md5)
-            XCTAssertEqual(md5, "ac9eff44abf714214112b05d54a3cf9b")
+            #expect(md5 != nil)
+            #expect(md5 == "ac9eff44abf714214112b05d54a3cf9b")
         }
-
-
     }
 
-    func testMD5() {
+    @Test func md5() {
         let text = "953b798c0f514ff060a53a3498ce6246 pose".hashed()
-        XCTAssertEqual(text, "4f3e0bbe7a24e1f929488cd1970222d3")
+        #expect(text == "4f3e0bbe7a24e1f929488cd1970222d3")
 
         let t3 = "953b798c0f514ff060a53a3498ce6246 pose".md5
-        XCTAssertEqual(t3, "4f3e0bbe7a24e1f929488cd1970222d3")
-
+        #expect(t3 == "4f3e0bbe7a24e1f929488cd1970222d3")
     }
-
 }

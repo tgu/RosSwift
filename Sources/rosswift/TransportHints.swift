@@ -5,53 +5,51 @@
 //  Created by Thomas Gustafsson on 2018-03-06.
 //
 
+/// Transport configuration for a subscription/publication. A value type:
+/// it is configured at construction and read during connection negotiation,
+/// so it needs neither reference semantics nor locking. The builder methods
+/// return a modified copy for fluent chaining.
+struct TransportHints: Sendable {
+    var transports: [String] = []
+    var options: [String: String] = [:]
 
-final class TransportHints {
-    var transports = [String]()
-    var options = [String: String]()
-
-    public init() {
-
-    }
+    public init() {}
 
     func reliable() -> TransportHints {
-        _ = tcp()
-        return self
+        return tcp()
     }
 
     func tcp() -> TransportHints {
-        transports.append("TCP")
-        return self
+        var copy = self
+        copy.transports.append("TCP")
+        return copy
     }
 
     func tcpNoDelay(nodelay: Bool = true) -> TransportHints {
-        options["tcp_nodelay"] = nodelay ? "true" : "false"
-        return self
+        var copy = self
+        copy.options["tcp_nodelay"] = nodelay ? "true" : "false"
+        return copy
     }
 
     func getTCPNoDelay() -> Bool {
-        if let delay = options["tcp_nodelay"] {
-            return delay == "true"
-        }
-        return false
+        return options["tcp_nodelay"] == "true"
     }
 
     func maxDatagramSize() -> UInt32 {
         if let mds = options["max_datagram_size"], let mdSize = UInt32(mds) {
             return mdSize
         }
-
         return 0
     }
 
     func unreliable() -> TransportHints {
-        _ = udp()
-        return self
+        return udp()
     }
 
     func udp() -> TransportHints {
-        transports.append("UDP")
-        return self
+        var copy = self
+        copy.transports.append("UDP")
+        return copy
     }
 
     func getTransports() -> [String] {

@@ -5,7 +5,7 @@
 //  Created by Thomas Gustafsson on 2019-04-03.
 //
 
-import XCTest
+import Testing
 import NIO
 @testable import RosSwift
 @testable import RosTime
@@ -13,73 +13,61 @@ import BinaryCoder
 
 private let standardDataString = "abcde"
 
-class DecoderTest: XCTestCase {
-    private var channel: EmbeddedChannel!
-    private var decoderUnderTest: ByteToMessageHandler<MessageDelimiterCodec>!
+@Suite("Decoder tests")
+struct DecoderTest {
 
-
-    override func setUp() {
-        self.channel = EmbeddedChannel()
-    }
-
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
-    func testHeaderWithData() {
-        self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
+    @Test func headerWithData() throws {
+        let channel = EmbeddedChannel()
+        let decoderUnderTest = ByteToMessageHandler(MessageDelimiterCodec())
+        try channel.pipeline.syncOperations.addHandler(decoderUnderTest)
 
         let dataLength: UInt32 = 5
 
-        var buffer = self.channel.allocator.buffer(capacity: 9) // 4 byte header + 5 character string
+        var buffer = channel.allocator.buffer(capacity: 9) // 4 byte header + 5 character string
         buffer.writeInteger(dataLength, endianness: .little, as: UInt32.self)
         buffer.writeString(standardDataString)
 
-        XCTAssertTrue(try self.channel.writeInbound(buffer).isFull)
+        #expect(try channel.writeInbound(buffer).isFull)
 
-        let data = try! (self.channel.readInbound(as: ByteBuffer.self)?.readableBytesView).map {
+        let data = try (channel.readInbound(as: ByteBuffer.self)?.readableBytesView).map {
             String(decoding: $0, as: Unicode.UTF8.self)
         }
-        XCTAssertNotNil(data)
+        #expect(data != nil)
 
-        XCTAssertEqual(standardDataString,String(data!.dropFirst(4)))
-        XCTAssertTrue(try self.channel.finish().isClean)
+        #expect(standardDataString == String(data!.dropFirst(4)))
+        #expect(try channel.finish().isClean)
     }
 
-    func testDecodeTwoFrames() throws {
-
-        self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
+    @Test func decodeTwoFrames() throws {
+        let channel = EmbeddedChannel()
+        let decoderUnderTest = ByteToMessageHandler(MessageDelimiterCodec())
+        try channel.pipeline.syncOperations.addHandler(decoderUnderTest)
 
         let firstFrameDataLength: UInt32 = 5
         let secondFrameDataLength: UInt32 = 3
         let secondFrameString = "123"
 
-        var buffer = self.channel.allocator.buffer(capacity: 16) // 4 byte header + 5 character string + 4 byte header + 3 character string
+        var buffer = channel.allocator.buffer(capacity: 16) // 4 byte header + 5 character string + 4 byte header + 3 character string
         buffer.writeInteger(firstFrameDataLength, endianness: .little, as: UInt32.self)
         buffer.writeString(standardDataString)
         buffer.writeInteger(secondFrameDataLength, endianness: .little, as: UInt32.self)
         buffer.writeString(secondFrameString)
 
-        XCTAssertTrue(try self.channel.writeInbound(buffer).isFull)
-        XCTAssertNoThrow(XCTAssertEqual(standardDataString,
-                                        try (self.channel.readInbound(as: ByteBuffer.self)?.readableBytesView.dropFirst(4)).map {
-                                            String(decoding: $0, as: Unicode.UTF8.self)
-            }))
+        #expect(try channel.writeInbound(buffer).isFull)
 
-        XCTAssertNoThrow(XCTAssertEqual(secondFrameString,
-                                        try (self.channel.readInbound(as: ByteBuffer.self)?.readableBytesView.dropFirst(4)).map {
-                                            String(decoding: $0, as: Unicode.UTF8.self)
-            }))
+        let firstFrame = try channel.readInbound(as: ByteBuffer.self)?.readableBytesView.dropFirst(4)
+        #expect(firstFrame.map { String(decoding: $0, as: Unicode.UTF8.self) } == standardDataString)
 
-        XCTAssertTrue(try self.channel.finish().isClean)
+        let secondFrame = try channel.readInbound(as: ByteBuffer.self)?.readableBytesView.dropFirst(4)
+        #expect(secondFrame.map { String(decoding: $0, as: Unicode.UTF8.self) } == secondFrameString)
+
+        #expect(try channel.finish().isClean)
     }
 
-    func testDecodeSplitIncomingData() throws {
-
-        self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
+    @Test func decodeSplitIncomingData() throws {
+        let channel = EmbeddedChannel()
+        let decoderUnderTest = ByteToMessageHandler(MessageDelimiterCodec())
+        try channel.pipeline.syncOperations.addHandler(decoderUnderTest)
 
         let frameDataLength: UInt32 = 5
 
@@ -87,72 +75,66 @@ class DecoderTest: XCTestCase {
         let frameDataLengthFirstByte: UInt8 = UInt8(frameDataLength)
         let frameDataLengthSecondByte: UInt8 = 0
 
-        var firstBuffer = self.channel.allocator.buffer(capacity: 1) // Byte 1 of 2 byte header header
+        var firstBuffer = channel.allocator.buffer(capacity: 1) // Byte 1 of 2 byte header header
         firstBuffer.writeInteger(frameDataLengthFirstByte, endianness: .little, as: UInt8.self)
 
-        XCTAssertTrue(try self.channel.writeInbound(firstBuffer).isEmpty)
+        #expect(try channel.writeInbound(firstBuffer).isEmpty)
 
         // Read should fail because there is not yet enough data.
-        XCTAssertNoThrow(XCTAssertNil(try self.channel.readInbound()))
+        #expect(try channel.readInbound(as: ByteBuffer.self) == nil)
 
-        var secondBuffer = self.channel.allocator.buffer(capacity: 1) // Byte 2 of 2 byte header header
+        var secondBuffer = channel.allocator.buffer(capacity: 1) // Byte 2 of 2 byte header header
         secondBuffer.writeInteger(frameDataLengthSecondByte, endianness: .little, as: UInt8.self)
         secondBuffer.writeInteger(frameDataLengthSecondByte, endianness: .little, as: UInt8.self)
         secondBuffer.writeInteger(frameDataLengthSecondByte, endianness: .little, as: UInt8.self)
 
-        XCTAssertTrue(try self.channel.writeInbound(secondBuffer).isEmpty)
+        #expect(try channel.writeInbound(secondBuffer).isEmpty)
 
         // Read should fail because there is not yet enough data.
-        XCTAssertNoThrow(XCTAssertNil(try self.channel.readInbound()))
+        #expect(try channel.readInbound(as: ByteBuffer.self) == nil)
 
         // Write and try to read each byte of the data individually
         for (index, character) in standardDataString.enumerated() {
 
-            var characterBuffer = self.channel.allocator.buffer(capacity: 1)
+            var characterBuffer = channel.allocator.buffer(capacity: 1)
             characterBuffer.writeString(String(character))
 
             if index < standardDataString.count - 1 {
 
-                XCTAssertTrue(try self.channel.writeInbound(characterBuffer).isEmpty)
+                #expect(try channel.writeInbound(characterBuffer).isEmpty)
                 // Read should fail because there is not yet enough data.
-                XCTAssertNoThrow(XCTAssertNil(try self.channel.readInbound()))
+                #expect(try channel.readInbound(as: ByteBuffer.self) == nil)
             } else {
-                XCTAssertTrue(try self.channel.writeInbound(characterBuffer).isFull)
+                #expect(try channel.writeInbound(characterBuffer).isFull)
             }
         }
 
-        XCTAssertNoThrow(XCTAssertEqual(standardDataString,
-                                        try (self.channel.readInbound(as: ByteBuffer.self)?.readableBytesView.dropFirst(4)).map {
-                                            String(decoding: $0, as: Unicode.UTF8.self)
-            }))
-        XCTAssertTrue(try self.channel.finish().isClean)
+        let frame = try channel.readInbound(as: ByteBuffer.self)?.readableBytesView.dropFirst(4)
+        #expect(frame.map { String(decoding: $0, as: Unicode.UTF8.self) } == standardDataString)
+        #expect(try channel.finish().isClean)
     }
 
-    func testEmptyBuffer() throws {
+    @Test func emptyBuffer() throws {
+        let channel = EmbeddedChannel()
+        let decoderUnderTest = ByteToMessageHandler(MessageDelimiterCodec())
+        try channel.pipeline.syncOperations.addHandler(decoderUnderTest)
 
-        self.decoderUnderTest = .init(MessageDelimiterCodec())
-        XCTAssertNoThrow(try self.channel.pipeline.syncOperations.addHandler(self.decoderUnderTest))
-
-        let buffer = self.channel.allocator.buffer(capacity: 1)
-        XCTAssertTrue(try self.channel.writeInbound(buffer).isEmpty)
-        XCTAssertTrue(try self.channel.finish().isClean)
+        let buffer = channel.allocator.buffer(capacity: 1)
+        #expect(try channel.writeInbound(buffer).isEmpty)
+        #expect(try channel.finish().isClean)
     }
 
-    func testTime() throws {
+    @Test func time() throws {
         let time = Time(sec: 1, nsec: 2)
         let data = try BinaryEncoder.encode(time)
         let t2 = try BinaryDecoder.decode(Time.self, data: data)
-        XCTAssertEqual(time, t2)
+        #expect(time == t2)
     }
 
-    func testTime2() throws {
+    @Test func time2() throws {
         let time = Time(sec: 91223, nsec: UInt32.max)
         let data = try BinaryEncoder.encode(time)
         let t2 = try BinaryDecoder.decode(Time.self, data: data)
-        XCTAssertEqual(time, t2)
+        #expect(time == t2)
     }
-
-
-
-
 }

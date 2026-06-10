@@ -7,7 +7,6 @@
 
 import Foundation
 import rpcobject
-import rpcclient
 
 struct Caller: Equatable {
     let id: String
@@ -99,52 +98,41 @@ protocol Register {
 
 }
 
-class Services: Register {
+struct Services: Register {
     let type: RegistrationType = .service
     var services: [String: Caller]
-    private let queue = DispatchQueue(label: "Services", attributes: .concurrent)
+
+    // A value type: mutual exclusion is provided by the owning
+    // `RosMasterHandler` actor (every access goes through actor-isolated
+    // methods), so no internal lock — or reference semantics — is needed.
 
     init() {
         services = .init()
     }
 
-    func register(key: String, serviceNode: Caller) {
-        queue.sync { services[key] = serviceNode }
+    mutating func register(key: String, serviceNode: Caller) {
+        services[key] = serviceNode
     }
-    
-    func unregister(key: String, caller_id: String, api: String) -> Result<String,ErrorMessage> {
-        return queue.sync(flags: .barrier) {
-            if services[key] != Caller(id: caller_id, api: api) {
-                return .success("\(caller_id) is on longer the current service handle for \(key)")
-            }
-            services.removeValue(forKey: key)
-            return .success("Unregistered \(caller_id) as provider of \(key)")
+
+    mutating func unregister(key: String, caller_id: String, api: String) -> Result<String,ErrorMessage> {
+        if services[key] != Caller(id: caller_id, api: api) {
+            return .success("\(caller_id) is on longer the current service handle for \(key)")
         }
+        services.removeValue(forKey: key)
+        return .success("Unregistered \(caller_id) as provider of \(key)")
     }
 
-
-    func getServiceApi(service: String) -> String? {
-        return queue.sync { services[service]?.api }
-    }
-
-    func registerService(key: String, caller_id: String, caller_api: String, service_api: String) {
-        queue.sync(flags: .barrier) {
-            services[key] = Caller(id: caller_id, api: service_api)
-        }
-    }
 
     func lookupService(key: String) -> Caller? {
-        return queue.sync { services[key] }
+        return services[key]
     }
 
-    func unregisterAll(id: String) {
-        queue.sync(flags: .barrier) {
-            let remove = services.filter { (key: String, value: Caller) -> Bool in
-                value.id == id
-            }
-            for key in remove.keys {
-                services.removeValue(forKey: key)
-            }
+    mutating func unregisterAll(id: String) {
+        let remove = services.filter { (key: String, value: Caller) -> Bool in
+            value.id == id
+        }
+        for key in remove.keys {
+            services.removeValue(forKey: key)
         }
     }
 
@@ -165,7 +153,9 @@ struct ErrorMessage: Error {
 struct Registrations: Register {
     let type: RegistrationType
     var providers: Multimap<String,Caller>
-    private let queue = DispatchQueue(label: "", attributes: .concurrent)
+
+    // Mutual exclusion is provided by the owning `RosMasterHandler` actor;
+    // no internal lock is needed.
 
     init(type: RegistrationType) {
         self.type = type
@@ -173,42 +163,38 @@ struct Registrations: Register {
     }
 
     var isEmpty: Bool {
-        return queue.sync { providers.isEmpty }
+        return providers.isEmpty
     }
 
     func getApis(key: String) -> [String] {
-        return queue.sync { providers[key].map { $0.api } }
+        return providers[key].map { $0.api }
     }
 
     func getCallers(key: String) -> [Caller] {
-        return queue.sync { providers[key] }
+        return providers[key]
     }
 
     func hasKey(key: String) -> Bool {
-        return queue.sync { providers.contains(key: key) }
+        return providers.contains(key: key)
     }
 
     func allValues() -> AnySequence<Caller> {
-        return queue.sync { providers.values }
+        return providers.values
     }
 
     mutating func register(key: String, node: Caller) {
-        queue.sync(flags: .barrier) {
-            if !self.providers[key].contains(node) {
-                self.providers.insert(value: node, forKey: key)
-            }
+        if !self.providers[key].contains(node) {
+            self.providers.insert(value: node, forKey: key)
         }
     }
-    
+
     mutating func unregister(key: String, caller_id: String, api: String) -> Result<String,ErrorMessage> {
         let caller = Caller(id: caller_id, api: api)
-        return queue.sync(flags: .barrier) {
-            if providers[key].contains(caller) {
-                providers.removeValue(caller, forKey: key)
-                return .success("Unregistered \(caller_id) as provider of \(key)")
-            } else {
-                return .failure(.init(message: "\(caller_id) is not known provider of \(key)"))
-            }
+        if providers[key].contains(caller) {
+            providers.removeValue(caller, forKey: key)
+            return .success("Unregistered \(caller_id) as provider of \(key)")
+        } else {
+            return .failure(.init(message: "\(caller_id) is not known provider of \(key)"))
         }
     }
 
@@ -216,26 +202,22 @@ struct Registrations: Register {
     /// Remove all registrations associated with id
 
     mutating func unregisterAll(id: String) {
-        return queue.sync(flags: .barrier) {
-            for key in providers.keys {
-                let to_remove = providers[key].filter { $0.id == id }
-                for c in to_remove {
-                    providers.removeValue(c, forKey: key)
-                }
-                if providers[key].isEmpty {
-                    providers.removeValuesForKey(key)
-                }
+        for key in providers.keys {
+            let to_remove = providers[key].filter { $0.id == id }
+            for c in to_remove {
+                providers.removeValue(c, forKey: key)
+            }
+            if providers[key].isEmpty {
+                providers.removeValuesForKey(key)
             }
         }
     }
 
     func getState() -> [State] {
         var state = [State]()
-        queue.sync {
-            for key in providers.keys {
-                let g = State(name: key, providers: providers[key].map { $0.id })
-                state.append(g)
-            }
+        for key in providers.keys {
+            let g = State(name: key, providers: providers[key].map { $0.id })
+            state.append(g)
         }
         return state
     }
@@ -250,15 +232,14 @@ public final class RegistrationManager {
     private var publishers = Registrations(type: .topicPublication)
     private var subscribers = Registrations(type: .topicSubscription)
     private var services = Services()
-    private let nodeQueue = DispatchQueue(label: "nodes", attributes: .concurrent)
 
+    // All access is serialized by the owning `RosMasterHandler` actor, so the
+    // node table needs no internal lock.
 
     private func register(type: RegistrationType, key: String, node: Caller) {
         let changed = registerNodeAPI(node: node)
 
-        nodeQueue.sync(flags: .barrier) {
-            nodes[node.id]?.add(type: type, key: key)
-        }
+        nodes[node.id]?.add(type: type, key: key)
 
         if changed {
             publishers.unregisterAll(id: node.id)
@@ -270,42 +251,38 @@ public final class RegistrationManager {
     
     private func unregister<T: Register>(r: inout T, key: String, caller_id: String, caller_api: String? = nil, service_api: String? = nil) -> Result<String,ErrorMessage> {
 
-        return nodeQueue.sync(flags: .barrier) {
-            if nodes[caller_id] != nil {
-                let api = r.type == .service ? service_api! : caller_api!
-                let ret = r.unregister(key: key, caller_id: caller_id, api: api)
-                if case .success = ret {
-                    nodes[caller_id]?.remove(type: r.type, key: key)
-                }
-                if nodes[caller_id]?.isEmpty ?? false {
-                    nodes.removeValue(forKey: caller_id)
-                }
-                return ret
-            } else {
-                return .failure(.init(message: "\(caller_id) is not a registered node"))
+        if nodes[caller_id] != nil {
+            let api = r.type == .service ? service_api! : caller_api!
+            let ret = r.unregister(key: key, caller_id: caller_id, api: api)
+            if case .success = ret {
+                nodes[caller_id]?.remove(type: r.type, key: key)
             }
+            if nodes[caller_id]?.isEmpty ?? false {
+                nodes.removeValue(forKey: caller_id)
+            }
+            return ret
+        } else {
+            return .failure(.init(message: "\(caller_id) is not a registered node"))
         }
     }
 
     private func registerNodeAPI(node: Caller) -> Bool {
-        return nodeQueue.sync(flags: .barrier) {
-            if let nodeRef = nodes[node.id] {
-                if nodeRef.api == node.api {
-                    return false
-                } else {
-                    // FIXME: new node registered with same name
-                    // Shutdown old node and unregister
-                    let nodeRef = NodeRef(node: node)
-                    nodes[node.id] = nodeRef
-                    return true
-                }
-
+        if let nodeRef = nodes[node.id] {
+            if nodeRef.api == node.api {
+                return false
+            } else {
+                // FIXME: new node registered with same name
+                // Shutdown old node and unregister
+                let nodeRef = NodeRef(node: node)
+                nodes[node.id] = nodeRef
+                return true
             }
 
-            let nodeRef = NodeRef(node: node)
-            nodes[node.id] = nodeRef
-            return false
         }
+
+        let nodeRef = NodeRef(node: node)
+        nodes[node.id] = nodeRef
+        return false
     }
 
     func publishers(for topic: String) -> [String] {
@@ -351,9 +328,7 @@ public final class RegistrationManager {
     }
 
     func getNode(caller: String, name: String) -> NodeRef? {
-        return nodeQueue.sync {
-            return self.nodes[caller]
-        }
+        return self.nodes[caller]
     }
 
     func register(parameterSubscriber node: Caller, parameter key: String) {

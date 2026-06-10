@@ -7,9 +7,11 @@
 
 import Foundation
 import NIO
+import NIOCore
 import NIOConcurrencyHelpers
 import rpcobject
 import RosNetwork
+import Synchronization
 #if os(Linux)
 //import NetService
 #endif
@@ -20,7 +22,7 @@ let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 ///
 /// The type is represented in the format "package_name/MessageName"
 
-public struct TopicInfo {
+public struct TopicInfo: Sendable {
     public let name: String
     public let dataType: String
 }
@@ -52,8 +54,7 @@ final class XmlRpcMessageDelimiterCodec: ByteToMessageDecoder {
             return .needMoreData
         }
 
-        guard let _ = content.firstIndex(of: "<") else {
-            ROS_DEBUG("Malformed header")
+        guard content.firstIndex(of: "<") != nil else {
             return .needMoreData
         }
 
@@ -71,62 +72,6 @@ final class XmlRpcMessageDelimiterCodec: ByteToMessageDecoder {
         ///
         self.cumulationBuffer = nil
         return .continue
-    }
-}
-
-final class XmlRpcHandler: ChannelInboundHandler {
-    typealias InboundIn = ByteBuffer
-    typealias OutboundOut = ByteBuffer
-
-    var response = XmlRpcValue()
-    weak var owner: Master!
-
-    init(owner: Master) {
-        self.owner = owner
-    }
-
-    func channelActive(context: ChannelHandlerContext) {
-        owner.registerHandler(for: context.channel, handler: self)
-    }
-
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        var buffer = self.unwrapInboundIn(data)
-        if let string = buffer.readString(length: buffer.readableBytes) {
-            guard let range = string.lowercased().range(of: "content-length: ")  else {
-                ROS_DEBUG("Header not read")
-                return
-            }
-
-            let content = String(string[range.upperBound..<string.endIndex])
-            guard let index = content.firstIndex(of: "\r\n") else {
-                ROS_DEBUG("Malformed header")
-                return
-            }
-
-            guard let _ = Int(content[content.startIndex..<index]) else {
-                ROS_DEBUG("length error")
-                return
-            }
-
-            guard let ind2 = content.firstIndex(of: "<") else {
-                ROS_DEBUG("Malformed header")
-                return
-            }
-
-            let resp = String(content[ind2..<content.endIndex])
-            if let r = XMLRPCClient.parseResponse(xml: resp) {
-                response = r
-            }
-            context.close(promise: nil)
-        }
-    }
-
-    func errorCaught(context: ChannelHandlerContext, error: Error) {
-        ROS_ERROR(error.localizedDescription)
-
-        // As we are not really interested getting notified on success or failure we just pass nil as promise to
-        // reduce allocations.
-        context.close(promise: nil)
     }
 }
 
@@ -163,15 +108,12 @@ enum XMLRPCClient {
 
 
 
-final class Master {
+final class Master: Sendable {
 
     let masterHost: String
     let masterPort: UInt16
     let group: EventLoopGroup
-    var bootstrap: ClientBootstrap?
-    var handlers = [ObjectIdentifier: XmlRpcHandler]()
-    let lock = NIOLock()
-    
+
     var path: String {
         return "\(masterHost):\(masterPort)"
     }
@@ -180,20 +122,6 @@ final class Master {
         return "/"
     }
 
-    func registerHandler(for channel: Channel, handler: XmlRpcHandler) {
-        lock.withLock {
-            precondition(handlers[ObjectIdentifier(channel)] == nil)
-            handlers[ObjectIdentifier(channel)] = handler
-        }
-    }
-
-    func unregisterHandler(for channel: Channel) {
-        lock.withLock {
-            precondition(handlers[ObjectIdentifier(channel)] != nil)
-            handlers.removeValue(forKey: ObjectIdentifier(channel))
-        }
-    }
-    
     static func determineRosMasterAddress(remappings: StringStringMap) -> (host: String, port: UInt16) {
         var masterURI = remappings["__master"]
 #if os(macOS) || os(iOS) || os(tvOS)
@@ -229,27 +157,15 @@ final class Master {
         guard let master = RosNetwork.splitURI(uri: masterURI!) else {
             fatalError( "Couldn't parse the master URI [\(masterURI!)] into a host:port pair.")
         }
-        
+
         return master
     }
 
     init(group: EventLoopGroup, host: String, port: UInt16) {
         masterHost = host
         masterPort = port
-
         self.group = group
-        self.bootstrap = ClientBootstrap(group: group)
-            // Enable SO_REUSEADDR.
-            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            .channelInitializer { channel in
-                channel.eventLoop.makeCompletedFuture {
-                    try channel.pipeline.syncOperations.addHandlers([ByteToMessageHandler(XmlRpcMessageDelimiterCodec()),
-                                                                 XmlRpcHandler(owner: self)])
-                }
-        }
-        
         ROS_DEBUG("master on host: \(masterHost), port: \(masterPort)")
-
     }
 
     enum ValidateError: Error {
@@ -330,8 +246,8 @@ final class Master {
         return request
     }
 
-    func execute(method: String, request: XmlRpcValue) -> EventLoopFuture<XmlRpcValue> {
-        return execute(method: method, request: request, host: masterHost, port: masterPort)
+    func execute(method: String, request: XmlRpcValue) async throws -> XmlRpcValue {
+        return try await execute(method: method, request: request, host: masterHost, port: masterPort)
     }
 
     enum MasterError: Error {
@@ -339,75 +255,84 @@ final class Master {
         case writeError(String)
     }
 
-    func execute(method: String, request: XmlRpcValue, host: String, port: UInt16) -> EventLoopFuture<XmlRpcValue> {
+    func execute(method: String, request: XmlRpcValue, host: String, port: UInt16) async throws -> XmlRpcValue {
         let xml = generateRequest(methodName: method, params: request, host: host, port: port)
+        return try await executeAsync(xml: xml, method: method, host: host, port: port)
+    }
 
-        let eventLoop = group.next()
-        let promise: EventLoopPromise<XmlRpcValue> = eventLoop.makePromise()
-
-        bootstrap?.connect(host: host, port: Int(port)).map { channel -> Void in
-            let buffer = channel.allocator.buffer(string: xml)
-            channel.writeAndFlush(buffer).whenFailure { error in
-                ROS_ERROR("write failed to \(channel.remoteAddress!) [\(error)]")
-                promise.fail(MasterError.writeError("write failed to \(channel.remoteAddress!) [\(error)]"))
-            }
-
-            channel.closeFuture.whenComplete { res in
-                // FIXME: check result
-
-                let result = self.lock.withLock { () -> Result<XmlRpcValue, ValidateError> in
-                    guard let handler = self.handlers[ObjectIdentifier(channel)] else {
-                        fatalError("failed to connect to \(host):\(port) for method \(method)")
-                    }
-
-                    return self.validateXmlrpcResponse(method: method, response: handler.response)
-                }
-
-                self.unregisterHandler(for: channel)
-
-                switch result {
-                case .success(let r):
-                    promise.succeed(r)
-                case .failure(let err):
-                    promise.fail(err)
+    /// One-shot XML-RPC request: connect, write the encoded request, read
+    /// the single response frame from the codec, parse and validate it.
+    private func executeAsync(xml: String, method: String, host: String, port: UInt16) async throws -> XmlRpcValue {
+        let asyncChannel: NIOAsyncChannel<ByteBuffer, ByteBuffer> = try await ClientBootstrap(group: group)
+            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .connect(host: host, port: Int(port)) { channel in
+                channel.eventLoop.makeCompletedFuture {
+                    try channel.pipeline.syncOperations.addHandler(
+                        ByteToMessageHandler(XmlRpcMessageDelimiterCodec())
+                    )
+                    return try NIOAsyncChannel<ByteBuffer, ByteBuffer>(
+                        wrappingChannelSynchronously: channel,
+                        configuration: .init()
+                    )
                 }
             }
-        }.whenFailure { error in
-            ROS_ERROR(error.localizedDescription)
-            promise.fail(error)
+
+        return try await asyncChannel.executeThenClose { inbound, outbound in
+            // Write the request.
+            let requestBuffer = ByteBuffer(string: xml)
+            try await outbound.write(requestBuffer)
+
+            // Read the single framed response from the codec.
+            var iterator = inbound.makeAsyncIterator()
+            guard var responseFrame = try await iterator.next() else {
+                throw MasterError.invalidResponse("peer closed before sending a response (\(method) → \(host):\(port))")
+            }
+            guard let body = responseFrame.readString(length: responseFrame.readableBytes) else {
+                throw MasterError.invalidResponse("non-UTF8 response body from \(host):\(port)")
+            }
+            guard let range = body.lowercased().range(of: "content-length: ") else {
+                throw MasterError.invalidResponse("response missing content-length header")
+            }
+            let afterHeader = String(body[range.upperBound..<body.endIndex])
+            guard let xmlStart = afterHeader.firstIndex(of: "<") else {
+                throw MasterError.invalidResponse("response missing XML body")
+            }
+            let xmlBody = String(afterHeader[xmlStart..<afterHeader.endIndex])
+
+            guard let parsed = XMLRPCClient.parseResponse(xml: xmlBody) else {
+                throw MasterError.invalidResponse("could not parse XML-RPC response")
+            }
+
+            switch self.validateXmlrpcResponse(method: method, response: parsed) {
+            case .success(let r):
+                return r
+            case .failure(let err):
+                throw err
+            }
         }
-        return promise.futureResult
-
     }
 
-    func getTopics(callerId: String) -> EventLoopFuture<[TopicInfo]> {
+    func getTopics(callerId: String) async throws -> [TopicInfo] {
         let args = XmlRpcValue(strings: callerId, "")
-        return execute(method: "getPublishedTopics", request: args).map({ (rpc) -> [TopicInfo] in
-            return rpc.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
-        })
+        let rpc = try await execute(method: "getPublishedTopics", request: args)
+        return rpc.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
     }
 
-    func getNodes(callerId: String) -> EventLoopFuture<[String]> {
+    func getNodes(callerId: String) async throws -> [String] {
         let args = XmlRpcValue(strings: callerId)
-        return execute(method: "getSystemState", request: args).map({ (rpc) -> [String] in
-            var nodes = Set<String>()
-            
-            for i in 0..<rpc.size() {
-                for j in 0..<rpc[i].size() {
-                    let val = rpc[i][j][1]
-                    for k in 0..<val.size() {
-                        let name = rpc[i][j][1][k]
-                        nodes.insert(name.string)
-                    }
+        let rpc = try await execute(method: "getSystemState", request: args)
+        var nodes = Set<String>()
+
+        for i in 0..<rpc.size() {
+            for j in 0..<rpc[i].size() {
+                let val = rpc[i][j][1]
+                for k in 0..<val.size() {
+                    let name = rpc[i][j][1][k]
+                    nodes.insert(name.string)
                 }
             }
-            
-            
-            return Array(nodes).sorted()
-        })
+        }
+
+        return Array(nodes).sorted()
     }
-
-
-    
-
 }

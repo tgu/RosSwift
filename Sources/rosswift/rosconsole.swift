@@ -6,8 +6,9 @@
 //
 
 import Foundation
-import LoggerAPI
+import Logging
 import Atomics
+import Synchronization
 
 let rosPackageName: String? = nil
 
@@ -15,6 +16,24 @@ let rosConsoleRootLoggerName = "ros"
 let rosConsolePacakgeName = rosPackageName ?? "unknown_package"
 let rosConsoleNamePrefix = rosConsoleRootLoggerName + "/" + (rosConsolePacakgeName)
 let rosConsoleDefaultName = rosConsoleNamePrefix
+
+/// Backing store for the library logger. Its level starts at the build
+/// configuration (debug in DEBUG builds, info otherwise) and can be changed at
+/// runtime via the `~set_logger_level` service (see `Console.setLoggerLevel`).
+private let loggerState = Mutex<Logging.Logger>({
+    var l = Logging.Logger(label: rosConsoleRootLoggerName)
+#if DEBUG
+    l.logLevel = .debug
+#else
+    l.logLevel = .info
+#endif
+    return l
+}())
+
+/// A snapshot of the library's swift-log logger. All `ROS_*` logging helpers
+/// route through it, so applications only need to bootstrap a swift-log
+/// backend (or rely on the default `StreamLogHandler`).
+var logger: Logging.Logger { loggerState.withLock { $0 } }
 
 protocol LogAppender {
 
@@ -25,7 +44,7 @@ func rosVerbose(_ msg: @autoclosure () -> String,
                 lineNum: Int = #line,
                 fileName: String = #file) {
 
-    Log.verbose(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+    logger.trace("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
 }
 
 func ROS_DEBUG(_ msg: @autoclosure () -> String,
@@ -33,9 +52,9 @@ func ROS_DEBUG(_ msg: @autoclosure () -> String,
                lineNum: Int = #line,
                fileName: String = #file) {
 
-    #if DEBUG
-    Log.debug(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
-    #endif
+#if DEBUG
+    logger.debug("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
+#endif
 }
 
 public func ROS_WARN_STREAM(_ msg: @autoclosure () -> String,
@@ -43,7 +62,7 @@ public func ROS_WARN_STREAM(_ msg: @autoclosure () -> String,
 
                             lineNum: Int = #line,
                             fileName: String = #file) {
-    Log.warning(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+    logger.warning("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
 }
 
 public func ROS_ERROR_STREAM(_ msg: @autoclosure () -> String,
@@ -51,41 +70,40 @@ public func ROS_ERROR_STREAM(_ msg: @autoclosure () -> String,
 
                              lineNum: Int = #line,
                              fileName: String = #file) {
-    Log.error(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+    logger.error("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
 }
 
 public func ROS_INFO_STREAM(_ msg: @autoclosure () -> String,
-                             functionName: String = #function,
-
-                             lineNum: Int = #line,
-                             fileName: String = #file) {
-    Log.info(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
-}
-
-public func ROS_WARN_STREAM_THROTTLE(_ timeout: Double, _ msg: @autoclosure () -> String,
                             functionName: String = #function,
 
                             lineNum: Int = #line,
                             fileName: String = #file) {
-    Log.warning(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+    logger.info("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
+}
+
+public func ROS_WARN_STREAM_THROTTLE(_ timeout: Double, _ msg: @autoclosure () -> String,
+                                     functionName: String = #function,
+
+                                     lineNum: Int = #line,
+                                     fileName: String = #file) {
+    logger.warning("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
 }
 
 
 
 public func ROS_INFO(_ msg: @autoclosure () -> String,
-              functionName: String = #function,
+                     functionName: String = #function,
 
-              lineNum: Int = #line,
-              fileName: String = #file) {
-    Log.info(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+                     lineNum: Int = #line,
+                     fileName: String = #file) {
+    logger.info("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
 }
 
 public func ROS_ERROR(_ msg: @autoclosure () -> String,
                       functionName: String = #function,
                       lineNum: Int = #line,
                       fileName: String = #file) {
-
-    Log.error(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+    logger.error("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
 }
 
 public func ROS_WARNING(_ msg: @autoclosure () -> String,
@@ -93,7 +111,7 @@ public func ROS_WARNING(_ msg: @autoclosure () -> String,
                         lineNum: Int = #line,
                         fileName: String = #file) {
 
-    Log.warning(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
+    logger.warning("\(msg())", file: fileName, function: functionName, line: UInt(lineNum))
 }
 
 func ROS_DEBUG_NAMED(_ name: String, _ text: String) {
@@ -110,35 +128,31 @@ func ROS_LOG_ERROR(_ text: String) {
 
 internal struct Console {
     static let gInitialized = ManagedAtomic(false)
-    nonisolated(unsafe) static var gExtraFixedTokens = StringStringMap()
-    static let gLocationsQueue = DispatchQueue(label: "location_mutex")
+    static let gExtraFixedTokens = Mutex(StringStringMap())
 
     static func initialize() {
 
     }
 
     static func setFixedFilterToken(key: String, val: String) {
-        gExtraFixedTokens[key] = val
+        gExtraFixedTokens.withLock { $0[key] = val }
     }
 
     static func registerAppender(appender: LogAppender) {
-        Log.debug("register_appender not implemented")
+        logger.debug("register_appender not implemented")
     }
 
     static func printDebug(_ text: String) {
-        gLocationsQueue.sync {
-            Log.debug(text)
-        }
+        logger.debug("\(text)")
     }
 
     static func print(_ text: String) {
-        gLocationsQueue.sync {
-            ROS_INFO(text)
-        }
+        ROS_INFO(text)
     }
 
-    static func setLoggerLevel(logger: String, level: LoggerMessageType) {
-        ROS_INFO("setLoggerLevel not implemented")
+    static func setLoggerLevel(logger name: String, level: Logging.Logger.Level) {
+        loggerState.withLock { $0.logLevel = level }
+        ROS_INFO("set logger [\(name)] level to \(level)")
     }
 
 }

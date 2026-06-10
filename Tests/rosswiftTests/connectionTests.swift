@@ -5,7 +5,7 @@
 //  Created by Thomas Gustafsson on 2018-10-23.
 //
 
-import XCTest
+import Testing
 @testable import RosSwift
 @testable import StdMsgs
 @testable import BinaryCoder
@@ -13,402 +13,504 @@ import XCTest
 import RosNetwork
 import rosmaster
 import Atomics
+import Synchronization
 
-class connectionTests: RosTest {
+@Suite("Connection tests", .serialized)
+class ConnectionTests {
+    let master: rosmaster.Master
+    var remap: [String: String] {
+        ["__master": master.address]
+    }
+    var host: String {
+        master.host
+    }
+    var port: Int {
+        master.port
+    }
 
-    func testNodeHandleConstructionDestruction() {
+    init() async throws {
+        let network = RosNetwork(remappings: [:])
+        // port 0 lets the OS pick a free port so parallel suites don't collide.
+        master = rosmaster.Master(host: network.gHost, port: 0, advertise: false)
+        _ = try await master.start().get()
+    }
 
-        let ros = Ros(master: host)
+    deinit {
+        _ = master.stop()
+    }
 
-        do {
-            XCTAssertFalse(ros.isStarted.load(ordering: .relaxed))
-            let n1 = ros.createNode()
-            XCTAssert(ros.isStarted.load(ordering: .relaxed))
-            XCTAssertEqual(n1.refCount,1)
-            XCTAssert(n1.gNodeStartedByNodeHandle)
+    @Test func nodeHandleConstructionDestruction() async throws {
+        try await withRos(master: host, port: port) { ros in
             do {
-                let n2 = ros.createNode()
-                XCTAssert(ros.isStarted.load(ordering: .relaxed))
-                XCTAssertEqual(n2.refCount,2)
-                XCTAssertFalse(n2.gNodeStartedByNodeHandle)
+                #expect(!ros.isStarted)
+                let n1 = await ros.createNode()
+                #expect(ros.isStarted)
+                #expect(await n1.refCount == 1)
+                #expect(n1.gNodeStartedByNodeHandle)
                 do {
-                    let n3 = ros.createNode()
-                    XCTAssert(ros.isStarted.load(ordering: .relaxed))
-                    XCTAssertEqual(n3.refCount,3)
-                    XCTAssertFalse(n3.gNodeStartedByNodeHandle)
+                    let n2 = await ros.createNode()
+                    #expect(ros.isStarted)
+                    #expect(await n2.refCount == 2)
+                    #expect(!n2.gNodeStartedByNodeHandle)
                     do {
-                        let n4 = ros.createNode()
-                        XCTAssert(ros.isStarted.load(ordering: .relaxed))
-                        XCTAssertFalse(n4.gNodeStartedByNodeHandle)
-                        XCTAssertEqual(n4.refCount,4)
+                        let n3 = await ros.createNode()
+                        #expect(ros.isStarted)
+                        #expect(await n3.refCount == 3)
+                        #expect(!n3.gNodeStartedByNodeHandle)
+                        do {
+                            let n4 = await ros.createNode()
+                            #expect(ros.isStarted)
+                            #expect(!n4.gNodeStartedByNodeHandle)
+                            #expect(await n4.refCount == 4)
+                        }
+                        #expect(await n1.refCount == 3)
                     }
-                    XCTAssertEqual(n1.refCount,3)
+                    #expect(await n1.refCount == 2)
                 }
-                XCTAssertEqual(n1.refCount,2)
+                #expect(await n1.refCount == 1)
+                #expect(ros.isStarted)
             }
-            XCTAssertEqual(n1.refCount,1)
-            XCTAssert(ros.isStarted.load(ordering: .relaxed))
+            #expect(ros.nodeReferenceCount.load(ordering: .relaxed) == 0)
+            #expect(!ros.isStarted)
+            do {
+                let n5 = await ros.createNode()
+                #expect(ros.isStarted)
+                #expect(await n5.refCount == 1)
+                #expect(n5.gNodeStartedByNodeHandle)
+            }
+            #expect(ros.nodeReferenceCount.load(ordering: .relaxed) == 0)
+            #expect(!ros.isStarted)
         }
-        XCTAssertEqual(ros.nodeReferenceCount.load(ordering: .relaxed), 0)
-        XCTAssertFalse(ros.isStarted.load(ordering: .relaxed))
-        do {
-            let n5 = ros.createNode()
-            XCTAssert(ros.isStarted.load(ordering: .relaxed))
-            XCTAssertEqual(n5.refCount,1)
-            XCTAssert(n5.gNodeStartedByNodeHandle)
-        }
-        XCTAssertEqual(ros.nodeReferenceCount.load(ordering: .relaxed), 0)
-        XCTAssertFalse(ros.isStarted.load(ordering: .relaxed))
-        ros.shutdown()
     }
 
+    @Test func intraprocess() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let _chatter: Mutex<Float64> = Mutex(0.0)
+            var chatter: Float64 {
+                _chatter.withLock { $0 }
+            }
+            let n = await ros.createNode()
+            let chatter_pub = try #require(await n.advertise(topic: "/intrachatter", message: std_msgs.float64.self))
 
-    func testIntraprocess() {
-        let ros = Ros(master: host)
-        var chatter : Float64 = 0.0
-        let n = ros.createNode()
-        guard let chatter_pub = n.advertise(topic: "/intrachatter", message: std_msgs.float64.self ) else {
-            exit(1)
+            @Sendable func chatterCallback(msg: std_msgs.float64) {
+                print("I saw: [\(msg)]")
+                _chatter.withLock { $0 = msg.data }
+            }
+
+            let vab = await n.subscribe(topic: "/intrachatter", queueSize: 1, callback: chatterCallback)
+            #expect(vab != nil)
+
+            await chatter_pub.publish(message: std_msgs.float64(10.0))
+            try? await Task.sleep(for: .milliseconds(100))
+            await ros.spinOnce()
+            try? await Task.sleep(for: .milliseconds(100))
+
+            #expect(chatter == 10.0)
         }
-
-        func chatterCallback(msg: std_msgs.float64) {
-            print("I saw: [\(msg)]")
-            chatter = msg.data
-        }
-        let vab = n.subscribe(topic: "/intrachatter", queueSize: 1, callback: chatterCallback)
-        XCTAssertNotNil(vab)
-
-        chatter_pub.publish(message: std_msgs.float64(10.0))
-        usleep(100000)
-        ros.spinOnce()
-        usleep(100000)
-
-        XCTAssertEqual(chatter, 10.0)
-
     }
 
-    func testgetPublishedTopics() {
-        let ros = Ros(master: host)
-        let n = ros.createNode()
-        let advertised_topics = (1...8).map { "/test_topic_\($0)" }
+    @Test func getPublishedTopics() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let n = await ros.createNode()
+            let advertised_topics = (1...8).map { "/test_topic_\($0)" }
 
-        var pubs = [Publisher]()
-        for adv_it in advertised_topics {
-            if let pub = n.advertise(topic: adv_it, message: std_msgs.float64.self) {
-                pubs.append(pub)
-            } else {
-                XCTFail(adv_it)
+            var pubs = [Publisher]()
+            for adv_it in advertised_topics {
+                if let pub = await n.advertise(topic: adv_it, message: std_msgs.float64.self) {
+                    pubs.append(pub)
+                } else {
+                    Issue.record("Failed to advertise \(adv_it)")
+                }
+            }
+
+            let topics = try await ros.master.getTopics(callerId: ros.name)
+
+            for topic in advertised_topics {
+                #expect(topics.contains { $0.name == topic })
             }
         }
+    }
 
-        guard let topics = try? ros.master.getTopics(callerId: ros.name).wait() else {
-            XCTFail()
-            return
-        }
+    @Test func trackedObjectWithAdvertiseSubscriberCallback() async throws {
+        try await withRos(name: "testCallServiceProvider", master: host, port: port) { rosProvider in
+            let g_recv_count = ManagedAtomic(0)
+            let g_sub_count = ManagedAtomic(0)
 
-        for topic in advertised_topics {
-            XCTAssert(topics.contains { $0.name == topic })
+            @Sendable func connectCallback(_ publisher: SingleSubscriberPublisher) {
+                g_sub_count.wrappingIncrement(ordering: .relaxed)
+            }
+
+            @Sendable func subscriberCallback(req: String) {
+                g_recv_count.wrappingIncrement(ordering: .relaxed)
+            }
+
+            let n = await rosProvider.createNode()
+
+            final class Trackable: TrackableObject {
+                let id: String = "rer"
+            }
+
+            var tracked: Trackable? = Trackable()
+
+            let pub = try #require(await n.advertise(topic: "/test", queueSize: 0, connectCall: connectCallback, message: std_msgs.string.self, tracked_object: tracked))
+
+            var sub = await n.subscribe(topic: "/test", queueSize: 1, callback: subscriberCallback)
+            await pub.publish(message: "hello")
+
+            await rosProvider.spinOnce()
+
+            let d = WallDuration(seconds: 0.01)
+            while g_sub_count.load(ordering: .relaxed) == 0 {
+                await d.sleep()
+                await rosProvider.spinOnce()
+            }
+
+            #expect(g_sub_count.load(ordering: .relaxed) == 1)
+
+            sub?.shutdown()
+
+            tracked = nil
+
+            await pub.publish(message: "hello")
+
+            await rosProvider.spinOnce()
+
+            sub = await n.subscribe(topic: "/test", queueSize: 1, callback: subscriberCallback)
+
+            for _ in 0..<10 {
+                await d.sleep()
+                await rosProvider.spinOnce()
+            }
+
+            #expect(g_sub_count.load(ordering: .relaxed) == 1)
+            #expect(g_recv_count.load(ordering: .relaxed) == 1)
         }
     }
 
-    func testnodeHandleParentWithRemappings() {
-        let ros = Ros(master: host)
-        let remappings = ["a":"b", "c":"d"]
-        guard let n1 = ros.createNode(ns: "/", remappings: remappings) else {
-            XCTFail()
-            return
+    @Test func trackedObjectWithSubscriptionCallback() async throws {
+        try await withRos(name: "testCallServiceProvider", master: host, port: port) { rosProvider in
+            let g_recv_count = ManagedAtomic(0)
+
+            @Sendable func subscriberCallback(req: String) {
+                g_recv_count.wrappingIncrement(ordering: .relaxed)
+            }
+
+            let n = await rosProvider.createNode()
+
+            final class Trackable: TrackableObject {
+                let id: String = "rer"
+            }
+
+            var tracked: Trackable? = Trackable()
+
+            let sub = await n.subscribe(topic: "/test", queueSize: 1, callback: subscriberCallback, tracked_object: tracked)
+
+            let pub = try #require(await n.advertise(topic: "/test", queueSize: 0, message: String.self))
+
+            let d = WallDuration(seconds: 0.01)
+            while g_recv_count.load(ordering: .relaxed) == 0 {
+                await pub.publish(message: "hello")
+                await d.sleep()
+                await rosProvider.spinOnce()
+            }
+            #expect(g_recv_count.load(ordering: .relaxed) == 1)
+
+            tracked = nil
+
+            await pub.publish(message: "hello")
+            for _ in 0..<10 {
+                await d.sleep()
+                await rosProvider.spinOnce()
+            }
+
+            #expect(g_recv_count.load(ordering: .relaxed) == 1)
+
+            sub?.shutdown()
         }
-
-        
-        XCTAssertEqual(n1.namespace, "/")
-        XCTAssertEqual(n1.remappings, ["/a":"/b","/c":"/d"])
-
-
-        // Sanity checks
-
-        XCTAssertEqual(n1.resolveName(name: "a"), "/b")
-        XCTAssertEqual(n1.resolveName(name: "/a"), "/b")
-        XCTAssertEqual(n1.resolveName(name: "c"), "/d")
-        XCTAssertEqual(n1.resolveName(name: "/c"), "/d")
-
-        let n2 = ros.createNode(parent: n1, ns: "my_ns")
-
-        XCTAssertEqual(n2.resolveName(name: "a"), "/my_ns/a")
-        XCTAssertEqual(n2.resolveName(name: "/a"), "/b")
-        XCTAssertEqual(n2.resolveName(name: "c"), "/my_ns/c")
-        XCTAssertEqual(n2.resolveName(name: "/c"), "/d")
-
-        let n3 = ros.createNode(parent: n2)
-
-        XCTAssertEqual(n3.resolveName(name: "a"), "/my_ns/a")
-        XCTAssertEqual(n3.resolveName(name: "/a"), "/b")
-        XCTAssertEqual(n3.resolveName(name: "c"), "/my_ns/c")
-        XCTAssertEqual(n3.resolveName(name: "/c"), "/d")
-
     }
 
-    var g_recv_count: Int32 = 0
-    func subscriberCallback(_ f: std_msgs.float64) {
-        g_recv_count = g_recv_count + 1
+    @Test func nodeHandleParentWithRemappings() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let remappings = ["a": "b", "c": "d"]
+            let n1 = try #require(await ros.createNode(ns: "/", remappings: remappings))
+
+            #expect(await n1.namespace == "/")
+            #expect(await n1.remappings == ["/a": "/b", "/c": "/d"])
+
+            #expect(await n1.resolveName(name: "a") == "/b")
+            #expect(await n1.resolveName(name: "/a") == "/b")
+            #expect(await n1.resolveName(name: "c") == "/d")
+            #expect(await n1.resolveName(name: "/c") == "/d")
+
+            let n2 = await ros.createNode(parent: n1, ns: "my_ns")
+
+            #expect(await n2.resolveName(name: "a") == "/my_ns/a")
+            #expect(await n2.resolveName(name: "/a") == "/b")
+            #expect(await n2.resolveName(name: "c") == "/my_ns/c")
+            #expect(await n2.resolveName(name: "/c") == "/d")
+
+            let n3 = await ros.createNode(parent: n2)
+
+            #expect(await n3.resolveName(name: "a") == "/my_ns/a")
+            #expect(await n3.resolveName(name: "/a") == "/b")
+            #expect(await n3.resolveName(name: "c") == "/my_ns/c")
+            #expect(await n3.resolveName(name: "/c") == "/d")
+        }
     }
 
-
-    class SubscribeHelper {
+    final class SubscribeHelper: Sendable {
         let recv_count_ = ManagedAtomic(0)
 
-        func callback(_ f: std_msgs.float64) {
+        @Sendable func callback(_ f: std_msgs.float64) {
             recv_count_.wrappingIncrement(ordering: .relaxed)
         }
     }
 
+    @Test func subscriberDestructionMultipleCallbacks() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let n = await ros.createNode()
+            let pub = try #require(await n.advertise(topic: "test", message: std_msgs.float64.self))
+            let msg = std_msgs.float64(3.14)
 
-    func testSubscriberDestructionMultipleCallbacks() {
-        let ros = Ros(master: host)
-        let n = ros.createNode()
-        guard let pub = n.advertise(topic: "test", message: std_msgs.float64.self) else {
-            XCTFail()
-            return
-        }
-        let msg = std_msgs.float64(3.14)
-        do {
-            let helper = SubscribeHelper()
-            let sub_class = n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
-            XCTAssertNotNil(sub_class)
-            let d = RosDuration(milliseconds: 50)
-            var last_class_count = helper.recv_count_.load(ordering: .relaxed)
-            while last_class_count == helper.recv_count_.load(ordering: .relaxed) {
-                pub.publish(message: msg)
-                ros.spinOnce()
-                d.sleep()
+            let g_recv_count = ManagedAtomic(0)
+            @Sendable func subscriberCallback(_ f: std_msgs.float64) {
+                g_recv_count.wrappingIncrement(ordering: .relaxed)
             }
 
-            var last_fn_count = g_recv_count
             do {
-                let sub_fn = n.subscribe(topic: "test", queueSize: 0, callback: subscriberCallback)
-                XCTAssertNotNil(sub_fn)
-                last_fn_count = g_recv_count
-                while last_fn_count == g_recv_count {
-                    pub.publish(message: msg)
-                    ros.spinOnce()
-                    d.sleep()
+                let helper = SubscribeHelper()
+                let sub_class = await n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
+                #expect(sub_class != nil)
+                let d = RosDuration(milliseconds: 50)
+                var last_class_count = helper.recv_count_.load(ordering: .relaxed)
+                while last_class_count == helper.recv_count_.load(ordering: .relaxed) {
+                    await pub.publish(message: msg)
+                    await ros.spinOnce()
+                    await d.sleep()
                 }
-            }
 
-            last_fn_count = g_recv_count
-            last_class_count = helper.recv_count_.load(ordering: .relaxed)
-            while last_class_count == helper.recv_count_.load(ordering: .relaxed) {
-                pub.publish(message: msg)
-                ros.spinOnce()
-                d.sleep()
-            }
+                var last_fn_count = g_recv_count.load(ordering: .relaxed)
+                do {
+                    let sub_fn = await n.subscribe(topic: "test", queueSize: 0, callback: subscriberCallback)
+                    #expect(sub_fn != nil)
+                    last_fn_count = g_recv_count.load(ordering: .relaxed)
+                    while last_fn_count == g_recv_count.load(ordering: .relaxed) {
+                        await pub.publish(message: msg)
+                        await ros.spinOnce()
+                        await d.sleep()
+                    }
+                }
 
-            XCTAssertEqual(last_fn_count, g_recv_count);
+                last_fn_count = g_recv_count.load(ordering: .relaxed)
+                last_class_count = helper.recv_count_.load(ordering: .relaxed)
+                while last_class_count == helper.recv_count_.load(ordering: .relaxed) {
+                    await pub.publish(message: msg)
+                    await ros.spinOnce()
+                    await d.sleep()
+                }
+
+                #expect(last_fn_count == g_recv_count.load(ordering: .relaxed))
+            }
         }
     }
 
-    func testPublisherMultiple() {
-        let ros = Ros(master: host)
-
-        do {
-            let n = ros.createNode()
-            let pub1 = n.advertise(topic: "/test", message: std_msgs.float64.self)
-            XCTAssertNotNil(pub1)
-            
+    @Test func publisherMultiple() async throws {
+        try await withRos(master: host, port: port) { ros in
             do {
-                let pub2 = n.advertise(topic: "/test", message: std_msgs.float64.self)
-                XCTAssertNotNil(pub2)
+                let n = await ros.createNode()
+                let pub1 = await n.advertise(topic: "/test", message: std_msgs.float64.self)
+                #expect(pub1 != nil)
 
-                let topics1 = ros.getAdvertisedTopics()
-                let t1 = topics1.first(where: { $0 == "/test" })
-                XCTAssertNotNil(t1)
+                do {
+                    let pub2 = await n.advertise(topic: "/test", message: std_msgs.float64.self)
+                    #expect(pub2 != nil)
+
+                    let topics1 = ros.getAdvertisedTopics()
+                    let t1 = topics1.first(where: { $0 == "/test" })
+                    #expect(t1 != nil)
+                }
+
+                let topics2 = ros.getAdvertisedTopics()
+                let t2 = topics2.first(where: { $0 == "/test" })
+                #expect(t2 != nil)
             }
-
-            let topics2 = ros.getAdvertisedTopics()
-            let t2 = topics2.first(where: { $0 == "/test" })
-            XCTAssertNotNil(t2)
-       }
-        WallDuration(milliseconds: 100).sleep()
-        print("leaving scope")
-        let topics3 = ros.getAdvertisedTopics()
-        print(topics3)
-        let t3 = topics3.first(where: { $0 == "/test" })
-        XCTAssertNil(t3)
-    }
-
-    func testPublisherCallback() {
-        let ros = Ros(master: host)
-
-        let n = ros.createNode()
-        let conns = ManagedAtomic(0)
-        let disconns = ManagedAtomic(0)
-
-        let ops = AdvertiseOptions(
-            topic: "/testCallback",
-            queueSize: 1,
-            latch: false,
-            std_msgs.int8.self,
-            connectCall: { _ in
-                conns.wrappingIncrement(ordering: .relaxed)
-            },
-            disconnectCall: { _ in
-                disconns.wrappingIncrement(ordering: .relaxed)
-            }
-        )
-        
-        let pub = n.advertise(ops: ops)
-        do {
-            let sub = n.subscribe(topic: "/testCallback") { (msg: Int8) -> Void  in }
-            XCTAssertEqual(sub?.publisherCount, 1)
-            XCTAssertEqual(conns.load(ordering: .relaxed), 1)
-            XCTAssertEqual(disconns.load(ordering: .relaxed), 0)
-            XCTAssertEqual(pub?.numSubscribers, 1)
+            await WallDuration(milliseconds: 100).sleep()
+            print("leaving scope")
+            let topics3 = ros.getAdvertisedTopics()
+            print(topics3)
+            let t3 = topics3.first(where: { $0 == "/test" })
+            #expect(t3 == nil)
         }
-
-        XCTAssertEqual(pub?.numSubscribers, 0)
-        XCTAssertEqual(conns.load(ordering: .relaxed), 1)
-        XCTAssertEqual(disconns.load(ordering: .relaxed), 1)
-
     }
 
+    @Test func publisherCallback() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let n = await ros.createNode()
+            let conns = ManagedAtomic(0)
+            let disconns = ManagedAtomic(0)
 
+            let ops = AdvertiseOptions(
+                topic: "/testCallback",
+                queueSize: 1,
+                latch: false,
+                std_msgs.int8.self,
+                connectCall: { _ in
+                    conns.wrappingIncrement(ordering: .relaxed)
+                },
+                disconnectCall: { _ in
+                    disconns.wrappingIncrement(ordering: .relaxed)
+                }
+            )
 
-    func testMultipleRos() {
-        let r1 = Ros(name: "testMultipleRos", namespace: "ett", remappings: remap)
-        let r2 = Ros(name: "testMultipleRos", namespace: "två", remappings: remap)
+            let pub = await n.advertise(ops: ops)
+            do {
+                let sub = await n.subscribe(topic: "/testCallback") { (msg: Int8) -> Void in print("msg = \(msg)") }
+                #expect(sub?.publisherCount == 1)
+                #expect(conns.load(ordering: .relaxed) == 1)
+                #expect(disconns.load(ordering: .relaxed) == 0)
+                #expect(pub?.numSubscribers == 1)
+            }
 
-        let n1 = r1.createNode()
-        let p1 = n1.advertise(topic: "test", message: Int64.self)
+            #expect(pub?.numSubscribers == 0)
+            #expect(conns.load(ordering: .relaxed) == 1)
+            #expect(disconns.load(ordering: .relaxed) == 1)
+        }
+    }
 
-        let n2 = r2.createNode()
+    @Test func multipleRos() async throws {
+        let r1 = try Ros(name: "testMultipleRos", namespace: "ett", remappings: remap)
+        let r2 = try Ros(name: "testMultipleRos", namespace: "två", remappings: remap)
+
+        let n1 = await r1.createNode()
+        let p1 = await n1.advertise(topic: "test", message: Int64.self)
+
+        let n2 = await r2.createNode()
 
         let received = ManagedAtomic<Int64>(0)
 
-        let s2 = n2.subscribe(topic: "/ett/test", queueSize: 100) { (msg: Int64) -> Void in
+        let s2 = await n2.subscribe(topic: "/ett/test", queueSize: 100) { (msg: Int64) -> Void in
             received.wrappingIncrement(ordering: .relaxed)
         }
-        XCTAssertNotNil(s2)
+        #expect(s2 != nil)
 
-        DispatchQueue(label: "r1").async {
-            r2.spin()
+        Task.detached {
+            await r2.spin()
         }
 
-        WallDuration(milliseconds: 100).sleep()
+        await WallDuration(milliseconds: 100).sleep()
 
         let start = WallTime.now
-        let sent:Int64 = 100
+        let sent: Int64 = 100
         for i in 0..<sent {
-            p1?.publish(message: i)
+            await p1?.publish(message: i)
         }
         let end = WallTime.now
-        print("elapsed time = \((end-start).toSec()) ")
-        WallDuration(milliseconds: 1000).sleep()
+        print("elapsed time = \((end - start).toSec()) ")
+        await WallDuration(milliseconds: 1000).sleep()
 
-        XCTAssertEqual(received.load(ordering: .relaxed), sent)
+        #expect(received.load(ordering: .relaxed) == sent)
+
+        await r1.shutdownAsync()
+        await r2.shutdownAsync()
     }
 
-    func testInternal() {
-        let ros = Ros(master: host)
-        let n = ros.createNode()
-        let p = n.advertise(topic: "/testInternal", message: Int64.self)
+    @Test func `internal`() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let n = await ros.createNode()
+            let p = await n.advertise(topic: "/testInternal", message: Int64.self)
 
-        let received = ManagedAtomic<Int64>(0)
+            let received = ManagedAtomic<Int64>(0)
 
-        let s = n.subscribe(topic: "/testInternal", queueSize: 10) { (msg: Int64) -> Void in
-            received.wrappingIncrement(ordering: .relaxed)
+            let s = await n.subscribe(topic: "/testInternal", queueSize: 10) { (msg: Int64) -> Void in
+                #expect(received.load(ordering: .relaxed) == msg)
+                received.wrappingIncrement(ordering: .relaxed)
+            }
+            #expect(s != nil)
+
+            Task.detached(priority: .high) {
+                await ros.spin()
+            }
+
+            await WallDuration(milliseconds: 100).sleep()
+
+            let start = WallTime.now
+            let sent: Int64 = 100
+            for i in 0..<sent {
+                await p?.publish(message: i)
+                await WallDuration(milliseconds: 10).sleep()
+            }
+            let end = WallTime.now
+            print("elapsed time = \((end - start).toSec()) ")
+            await WallDuration(milliseconds: 100).sleep()
+
+            #expect(received.load(ordering: .relaxed) == sent)
         }
-        XCTAssertNotNil(s)
-
-        DispatchQueue(label: "r").async {
-            ros.spin()
-        }
-
-        WallDuration(milliseconds: 100).sleep()
-
-        let start = WallTime.now
-        let sent:Int64 = 100
-        for i in 0..<sent {
-            p?.publish(message: i)
-        }
-        let end = WallTime.now
-        print("elapsed time = \((end-start).toSec()) ")
-        WallDuration(milliseconds: 100).sleep()
-
-        XCTAssertEqual(received.load(ordering: .relaxed), sent)
-    }
-    
-    func testNonLatching() {
-        let ros = Ros(master: host)
-
-        let n = ros.createNode()
-        
-        let pub = n.advertise(topic: "/testInternal", latch: false, message: Int64.self)!
-        pub.publish(message: Int64(1))
-        
-        var count = 0
-        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
-            count += 1
-        }
-        
-        ros.spinOnce()
-
-        XCTAssertEqual(count, 0)
-
-    }
-    
-
-    
-    func testLatching() {
-        let ros = Ros(master: host)
-
-        let n = ros.createNode()
-        
-        let pub = n.advertise(topic: "/testInternal", latch: true, message: Int64.self)!
-        pub.publish(message: Int64(1))
-        
-        var count = 0
-        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
-            count += 1
-        }
-        
-        ros.spinOnce()
-
-        XCTAssertEqual(count, 1)
-
-    }
-    
-    func testLatchingMultipleSubscribers() {
-        let ros = Ros(master: host)
-
-        let n = ros.createNode()
-        
-        let pub = n.advertise(topic: "/testInternal", latch: true, message: Int64.self)!
-        pub.publish(message: Int64(1))
-        
-        var count1 = 0
-        var count2 = 0
-        
-        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
-            count1 += 1
-        }
-        
-        ros.spinOnce()
-
-        XCTAssertEqual(count1, 1)
-        XCTAssertEqual(count2, 0)
-        
-        _ = n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
-            count2 += 1
-        }
-        
-        ros.spinOnce()
-
-        XCTAssertEqual(count1, 1)
-        XCTAssertEqual(count1, 1)
-
-
     }
 
+    @Test func nonLatching() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let n = await ros.createNode()
 
+            let pub = try #require(await n.advertise(topic: "/testInternal", latch: false, message: Int64.self))
+            await pub.publish(message: Int64(1))
 
+            let count = ManagedAtomic(0)
+            _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+                _ = count.loadThenWrappingIncrement(ordering: .relaxed)
+            }
 
+            await ros.spinOnce()
+
+            #expect(count.load(ordering: .relaxed) == 0)
+        }
+    }
+
+    @Test func latching() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let n = await ros.createNode()
+
+            let pub = try #require(await n.advertise(topic: "/testInternal", latch: true, message: Int64.self))
+            await pub.publish(message: Int64(1))
+
+            let count = ManagedAtomic(0)
+            _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+                _ = count.loadThenWrappingIncrement(ordering: .relaxed)
+            }
+
+            await ros.spinOnce()
+
+            #expect(count.load(ordering: .relaxed) == 1)
+        }
+    }
+
+    @Test func latchingMultipleSubscribers() async throws {
+        try await withRos(master: host, port: port) { ros in
+            let n = await ros.createNode()
+
+            let pub = try #require(await n.advertise(topic: "/testInternal", latch: true, message: Int64.self))
+            await pub.publish(message: Int64(1))
+
+            let count1 = ManagedAtomic(0)
+            let count2 = ManagedAtomic(0)
+
+            _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+                _ = count1.loadThenWrappingIncrement(ordering: .relaxed)
+            }
+
+            await ros.spinOnce()
+
+            #expect(count1.load(ordering: .relaxed) == 1)
+            #expect(count2.load(ordering: .relaxed) == 0)
+
+            _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
+                _ = count2.loadThenWrappingIncrement(ordering: .relaxed)
+            }
+
+            await Task.yield()
+            await ros.spinOnce()
+
+            #expect(count1.load(ordering: .relaxed) == 1)
+            #expect(count2.load(ordering: .relaxed) == 1)
+        }
+    }
 }

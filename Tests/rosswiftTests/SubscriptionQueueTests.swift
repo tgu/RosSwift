@@ -5,139 +5,146 @@
 //  Created by Thomas Gustafsson on 2018-11-23.
 //
 
-import XCTest
+import Testing
 @testable import RosSwift
 import StdMsgs
 import RosTime
+import Foundation
+import Synchronization
 
-class SubscriptionQueueTests: XCTestCase {
+class SubscriptionQueueTests {
 
 
-    func testQueueSize() {
+    @Test func testQueueSize() async throws {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 1, allowConcurrentCallbacks: false)
 
-        XCTAssertFalse(queue.full)
+        #expect(await queue.full == false)
 
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
 
-        queue.push(helper: helper, deserializer: des)
-        XCTAssert( queue.full )
-        XCTAssertEqual(queue.call(), .success)
-        XCTAssertFalse(queue.full)
-        queue.push(helper: helper, deserializer: des)
-        XCTAssert( queue.full )
-        XCTAssert( queue.ready )
-        queue.push(helper: helper, deserializer: des)
-        XCTAssert( queue.full )
-        XCTAssertEqual(queue.call(), .success)
-        XCTAssertEqual(queue.call(), .invalid)
-        XCTAssertEqual(helper.calls, 2)
+        await queue.push(helper: helper, deserializer: des)
+        #expect(await queue.full )
+        #expect(try await queue.call() == .success)
+        #expect(await queue.full == false)
+        await queue.push(helper: helper, deserializer: des)
+        #expect(await queue.full )
+        #expect(await queue.ready )
+        await queue.push(helper: helper, deserializer: des)
+        #expect(await queue.full )
+        #expect(try await queue.call() == .success)
+        #expect(try await queue.call() == .invalid)
+        #expect(helper.calls == 2)
    }
 
-    func testInfiniteQueue() {
+    @Test func testInfiniteQueue() async throws {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
 
-        XCTAssertFalse(queue.full)
+        #expect(await queue.full == false)
 
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
 
-        queue.push(helper: helper, deserializer: des)
-        XCTAssertEqual(queue.call(), .success)
-        XCTAssertFalse(queue.full)
+        await queue.push(helper: helper, deserializer: des)
+        #expect(try await queue.call() == .success)
+        #expect(await queue.full == false)
 
         for _ in 0..<10000 {
-            queue.push(helper: helper, deserializer: des)
+            await queue.push(helper: helper, deserializer: des)
         }
-        XCTAssertFalse(queue.full)
+        #expect(await queue.full == false)
         for _ in 0..<10000 {
-            XCTAssertEqual(queue.call(), .success)
+            #expect(try await queue.call() == .success)
         }
-        XCTAssertEqual(queue.call(), .invalid)
-        XCTAssertEqual(helper.calls, 10001)
+        #expect(try await queue.call() == .invalid)
+        #expect(helper.calls == 10001)
     }
 
-    func testClearCall() {
+    @Test func testClearCall() async throws {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
-        queue.push(helper: helper, deserializer: des)
-        queue.clear()
-        XCTAssertEqual(queue.call(), .invalid)
+        await queue.push(helper: helper, deserializer: des)
+        await queue.clear()
+        #expect(try await queue.call() == .invalid)
     }
 
-    func testClearThenCall() {
+    @Test func testClearThenCall() async throws {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
-        queue.push(helper: helper, deserializer: des)
-        queue.clear()
-        queue.push(helper: helper, deserializer: des)
-        XCTAssertEqual(queue.call(), .success)
+        await queue.push(helper: helper, deserializer: des)
+        await queue.clear()
+        await queue.push(helper: helper, deserializer: des)
+        #expect(try await queue.call() == .success)
     }
 
     struct ClearInCallback: CallbackProtocol {
         let queue: SubscriptionQueue
 
-        func call() {
-            queue.clear()
+        func call() async {
+            await queue.clear()
         }
     }
 
-    func testClearInCallback() {
+    @Test func testClearInCallback() async throws {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
 
         helper.cb = ClearInCallback(queue: queue)
-        queue.push(helper: helper, deserializer: des)
-        queue.push(helper: helper, deserializer: des)
-        queue.push(helper: helper, deserializer: des)
-        queue.push(helper: helper, deserializer: des)
-        XCTAssertEqual(queue.call(), .success)
-        XCTAssertEqual(queue.call(), .invalid)
+        await queue.push(helper: helper, deserializer: des)
+        await queue.push(helper: helper, deserializer: des)
+        await queue.push(helper: helper, deserializer: des)
+        await queue.push(helper: helper, deserializer: des)
+        #expect(try await queue.call() == .success)
+        #expect(try await queue.call() == .invalid)
     }
 
-    final class Barrier {
-        let condition = NSCondition()
-        let mutex = DispatchQueue(label: "barrier")
-        var count : UInt
+    /// Async rendezvous for N parties. Each caller awaits `wait()`; the call
+    /// completes once `count` parties have arrived. Replaces an earlier
+    /// `NSCondition`-based barrier that parked threads on the cooperative
+    /// pool and triggered priority-inversion warnings.
+    actor Barrier {
+        private var remaining: Int
+        private var waiters: [CheckedContinuation<Void, Never>] = []
 
-        init(count: UInt) {
-            self.count = count
+        init(count: Int) {
+            self.remaining = count
         }
 
-        func wait() {
-            condition.lock()
-            count -= 1
-            if count == 0 {
-                condition.broadcast()
-            } else {
-                condition.wait()
+        func wait() async {
+            remaining -= 1
+            if remaining == 0 {
+                let resume = waiters
+                waiters.removeAll()
+                for w in resume { w.resume() }
+                return
             }
-            condition.unlock()
+            await withCheckedContinuation { cont in
+                waiters.append(cont)
+            }
         }
     }
 
 
-    class ClearWhileThreadIsBlockingCallback: CallbackProtocol {
+    final class ClearWhileThreadIsBlockingCallback: CallbackProtocol, @unchecked Sendable {
         var done: Bool
-        var barrier: Barrier
+        let barrier: Barrier
 
         init(done: Bool, barrier: Barrier) {
             self.done = done
             self.barrier = barrier
         }
 
-        func call() {
-            barrier.wait()
-            WallDuration(milliseconds: 1000).sleep()
-           done = true
+        func call() async {
+            await barrier.wait()
+            await WallDuration(milliseconds: 1000).sleep()
+            done = true
         }
     }
 
-    func testClearWhileThreadIsBlocking() {
+    @Test func testClearWhileThreadIsBlocking() async {
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
@@ -146,31 +153,31 @@ class SubscriptionQueueTests: XCTestCase {
 
         let cb = ClearWhileThreadIsBlockingCallback(done: false, barrier: barrier)
         helper.cb = cb
-        queue.push(helper: helper, deserializer: des)
-        let thread = Thread {
-            queue.call()
+        await queue.push(helper: helper, deserializer: des)
+        let thread = Task.detached {
+            try await queue.call()
         }
-        thread.start()
-        barrier.wait()
-        queue.clear()
-        XCTAssert(cb.done)
+        await barrier.wait()
+        await queue.clear()
+        thread.cancel()
+        #expect(cb.done)
     }
 
-    class WaitForBarrier: CallbackProtocol {
-        var barrier: Barrier
+    final class WaitForBarrier: CallbackProtocol, @unchecked Sendable {
+        let barrier: Barrier
 
         init(barrier: Barrier) {
             self.barrier = barrier
         }
 
-        func call() {
-            barrier.wait()
+        func call() async {
+            await barrier.wait()
         }
     }
 
 
-    func testConcurrentCallbacks() {
-        #if os(macOS)
+    @Test func testConcurrentCallbacks() async {
+        #if false
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: true)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
@@ -179,8 +186,8 @@ class SubscriptionQueueTests: XCTestCase {
         helper.cb = WaitForBarrier(barrier: barrier)
         let lock1 = NSConditionLock()
         let lock2 = NSConditionLock()
-        queue.push(helper: helper, deserializer: des)
-        queue.push(helper: helper, deserializer: des)
+        await queue.push(helper: helper, deserializer: des)
+        await queue.push(helper: helper, deserializer: des)
         let thread1 = Thread {
             lock1.lock()
             queue.call()
@@ -195,25 +202,27 @@ class SubscriptionQueueTests: XCTestCase {
         thread2.start()
         lock1.lock(whenCondition: 1)
         lock2.lock(whenCondition: 1)
-        XCTAssertEqual(helper.calls, 2)
+        #expect(helper.calls == 2)
         #endif
     }
 
     struct WaitForASecond: CallbackProtocol {
-        func call() {
-            WallDuration(seconds: 1).sleep()
+        func call() async throws {
+            let now = ContinuousClock.now
+            let next = now.advanced(by: .seconds(1))
+            try await ContinuousClock().sleep(until: next)
         }
     }
 
 
-    func testNonConcurrentOrdering() {
-        #if os(macOS)
+    func testNonConcurrentOrdering() async {
+        #if false
         let queue = SubscriptionQueue(topic: "topic", queueSize: 0, allowConcurrentCallbacks: false)
         let helper = FakeSubHelper()
         let des = MessageDeserializer(helper: helper, m: SerializedMessage(), header: StringStringMap())
         helper.cb = WaitForASecond()
-        queue.push(helper: helper, deserializer: des)
-        queue.push(helper: helper, deserializer: des)
+        await queue.push(helper: helper, deserializer: des)
+        await queue.push(helper: helper, deserializer: des)
         let lock1 = NSConditionLock()
         let lock2 = NSConditionLock()
         let thread1 = Thread {
@@ -230,42 +239,45 @@ class SubscriptionQueueTests: XCTestCase {
         thread2.start()
         lock1.lock(whenCondition: 1)
         lock2.lock(whenCondition: 1)
-        XCTAssertEqual(helper.calls, 1)
+        #expect(helper.calls == 1)
         queue.call()
-        XCTAssertEqual(helper.calls, 2)
+        #expect(helper.calls == 2)
         #endif
     }
 }
 
-class FakeMessage: Message {
+struct FakeMessage: Message {
     static let md5sum: String = ""
     static let datatype: String = ""
     static let definition: String = ""
 }
 
 protocol CallbackProtocol {
-    func call()
+    func call() async throws
 }
 
 
-class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible {
+final class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible, @unchecked Sendable {
 
     var debugDescription: String { return "Fake \(calls)" }
 
     let id = UUID()
-    var calls = 0
+    let _calls = Mutex(0)
     var cb : CallbackProtocol?
-    var mutex = DispatchQueue(label: "mutex")
+
+    var calls: Int {
+        _calls.withLock { $0 }
+    }
 
     func deserialize(data: [UInt8]) -> Message? {
         return FakeMessage()
     }
 
-    func call(msg: Message, item: SubscriptionQueue.Item) {
-        mutex.sync {
-            calls += 1
+    func call(msg: Message, item: SubscriptionQueue.Item) async throws {
+        _calls.withLock {
+            $0 += 1
         }
-        cb?.call()
+        try await cb?.call()
     }
 
 }

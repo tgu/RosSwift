@@ -9,14 +9,16 @@ import Foundation
 
 
 public struct WallTime: TimeBase {
+    public typealias Duration = WallDuration
+    
     public static let isSystemTime = true
     
     public let nanoseconds: UInt64
-
+    
     public init(nanosec: UInt64) {
         nanoseconds = nanosec
     }
-
+    
     public static var now: WallTime {
         let time = walltime()
         return WallTime(sec: time.sec, nsec: time.nsec)

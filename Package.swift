@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.2
 
 import PackageDescription
 
@@ -18,21 +18,25 @@ var products: [Product] = [
     .library(name: "msgs", targets: ["msgs"]),
     .library(name: "StdMsgs", targets: ["StdMsgs"]),
     .library(name: "RosTime", targets: ["RosTime"]),
+    .library(name: "rosmaster", targets: ["rosmaster"]),
+    .library(name: "RosNetwork", targets: ["RosNetwork"]),
 ]
 
 var targets: [Target] = [
     .target( name: "RosSwift",
-             dependencies: ["StdMsgs",
-                            "msgs",
-                            "RosTime",
-                            "BinaryCoder",
+             dependencies: [.byName(name: "StdMsgs"),
+                            .byName(name: "msgs"),
+                            .byName(name: "RosTime"),
+                            .byName(name: "BinaryCoder"),
                             .product(name: "NIO", package: "swift-nio"),
                             .product(name: "NIOHTTP1", package: "swift-nio"),
                             .product(name: "NIOExtras", package: "swift-nio-extras"),
-                            "RosNetwork",
-                            "HeliumLogger",
+                            .byName(name: "RosNetwork"),
+                            .product(name: "Logging", package: "swift-log"),
                             .product(name: "DequeModule", package: "swift-collections"),
-                            "rpcobject"],
+                            .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                            .product(name: "ServiceLifecycle", package: "swift-service-lifecycle"),
+                            .byName(name: "rpcobject")],
              path: "Sources/rosswift"),
     .target( name: "msgs", dependencies: ["StdMsgs","RosTime"]),
     .target( name: "StdMsgs", dependencies: ["RosTime"]),
@@ -45,13 +49,14 @@ var targets: [Target] = [
 ]
 
 var dependencies: [Package.Dependency] = [
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.41.1"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.91.0"),
     .package(url: "https://github.com/tgu/BinaryCoder.git", from: "1.1.0"),
-    .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.200"),
-    .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.3"),
-    .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.13.0"),
-    .package(url: "https://github.com/apple/swift-log.git", from: "1.4.4"),
-    .package(url: "https://github.com/apple/swift-atomics.git", from: "1.0.2"),
+    .package(url: "https://github.com/apple/swift-collections.git", from: "1.3.0"),
+    .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.31.2"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.8.0"),
+    .package(url: "https://github.com/apple/swift-atomics.git", from: "1.3.0"),
+    .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.1.0"),
+    .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.9.1"),
 ]
 
 
@@ -60,18 +65,27 @@ products.append(.executable(name: "publisher", targets: ["publisher"]))
 products.append(.executable(name: "listener", targets: ["listener"]))
 products.append(.executable(name: "msgbuilder", targets: ["msgbuilder"]))
 
-targets.append(.executableTarget( name: "listener", dependencies: ["RosSwift"]))
+targets.append(.executableTarget( name: "listener", dependencies: [
+    "RosSwift",
+    .product(name: "ServiceLifecycle", package: "swift-service-lifecycle"),
+    .product(name: "Logging", package: "swift-log")]))
 targets.append(.executableTarget( name: "publisher",
-                                      dependencies: ["RosSwift"],
+                                      dependencies: [
+                                        "RosSwift",
+                                        .product(name: "ServiceLifecycle", package: "swift-service-lifecycle"),
+                                        .product(name: "Logging", package: "swift-log")],
                                       exclude: ["custom_msgs/srv/AddTwoInts.srv"]))
 targets.append(.executableTarget( name: "msgbuilder", dependencies: msgDep))
 targets.append(.testTarget( name: "msgBuilderTests", dependencies: ["msgbuilderLib"]))
 targets.append(.executableTarget(name: "roscore", dependencies: [
     "rosmaster", "RosNetwork",
+    .product(name: "ServiceLifecycle", package: "swift-service-lifecycle"),
     .product(name: "Logging", package: "swift-log")]))
 targets.append(.target(name: "rosmaster", dependencies: [
     "rpcclient",
     .product(name: "NIOHTTP1", package: "swift-nio"),
+    .product(name: "NIOExtras", package: "swift-nio-extras"),
+    .product(name: "ServiceLifecycle", package: "swift-service-lifecycle"),
     .product(name: "Logging", package: "swift-log")]))
 targets.append(.testTarget(name: "rosmasterTests", dependencies: ["roscore"]))
 targets.append(.target(name: "rpcclient", dependencies: [
@@ -85,6 +99,7 @@ targets.append(.testTarget( name: "rosswiftTests",
                                                "rpcobject",
                                                "rosmaster",
                                                "RosNetwork",
+                                               .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
                                                swiftAtomics]))
 #endif
 
@@ -113,7 +128,7 @@ targets.append(
 
 let package = Package(
     name: "RosSwift",
-    platforms: [.macOS(.v13), .iOS(.v14), .tvOS(.v14), .watchOS(.v7), .visionOS(.v1)],
+    platforms: [.macOS("15.4"), .iOS("18.4"), .tvOS("18.4")],
     products: products,
     dependencies: dependencies,
     targets: targets

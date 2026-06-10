@@ -7,27 +7,28 @@
 
 import StdMsgs
 
-public struct SubscribeOptions<M: Message> {
+public struct SubscribeOptions<M: Message>: Sendable {
     var topic: String
     let transportHints = TransportHints()
     let helper: SubscriptionCallbackHelper 
-    var trackedObject: AnyObject?
+    weak var trackedObject: TrackableObject?
     var allowConcurrentCallbacks = false
-    var callbackQueue: CallbackQueueInterface
+    var callbackQueue: AsyncCallbackQueue
     let queueSize: UInt32
-
-    init(topic: String, queueSize: UInt32, queue: CallbackQueueInterface, callback: @escaping ((M) -> Void)) {
+    
+    init(topic: String, queueSize: UInt32, queue: AsyncCallbackQueue, trackedObject: TrackableObject? = nil, callback: @escaping @Sendable (M) -> Void) {
         self.topic = topic
         self.helper = SubscriptionCallbackHelperT(callback: callback)
         self.queueSize = queueSize
         self.callbackQueue = queue
+        self.trackedObject = trackedObject
     }
-
-    init(topic: String, queueSize: UInt32, queue: CallbackQueueInterface, callback: @escaping ((MessageEvent<M>) -> Void)) {
+    
+    init(topic: String, queueSize: UInt32, queue: AsyncCallbackQueue, callback: @escaping @Sendable (MessageEvent<M>) -> Void) {
         self.topic = topic
         self.helper = SubscriptionEventCallbackHelperT(callback: callback)
         self.queueSize = queueSize
         self.callbackQueue = queue
     }
-
+    
 }

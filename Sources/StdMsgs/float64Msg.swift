@@ -3,7 +3,7 @@
 
 
 extension std_msgs {
-	public struct float64: Message {
+	public struct float64: Message, Sendable {
 		public static let md5sum: String = "fdb28210bfa9d7c91146260178d9a584"
 		public static let datatype = "std_msgs/Float64"
 		public static let definition = "float64 data"

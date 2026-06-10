@@ -9,13 +9,14 @@ import StdMsgs
 
 public struct SingleSubscriberPublisher {
     let link: SubscriberLink
-
+    
     public var callerId: String {
         return link.destinationCallerId
     }
-
+    
     public func publish<M: Message>(_ msg: M) {
         let ser = SerializedMessage(msg: msg)
-        link.enqueueMessage(m: ser)
+        let lnk = link
+        Task { await lnk.enqueueMessage(ser) }
     }
 }

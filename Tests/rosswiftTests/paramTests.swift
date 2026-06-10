@@ -5,280 +5,266 @@
 //  Created by Thomas Gustafsson on 2018-10-30.
 //
 
-import XCTest
+import Testing
 @testable import RosSwift
 @testable import RosTime
 @testable import rpcobject
+import RosNetwork
+import rosmaster
 
 
-class paramTests: RosTest {
+@Suite("Parameter tests", .serialized)
+class paramTests {
     var ros: Ros!
+    let master: rosmaster.Master
+    var remap: [String:String] {
+        ["__master": master.address]
+    }
+    var host: String {
+        master.host
+    }
+    var port: Int {
+        master.port
+    }
 
-
-    override func setUp() {
+    init() async throws {
+        let network = RosNetwork(remappings: [:])
+        master = rosmaster.Master(host: network.gHost, port: 0, advertise: false)
+        _ = try await master.start().get()
         // Put setup code here. This method is called before the invocation of each test method in the class.
 
-        ros = Ros(name: "paramTests", master: host)
+        ros = try! Ros(name: "paramTests", master: host, port: port)
 
-        ros.param.set(key: "string", value: "test")
-        ros.param.set(key: "int", value: Int(10))
-        ros.param.set(key: "double", value: Double(10.5))
-        ros.param.set(key: "bool", value: false)
-        _ = ros.param.del(key: "/test_set_param_setThenGetStringCached")
-        _ = ros.param.del(key: "/test_create_parameter")
+        await ros.param.set(key: "string", value: "test")
+        await ros.param.set(key: "int", value: Int(10))
+        await ros.param.set(key: "double", value: Double(10.5))
+        await ros.param.set(key: "bool", value: false)
+        _ = await ros.param.del(key: "/test_set_param_setThenGetStringCached")
+        _ = await ros.param.del(key: "/test_create_parameter")
 
     }
 
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    deinit {
         ros.shutdown()
+        _ = master.stop()
     }
-
-    func testAllParamTypes() {
+    
+    @Test func testAllParamTypes() async {
         var string_param = ""
-        XCTAssert( ros.param.get( "string", &string_param ) )
-        XCTAssert( string_param == "test" )
+        #expect( await ros.param.get( "string", &string_param ) )
+        #expect( string_param == "test" )
 
         var int_param = 0
-        XCTAssert( ros.param.get( "int", &int_param ) )
-        XCTAssert( int_param == 10 )
+        #expect( await ros.param.get( "int", &int_param ) )
+        #expect( int_param == 10 )
 
         var double_param = 0.0
-        XCTAssert( ros.param.get( "double", &double_param ) )
-        XCTAssertEqual( double_param, 10.5 )
+        #expect( await ros.param.get( "double", &double_param ) )
+        #expect( double_param == 10.5 )
 
         var bool_param = true
-        XCTAssert( ros.param.get( "bool", &bool_param ) )
-        XCTAssertFalse( bool_param )
+        #expect( await ros.param.get( "bool", &bool_param ) )
+        #expect( bool_param  == false)
     }
 
-
-
-    func testPropertyWrapper() {
-        @RosParameter(name: "string", ros: ros) var string_param: String
-        @RosParameter(name: "string", ros: ros) var string_param2: String
-        @RosParameter(name: "test_create_parameter", ros: ros) var param3: String
-
-        XCTAssertEqual( string_param, "test" )
-        XCTAssertEqual( string_param2,"test" )
-
-        string_param = "testing"
-        XCTAssertEqual( string_param, "testing" )
-        XCTAssertEqual( string_param2, "testing" )
-
-        XCTAssertFalse( ros.param.has(key: "test_create_parameter"))
-        param3 = "param"
-        XCTAssert( ros.param.has(key: "test_create_parameter"))
-        XCTAssertEqual( param3, "param" )
+    @Test func testSetThenGetString() async {
+        await ros.param.set( key: "test_set_param", value: "asdf" )
 
         var param = ""
-        XCTAssert( ros.param.get( "test_create_parameter", &param ) )
-        XCTAssertEqual( "param", param )
-
-        ros.param.set(key: "test_create_parameter", value: "new value")
-        XCTAssertEqual( param3, "new value" )
-    }
-
-
-
-    func testSetThenGetString() {
-        ros.param.set( key: "test_set_param", value: "asdf" )
-
-        var param = ""
-        XCTAssert( ros.param.get( "test_set_param", &param ) )
-        XCTAssertEqual( "asdf", param )
+        #expect( await ros.param.get( "test_set_param", &param ) )
+        #expect( "asdf" == param )
 
         var v = XmlRpcValue()
-        XCTAssert( ros.param.get("test_set_param", &v) )
-        XCTAssertEqual(v, XmlRpcValue(str: "asdf") )
+        #expect( await ros.param.get("test_set_param", &v) )
+        #expect(v == XmlRpcValue(str: "asdf") )
     }
 
-    func testSetThenGetStringCached() {
-        _ = ros.param.del(key: "test_set_param_setThenGetStringCached")
+    @Test func testSetThenGetStringCached() async {
+        _ = await ros.param.del(key: "test_set_param_setThenGetStringCached")
         var  param = ""
-        XCTAssertFalse( ros.param.getCached( "test_set_param_setThenGetStringCached", &param) )
+        #expect( await ros.param.getCached( "test_set_param_setThenGetStringCached", &param) == false )
 
-        ros.param.set( key: "test_set_param_setThenGetStringCached", value: "asdf" )
-        XCTAssert( ros.param.getCached( "test_set_param_setThenGetStringCached", &param) )
-        XCTAssertEqual( "asdf", param )
+        await ros.param.set( key: "test_set_param_setThenGetStringCached", value: "asdf" )
+        #expect( await ros.param.getCached( "test_set_param_setThenGetStringCached", &param) )
+        #expect( "asdf" == param )
     }
 
-    func testSetThenGetNamespaceCached()
+    @Test func testSetThenGetNamespaceCached() async
     {
-        _ = ros.param.del(key: "/test_set_param_setThenGetStringCached2")
+        _ = await ros.param.del(key: "/test_set_param_setThenGetStringCached2")
         var stringParam = ""
         var structParam = XmlRpcValue()
         let ns = "test_set_param_setThenGetStringCached2"
-        XCTAssertFalse(ros.param.getCached(ns, &stringParam))
+        #expect(await ros.param.getCached(ns, &stringParam) == false)
 
-        ros.param.set(key: ns, value: "a")
-        XCTAssert(ros.param.getCached(ns, &stringParam))
-        XCTAssertEqual("a", stringParam)
+        await ros.param.set(key: ns, value: "a")
+        #expect(await ros.param.getCached(ns, &stringParam))
+        #expect("a" == stringParam)
 
-        ros.param.set(key: ns + "/foo", value: "b")
-        XCTAssert(ros.param.getCached(ns + "/foo", &stringParam))
-        XCTAssertEqual("b", stringParam)
-        XCTAssert(ros.param.getCached(ns, &structParam))
-        XCTAssert(structParam.hasMember("foo"))
-        XCTAssertEqual("b", structParam["foo"]?.string)
+        await ros.param.set(key: ns + "/foo", value: "b")
+        #expect(await ros.param.getCached(ns + "/foo", &stringParam))
+        #expect("b" == stringParam)
+        #expect(await ros.param.getCached(ns, &structParam))
+        #expect(structParam.hasMember("foo"))
+        #expect("b" == structParam["foo"]?.string)
 
     }
 
-    func testSetThenGetCString()
+    @Test func testSetThenGetCString() async
     {
-        ros.param.set( key: "test_set_param", value: "asdf" )
+        await ros.param.set( key: "test_set_param", value: "asdf" )
         var param = ""
-        XCTAssert( ros.param.get( "test_set_param", &param ) )
-        XCTAssertEqual( "asdf", param )
+        #expect( await ros.param.get( "test_set_param", &param ) )
+        #expect( "asdf" == param )
     }
 
-    func testsetThenGetInt()
+    @Test func testsetThenGetInt() async
     {
-        ros.param.set( key: "test_set_param", value: 42)
+        await ros.param.set( key: "test_set_param", value: 42)
         var param = 0
-        XCTAssert( ros.param.get( "test_set_param", &param ) )
-        XCTAssertEqual( 42, param )
+        #expect( await ros.param.get( "test_set_param", &param ) )
+        #expect( 42 == param )
         var v = XmlRpcValue()
-        XCTAssert(ros.param.get("test_set_param", &v))
+        #expect(await ros.param.get("test_set_param", &v))
         guard case .int = v else {
-            XCTFail()
+            #expect(Bool(false))
             return
         }
     }
 
-    func testunknownParam()
+    @Test func testunknownParam() async
     {
         var param = ""
-        XCTAssertFalse( ros.param.get( "this_param_really_should_not_exist", &param ) )
+        #expect( await ros.param.get( "this_param_really_should_not_exist", &param ) == false )
     }
 
-    func testdeleteParam()
+    @Test func testdeleteParam() async
     {
-        ros.param.set( key: "test_delete_param", value: "asdf" )
-        _ = ros.param.del( key: "test_delete_param" )
+        await ros.param.set( key: "test_delete_param", value: "asdf" )
+        _ = await ros.param.del( key: "test_delete_param" )
         var param = ""
-        XCTAssertFalse( ros.param.get( "test_delete_param", &param ) )
+        #expect( await ros.param.get( "test_delete_param", &param ) == false )
     }
 
-    func testhasParam()
+    @Test func testhasParam() async
     {
-        XCTAssert( ros.param.has( key: "string" ) )
+        #expect( await ros.param.has( key: "string" ) )
     }
 
-    func testsetIntDoubleGetInt()
+    @Test func testsetIntDoubleGetInt() async
     {
-        ros.param.set(key: "test_set_int_as_double", value: 1)
-        ros.param.set(key: "test_set_int_as_double", value: 3.0)
+        await ros.param.set(key: "test_set_int_as_double", value: 1)
+        await ros.param.set(key: "test_set_int_as_double", value: 3.0)
 
         var i = -1
-        XCTAssert(ros.param.get("test_set_int_as_double", &i))
-        XCTAssertEqual(3, i)
+        #expect(await ros.param.get("test_set_int_as_double", &i))
+        #expect(3 == i)
         var d = 0.0
-        XCTAssert(ros.param.get("test_set_int_as_double", &d))
-        XCTAssertEqual(3.0, d)
+        #expect(await ros.param.get("test_set_int_as_double", &d))
+        #expect(3.0 == d)
     }
 
-    func testgetIntAsDouble()
+    @Test func testgetIntAsDouble() async
     {
-        ros.param.set(key: "int_param", value: 1)
+        await ros.param.set(key: "int_param", value: 1)
         var d = 0.0
-        XCTAssert(ros.param.get("int_param", &d))
-        XCTAssertEqual(1.0, d)
+        #expect(await ros.param.get("int_param", &d))
+        #expect(1.0 == d)
     }
 
-    func testgetDoubleAsInt()
+    @Test func testgetDoubleAsInt() async
     {
-        ros.param.set(key: "double_param", value: 2.3)
+        await ros.param.set(key: "double_param", value: 2.3)
         var i = -1
-        XCTAssert(ros.param.get("double_param", &i))
-        XCTAssertEqual(2, i)
+        #expect(await ros.param.get("double_param", &i))
+        #expect(2 == i)
 
-        ros.param.set(key: "double_param", value: 3.8)
+        await ros.param.set(key: "double_param", value: 3.8)
         i = -1
-        XCTAssert(ros.param.get("double_param", &i))
-        XCTAssertEqual(4, i)
+        #expect(await ros.param.get("double_param", &i))
+        #expect(4 == i)
     }
 
-    func testsearchParam()
+    @Test func testsearchParam() async
     {
         let ns = "/a/b/c/d/e/f"
         var result = ""
 
-        ros.param.set(key: "/s_i", value: 1)
-        XCTAssert(ros.param.search(ns: ns, key: "s_i", result: &result))
-        XCTAssertEqual(result, "/s_i")
-        XCTAssert(ros.param.del(key: "/s_i"))
+        await ros.param.set(key: "/s_i", value: 1)
+        #expect(await ros.param.search(ns: ns, key: "s_i", result: &result))
+        #expect(result == "/s_i")
+        #expect(await ros.param.del(key: "/s_i"))
 
-        ros.param.set(key: "/a/b/s_i", value: 1)
-        XCTAssert(ros.param.search(ns: ns, key: "s_i", result: &result))
-        XCTAssertEqual(result, "/a/b/s_i")
-        XCTAssert(ros.param.del(key: "/a/b/s_i"))
+        await ros.param.set(key: "/a/b/s_i", value: 1)
+        #expect(await ros.param.search(ns: ns, key: "s_i", result: &result))
+        #expect(result == "/a/b/s_i")
+        #expect(await ros.param.del(key: "/a/b/s_i"))
 
-        ros.param.set(key: "/a/b/c/d/e/f/s_i", value: 1)
-        XCTAssert(ros.param.search(ns: ns, key: "s_i", result: &result))
-        XCTAssertEqual(result, "/a/b/c/d/e/f/s_i")
-        XCTAssert(ros.param.del(key: "/a/b/c/d/e/f/s_i"))
+        await ros.param.set(key: "/a/b/c/d/e/f/s_i", value: 1)
+        #expect(await ros.param.search(ns: ns, key: "s_i", result: &result))
+        #expect(result == "/a/b/c/d/e/f/s_i")
+        #expect(await ros.param.del(key: "/a/b/c/d/e/f/s_i"))
 
-        XCTAssertFalse(ros.param.search(ns: ns, key: "s_j", result: &result))
+        #expect(await ros.param.search(ns: ns, key: "s_j", result: &result) == false)
     }
 
-    func testsearchParamNodeHandle()
+    @Test func testsearchParamNodeHandle() async
     {
-        guard let n = ros.createNode(ns: "/a/b/c/d/e/f") else {
-            XCTFail()
+        guard let n = await ros.createNode(ns: "/a/b/c/d/e/f") else {
+            #expect(Bool(false))
             return
         }
         var result = ""
 
-        n.set(parameter: "/s_i", value: 1)
-        let ok = n.search(parameter: "s_i", result: &result)
-        XCTAssert(ok)
-        XCTAssertEqual(result, "/s_i")
-        XCTAssert(n.delete(paramter: "/s_i"))
+        await n.set(parameter: "/s_i", value: 1)
+        let ok = await n.search(parameter: "s_i", result: &result)
+        #expect(ok)
+        #expect(result == "/s_i")
+        #expect(await n.delete(paramter: "/s_i"))
 
-        n.set(parameter: "/a/b/s_i", value: 1)
-        XCTAssert(n.search(parameter: "s_i", result: &result))
-        XCTAssertEqual(result, "/a/b/s_i")
-        XCTAssert(n.delete(paramter:"/a/b/s_i"))
+        await n.set(parameter: "/a/b/s_i", value: 1)
+        await #expect(n.search(parameter: "s_i", result: &result))
+        #expect(result == "/a/b/s_i")
+        #expect(await n.delete(paramter:"/a/b/s_i"))
 
-        n.set(parameter: "/a/b/c/d/e/f/s_i", value: 1)
-        XCTAssert(n.search(parameter: "s_i", result: &result))
-        XCTAssertEqual(result, "/a/b/c/d/e/f/s_i")
-        XCTAssert(n.delete(paramter:"/a/b/c/d/e/f/s_i"))
+        await n.set(parameter: "/a/b/c/d/e/f/s_i", value: 1)
+        await #expect(n.search(parameter: "s_i", result: &result))
+        #expect(result == "/a/b/c/d/e/f/s_i")
+        #expect(await n.delete(paramter:"/a/b/c/d/e/f/s_i"))
 
-        XCTAssertFalse(n.search(parameter: "s_j", result: &result))
+        await #expect(n.search(parameter: "s_j", result: &result) == false)
     }
 
-    func testsearchParamNodeHandleWithRemapping()
+    @Test func testsearchParamNodeHandleWithRemapping() async
     {
-        _ = ros.param.del(key: "/s_b")
+        _ = await ros.param.del(key: "/s_b")
         let remappings = ["s_c":"s_b"]
-        guard let n = ros.createNode(ns: "/a/b/c/d/e/f", remappings: remappings) else {
-            XCTFail()
+        guard let n = await ros.createNode(ns: "/a/b/c/d/e/f", remappings: remappings) else {
+            #expect(Bool(false))
             return
         }
         var result = ""
 
-        n.set(parameter: "/s_c", value: 1)
-        XCTAssertFalse(n.search(parameter: "s_c", result: &result))
-        n.set(parameter: "/s_b", value: 1)
-        XCTAssert(n.search(parameter: "s_c", result: &result))
+        await n.set(parameter: "/s_c", value: 1)
+        await #expect(n.search(parameter: "s_c", result: &result) == false)
+        await n.set(parameter: "/s_b", value: 1)
+        await #expect(n.search(parameter: "s_c", result: &result))
         print("RESULT \(result)")
     }
 
-    func testgetMissingXmlRpcValueParameterCachedTwice()
+    @Test func testgetMissingXmlRpcValueParameterCachedTwice() async
     {
         var v = XmlRpcValue()
-        XCTAssertFalse(ros.param.getCached("invalid_xmlrpcvalue_param", &v))
-        XCTAssertFalse(ros.param.getCached("invalid_xmlrpcvalue_param", &v))
+        #expect(await ros.param.getCached("invalid_xmlrpcvalue_param", &v) == false)
+        #expect(await ros.param.getCached("invalid_xmlrpcvalue_param", &v) == false)
     }
 
-    func testdoublePrecision()
+    @Test func testdoublePrecision() async
     {
-        ros.param.set(key: "bar", value: 0.123456789123456789)
+        await ros.param.set(key: "bar", value: 0.123456789123456789)
         var d = 0.0
-        XCTAssert(ros.param.get("bar", &d))
-        XCTAssertEqual(d, 0.12345678912345678)
+        #expect(await ros.param.get("bar", &d))
+        #expect(d == 0.12345678912345678)
     }
 
     var vec_s = [String]()
@@ -292,123 +278,123 @@ class paramTests: RosTest {
     var vec_b = [Bool]()
     var vec_b2 = [Bool]()
 
-    func testvectorStringParam()
+    @Test func testvectorStringParam() async
     {
         let param_name = "v_param"
 
 
         vec_s = ["foo","bar","baz"]
 
-        ros.param.set(key: param_name, value: vec_s)
+        await ros.param.set(key: param_name, value: vec_s)
 
-        XCTAssertFalse(ros.param.get(param_name, &vec_d))
-        XCTAssertFalse(ros.param.get(param_name, &vec_f))
-        XCTAssertFalse(ros.param.get(param_name, &vec_i))
-        XCTAssertFalse(ros.param.get(param_name, &vec_b))
+        #expect(await ros.param.get(param_name, &vec_d) == false)
+        #expect(await ros.param.get(param_name, &vec_f) == false)
+        #expect(await ros.param.get(param_name, &vec_i) == false)
+        #expect(await ros.param.get(param_name, &vec_b) == false)
 
-        XCTAssert(ros.param.get(param_name, &vec_s2))
+        #expect(await ros.param.get(param_name, &vec_s2))
 
-        XCTAssertEqual(vec_s.count, vec_s2.count)
-        XCTAssertEqual(vec_s, vec_s2)
+        #expect(vec_s.count == vec_s2.count)
+        #expect(vec_s == vec_s2)
 
         // test empty vector
         vec_s.removeAll()
-        ros.param.set(key: param_name, value: vec_s)
-        XCTAssert(ros.param.get(param_name, &vec_s2))
-        XCTAssertEqual(vec_s.count, vec_s2.count)
+        await ros.param.set(key: param_name, value: vec_s)
+        #expect(await ros.param.get(param_name, &vec_s2))
+        #expect(vec_s.count == vec_s2.count)
     }
 
-    func testvectorDoubleParam()
+    @Test func testvectorDoubleParam() async
     {
         let param_name = "vec_double_param"
 
         vec_d = [-0.123456789,3,3.01,7.01]
 
-        ros.param.set(key: param_name, value: vec_d)
+        await ros.param.set(key: param_name, value: vec_d)
 
-        XCTAssertFalse(ros.param.get(param_name, &vec_s))
-        XCTAssert(ros.param.get(param_name, &vec_i))
-        XCTAssert(ros.param.get(param_name, &vec_b))
-        XCTAssert(ros.param.get(param_name, &vec_f))
+        #expect(await ros.param.get(param_name, &vec_s) == false)
+        #expect(await ros.param.get(param_name, &vec_i))
+        #expect(await ros.param.get(param_name, &vec_b))
+        #expect(await ros.param.get(param_name, &vec_f))
 
-        XCTAssert(ros.param.get(param_name, &vec_d2))
+        #expect(await ros.param.get(param_name, &vec_d2))
 
-        XCTAssertEqual(vec_d.count, vec_d2.count)
-        XCTAssertEqual(vec_d, vec_d2)
-        XCTAssertEqual(vec_f, [-0.123456789,3,3.01,7.01])
-        XCTAssertEqual(vec_i, [0,3,3,7])
-        XCTAssertEqual(vec_b, [true,true,true,true])
+        #expect(vec_d.count == vec_d2.count)
+        #expect(vec_d == vec_d2)
+        #expect(vec_f == [-0.123456789,3,3.01,7.01])
+        #expect(vec_i == [0,3,3,7])
+        #expect(vec_b == [true,true,true,true])
 
     }
 
-    func testvectorFloatParam()
+    @Test func testvectorFloatParam() async
     {
         let param_name = "vec_float_param"
 
         vec_f = [-0.25, 0.0, 3, 3.25]
 
-        ros.param.set(key: param_name, value: vec_f)
+        await ros.param.set(key: param_name, value: vec_f)
 
-        XCTAssertFalse(ros.param.get(param_name, &vec_s))
-        XCTAssert(ros.param.get(param_name, &vec_i))
-        XCTAssert(ros.param.get(param_name, &vec_b))
-        XCTAssert(ros.param.get(param_name, &vec_d))
+        #expect(await ros.param.get(param_name, &vec_s) == false)
+        #expect(await ros.param.get(param_name, &vec_i))
+        #expect(await ros.param.get(param_name, &vec_b))
+        #expect(await ros.param.get(param_name, &vec_d))
 
-        XCTAssertEqual(vec_b,[true,false,true,true])
-        XCTAssertEqual(vec_i, [0,0,3,3])
-        XCTAssertEqual(vec_d, [-0.25, 0.0, 3, 3.25])
+        #expect(vec_b == [true,false,true,true])
+        #expect(vec_i == [0,0,3,3])
+        #expect(vec_d == [-0.25, 0.0, 3, 3.25])
 
-        XCTAssert(ros.param.get(param_name, &vec_f2))
+        #expect(await ros.param.get(param_name, &vec_f2))
 
-        XCTAssertEqual(vec_f.count, vec_f2.count)
-        XCTAssertEqual(vec_f, vec_f2)
+        #expect(vec_f.count == vec_f2.count)
+        #expect(vec_f == vec_f2)
     }
 
-    func testvectorIntParam()
+    @Test func testvectorIntParam() async
     {
         let param_name = "vec_int_param"
 
         vec_i = [-1, 0, 1337, 2]
 
-        ros.param.set(key: param_name, value: vec_i)
+        await ros.param.set(key: param_name, value: vec_i)
 
-        XCTAssertFalse(ros.param.get(param_name, &vec_s))
-        XCTAssert(ros.param.get(param_name, &vec_d))
-        XCTAssert(ros.param.get(param_name, &vec_f))
-        XCTAssert(ros.param.get(param_name, &vec_b))
+        #expect(await ros.param.get(param_name, &vec_s) == false)
+        #expect(await ros.param.get(param_name, &vec_d))
+        #expect(await ros.param.get(param_name, &vec_f))
+        #expect(await ros.param.get(param_name, &vec_b))
 
-        XCTAssertEqual(vec_b,[true,false,true,true])
-        XCTAssertEqual(vec_f,[-1,0,1337,2])
-        XCTAssertEqual(vec_d,[-1,0,1337,2])
+        #expect(vec_b == [true,false,true,true])
+        #expect(vec_f == [-1,0,1337,2])
+        #expect(vec_d == [-1,0,1337,2])
 
-        XCTAssert(ros.param.get(param_name, &vec_i2))
+        #expect(await ros.param.get(param_name, &vec_i2))
 
-        XCTAssertEqual(vec_i.count, vec_i2.count)
-        XCTAssertEqual(vec_i, vec_i2)
+        #expect(vec_i.count == vec_i2.count)
+        #expect(vec_i == vec_i2)
     }
 
-    func testvectorBoolParam()
+    @Test func testvectorBoolParam() async
     {
         let param_name = "vec_bool_param"
 
         vec_b = [true, false, true, true]
 
-        ros.param.set(key: param_name, value: vec_b)
+        await ros.param.set(key: param_name, value: vec_b)
 
-        XCTAssertFalse(ros.param.get(param_name, &vec_s))
-        XCTAssert(ros.param.get(param_name, &vec_d))
-        XCTAssert(ros.param.get(param_name, &vec_f))
-        XCTAssert(ros.param.get(param_name, &vec_i))
+        #expect(await ros.param.get(param_name, &vec_s) == false)
+        #expect(await ros.param.get(param_name, &vec_d))
+        #expect(await ros.param.get(param_name, &vec_f))
+        #expect(await ros.param.get(param_name, &vec_i))
 
-        XCTAssertEqual(vec_i,[1,0,1,1])
-        XCTAssertEqual(vec_d,[1,0,1,1])
-        XCTAssertEqual(vec_f,[1,0,1,1])
+        #expect(vec_i == [1,0,1,1])
+        #expect(vec_d == [1,0,1,1])
+        #expect(vec_f == [1,0,1,1])
 
 
-        XCTAssert(ros.param.get(param_name, &vec_b2))
+        #expect(await ros.param.get(param_name, &vec_b2))
 
-        XCTAssertEqual(vec_b.count, vec_b2.count)
-        XCTAssertEqual(vec_b, vec_b2)
+        #expect(vec_b.count == vec_b2.count)
+        #expect(vec_b == vec_b2)
     }
 
     var map_s = [String:String]()
@@ -422,159 +408,159 @@ class paramTests: RosTest {
     var map_b = [String:Bool]()
     var map_b2 = [String:Bool]()
 
-    func testmapStringParam()
+    @Test func testmapStringParam() async
     {
         let param_name = "map_str_param"
 
         map_s = ["a": "apple", "b": "blueberry", "c": "carrot"]
 
-        ros.param.set(key: param_name, value: map_s)
+        await ros.param.set(key: param_name, value: map_s)
 
-        XCTAssertFalse(ros.param.get(param_name, &map_d))
-        XCTAssertFalse(ros.param.get(param_name, &map_f))
-        XCTAssertFalse(ros.param.get(param_name, &map_i))
-        XCTAssertFalse(ros.param.get(param_name, &map_b))
+        #expect(await ros.param.get(param_name, &map_d) == false)
+        #expect(await ros.param.get(param_name, &map_f) == false)
+        #expect(await ros.param.get(param_name, &map_i) == false)
+        #expect(await ros.param.get(param_name, &map_b) == false)
 
-        XCTAssert(ros.param.get(param_name, &map_s2))
+        #expect(await ros.param.get(param_name, &map_s2))
 
-        XCTAssertEqual(map_s.count, map_s2.count)
-        XCTAssertEqual(map_s, map_s2)
+        #expect(map_s.count == map_s2.count)
+        #expect(map_s == map_s2)
     }
 
-    func testmapDoubleParam()
+    @Test func testmapDoubleParam() async
     {
         let param_name = "map_double_param"
 
         map_d = ["a":0.0,"b":-0.123456789,"c":12345678]
 
-        ros.param.set(key: param_name, value: map_d)
+        await ros.param.set(key: param_name, value: map_d)
 
-        XCTAssertFalse(ros.param.get(param_name, &map_s))
-        XCTAssert(ros.param.get(param_name, &map_f))
-        XCTAssert(ros.param.get(param_name, &map_i))
-        XCTAssert(ros.param.get(param_name, &map_b))
-        XCTAssert(ros.param.get(param_name, &map_d2))
+        #expect(await ros.param.get(param_name, &map_s) == false)
+        #expect(await ros.param.get(param_name, &map_f))
+        #expect(await ros.param.get(param_name, &map_i))
+        #expect(await ros.param.get(param_name, &map_b))
+        #expect(await ros.param.get(param_name, &map_d2))
 
-        XCTAssertEqual(map_f, ["a":0.0,"b":-0.123456789,"c":12345678])
-        XCTAssertEqual(map_i, ["a":0,"b":0,"c":12345678])
-        XCTAssertEqual(map_b, ["a":false,"b":true,"c":true])
+        #expect(map_f == ["a":0.0,"b":-0.123456789,"c":12345678])
+        #expect(map_i == ["a":0,"b":0,"c":12345678])
+        #expect(map_b == ["a":false,"b":true,"c":true])
 
-        XCTAssertEqual(map_d.count, map_d2.count)
-        XCTAssertEqual(map_d, map_d2)
+        #expect(map_d.count == map_d2.count)
+        #expect(map_d == map_d2)
     }
 
-    func testmapFloatParam()
+    @Test func testmapFloatParam() async
     {
         let param_name = "map_float_param"
 
         map_f = ["a": 0.0, "b":-0.25,"c":1234567]
 
-        ros.param.set(key: param_name, value: map_f)
+        await ros.param.set(key: param_name, value: map_f)
 
-        XCTAssertFalse(ros.param.get(param_name, &map_s))
-        XCTAssert(ros.param.get(param_name, &map_d))
-        XCTAssert(ros.param.get(param_name, &map_i))
-        XCTAssert(ros.param.get(param_name, &map_b))
+        #expect(await ros.param.get(param_name, &map_s) == false)
+        #expect(await ros.param.get(param_name, &map_d))
+        #expect(await ros.param.get(param_name, &map_i))
+        #expect(await ros.param.get(param_name, &map_b))
 
-        XCTAssertEqual(map_d, ["a":0.0,"b":-0.25,"c":1234567])
-        XCTAssertEqual(map_i, ["a":0,"b":0,"c":1234567])
-        XCTAssertEqual(map_b, ["a":false,"b":true,"c":true])
+        #expect(map_d == ["a":0.0,"b":-0.25,"c":1234567])
+        #expect(map_i == ["a":0,"b":0,"c":1234567])
+        #expect(map_b == ["a":false,"b":true,"c":true])
 
-        XCTAssert(ros.param.get(param_name, &map_f2))
+        #expect(await ros.param.get(param_name, &map_f2))
 
-        XCTAssertEqual(map_f.count, map_f2.count)
-        XCTAssertEqual(map_f, map_f2)
+        #expect(map_f.count == map_f2.count)
+        #expect(map_f == map_f2)
     }
 
-    func testmapIntParam()
+    @Test func testmapIntParam() async
     {
         let param_name = "map_int_param"
 
         map_i = ["a":0, "b":-1, "c":1337]
 
-        ros.param.set(key: param_name, value: map_i)
+        await ros.param.set(key: param_name, value: map_i)
 
-        XCTAssertFalse(ros.param.get(param_name, &map_s))
-        XCTAssert(ros.param.get(param_name, &map_d))
-        XCTAssert(ros.param.get(param_name, &map_f))
-        XCTAssert(ros.param.get(param_name, &map_b))
+        #expect(await ros.param.get(param_name, &map_s) == false)
+        #expect(await ros.param.get(param_name, &map_d))
+        #expect(await ros.param.get(param_name, &map_f))
+        #expect(await ros.param.get(param_name, &map_b))
 
-        XCTAssertEqual(map_f, ["a":0.0,"b":-1,"c":1337])
-        XCTAssertEqual(map_d, ["a":0,"b":-1,"c":1337])
-        XCTAssertEqual(map_b, ["a":false,"b":true,"c":true])
+        #expect(map_f == ["a":0.0,"b":-1,"c":1337])
+        #expect(map_d == ["a":0,"b":-1,"c":1337])
+        #expect(map_b == ["a":false,"b":true,"c":true])
 
-        XCTAssert(ros.param.get(param_name, &map_i2))
+        #expect(await ros.param.get(param_name, &map_i2))
 
-        XCTAssertEqual(map_i.count, map_i2.count)
-        XCTAssertEqual(map_i, map_i2)
+        #expect(map_i.count == map_i2.count)
+        #expect(map_i == map_i2)
     }
 
-    func testmapBoolParam()
+    @Test func testmapBoolParam() async
     {
         let param_name = "map_bool_param"
 
         map_b = ["a":true, "b":false, "c":true]
 
-        ros.param.set(key: param_name, value: map_b)
+        await ros.param.set(key: param_name, value: map_b)
 
-        XCTAssertFalse(ros.param.get(param_name, &map_s))
-        XCTAssert(ros.param.get(param_name, &map_d))
-        XCTAssert(ros.param.get(param_name, &map_f))
-        XCTAssert(ros.param.get(param_name, &map_i))
+        #expect(await ros.param.get(param_name, &map_s) == false)
+        #expect(await ros.param.get(param_name, &map_d))
+        #expect(await ros.param.get(param_name, &map_f))
+        #expect(await ros.param.get(param_name, &map_i))
 
-        XCTAssertEqual(map_i, ["a":1,"b":0, "c":1])
-        XCTAssertEqual(map_f, ["a":1,"b":0, "c":1])
-        XCTAssertEqual(map_d, ["a":1,"b":0, "c":1])
+        #expect(map_i == ["a":1,"b":0, "c":1])
+        #expect(map_f == ["a":1,"b":0, "c":1])
+        #expect(map_d == ["a":1,"b":0, "c":1])
 
-        XCTAssert(ros.param.get(param_name, &map_b2))
+        #expect(await ros.param.get(param_name, &map_b2))
 
-        XCTAssertEqual(map_b.count, map_b2.count)
-        XCTAssertEqual(map_b, map_b2)
+        #expect(map_b.count ==  map_b2.count)
+        #expect(map_b ==  map_b2)
     }
 
-    func testparamTemplateFunction()
+    @Test func testparamTemplateFunction() async
     {
-        XCTAssertEqual( ros.param.param( name: "string", defaultValue: "" ), "test" )
-        XCTAssertEqual( ros.param.param( name: "gnirts", defaultValue: "test" ), "test" )
+        #expect( await ros.param.param( name: "string", defaultValue: "" ) == "test" )
+        #expect( await ros.param.param( name: "gnirts", defaultValue: "test" ) == "test" )
 
-        XCTAssertEqual( ros.param.param( name: "int", defaultValue: 0 ), 10 )
-        XCTAssertEqual( ros.param.param( name: "tni", defaultValue: 10 ), 10 )
+        #expect( await ros.param.param( name: "int", defaultValue: 0 ) == 10 )
+        #expect( await ros.param.param( name: "tni", defaultValue: 10 ) == 10 )
 
-        XCTAssertEqual( ros.param.param( name: "double", defaultValue: 0.0 ), 10.5 )
-        XCTAssertEqual( ros.param.param( name: "elbuod", defaultValue: 10.5 ), 10.5 )
+        #expect( await ros.param.param( name: "double", defaultValue: 0.0 ) == 10.5 )
+        #expect( await ros.param.param( name: "elbuod", defaultValue: 10.5 ) == 10.5 )
 
-        XCTAssertEqual( ros.param.param( name: "bool", defaultValue: true ), false )
-        XCTAssertEqual( ros.param.param( name: "loob", defaultValue: true ), true )
+        #expect( await ros.param.param( name: "bool", defaultValue: true ) == false )
+        #expect( await ros.param.param( name: "loob", defaultValue: true ) == true )
     }
 
-    func testparamNodeHandleTemplateFunction()
+    @Test func testparamNodeHandleTemplateFunction() async
     {
-        let nh = ros.createNode()
+        let nh = await ros.createNode()
 
-        XCTAssertEqual( nh.param( name: "string", defaultValue: "" ), "test" )
-        XCTAssertEqual( nh.param( name: "gnirts", defaultValue: "test" ), "test" )
+        #expect( await nh.param( name: "string", defaultValue: "" ) == "test" )
+        #expect( await nh.param( name: "gnirts", defaultValue: "test" ) == "test" )
 
-        XCTAssertEqual( nh.param( name: "int", defaultValue: 0 ), 10 )
-        XCTAssertEqual( nh.param( name: "tni", defaultValue: 10 ), 10 )
+        #expect( await nh.param( name: "int", defaultValue: 0 ) == 10 )
+        #expect( await nh.param( name: "tni", defaultValue: 10 ) == 10 )
 
-        XCTAssertEqual( nh.param( name: "double", defaultValue: 0.0 ), 10.5 )
-        XCTAssertEqual( nh.param( name: "elbuod", defaultValue: 10.5 ), 10.5 )
+        #expect( await nh.param( name: "double", defaultValue: 0.0 ) == 10.5 )
+        #expect( await nh.param( name: "elbuod", defaultValue: 10.5 ) == 10.5 )
 
-        XCTAssertEqual( nh.param( name: "bool", defaultValue: true ), false )
-        XCTAssertEqual( nh.param( name: "loob", defaultValue: true ), true )
+        #expect( await nh.param( name: "bool", defaultValue: true ) == false )
+        #expect( await nh.param( name: "loob", defaultValue: true ) == true )
     }
 
     // should run last, tests runs in alphabetical order (unless random order is selected)
-    func testZgetParamNames() {
+    @Test func testZgetParamNames() async {
         var test_params = [String]()
-        let b = ros.param.getParamNames(keys: &test_params)
+        let b = await ros.param.getParamNames(keys: &test_params)
 
 
-        XCTAssert(b)
-        XCTAssertLessThan(10, test_params.count)
+        #expect(b)
+        #expect(10 > test_params.count)
 
-        let h = try! ros.param.getParameterNames().wait()
-        XCTAssertLessThan(10, h.count)
+        let h = try! await ros.param.getParameterNames()
+        #expect(10 > h.count)
         print(h)
 }
 

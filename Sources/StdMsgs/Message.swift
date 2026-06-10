@@ -7,7 +7,7 @@
 
 import BinaryCoder
 
-public protocol Message: BinaryCodable {
+public protocol Message: BinaryCodable, Sendable {
     static var md5sum : String { get }
     static var datatype : String { get }
     static var definition: String { get }
@@ -157,7 +157,7 @@ public extension FixedLengthFloatArray {
     }
 }
 
-public struct FixedLengthFloat64Array4: FixedLengthFloatArray, Equatable {
+public struct FixedLengthFloat64Array4: FixedLengthFloatArray, Equatable, Sendable {
     public static let length: Int = 4
     public var _array: [Float64]
 
@@ -178,7 +178,7 @@ public struct FixedLengthFloat64Array4: FixedLengthFloatArray, Equatable {
 
 
 
-public struct FixedLengthFloat64Array9: FixedLengthFloatArray, Equatable {
+public struct FixedLengthFloat64Array9: FixedLengthFloatArray, Equatable, Sendable {
     public static let length: Int = 9
     public var _array: [Float64]
 
@@ -197,7 +197,7 @@ public struct FixedLengthFloat64Array9: FixedLengthFloatArray, Equatable {
 
 }
 
-public struct FixedLengthFloat64Array12: FixedLengthFloatArray, Equatable {
+public struct FixedLengthFloat64Array12: FixedLengthFloatArray, Equatable, Sendable {
     public static let length: Int = 12
     public var _array: [Float64]
 
@@ -216,7 +216,7 @@ public struct FixedLengthFloat64Array12: FixedLengthFloatArray, Equatable {
 
 }
 
-public struct FixedLengthFloat64Array15: FixedLengthFloatArray, Equatable {
+public struct FixedLengthFloat64Array15: FixedLengthFloatArray, Equatable, Sendable {
     public static let length: Int = 15
     public var _array: [Float64]
 
@@ -237,7 +237,7 @@ public struct FixedLengthFloat64Array15: FixedLengthFloatArray, Equatable {
 
 
 
-public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable {
+public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable, Sendable {
     public static let length: Int = 36
     public var _array: [Float64]
 
@@ -256,7 +256,7 @@ public struct FixedLengthFloat64Array36: FixedLengthFloatArray, Equatable {
 
 }
 
-public struct FixedLengthFloat64Array225: FixedLengthFloatArray, Equatable {
+public struct FixedLengthFloat64Array225: FixedLengthFloatArray, Equatable, Sendable {
     public static let length: Int = 225
     public var _array: [Float64]
 
@@ -311,7 +311,7 @@ public extension FixedLengthUInt32Array {
     }
 }
 
-public struct FixedLengthUInt32Array3: FixedLengthUInt32Array, Equatable {
+public struct FixedLengthUInt32Array3: FixedLengthUInt32Array, Equatable, Sendable {
     public static let length: Int = 3
     public var _array: [UInt32]
 
@@ -355,7 +355,7 @@ public protocol FixedLengthUInt8Array: BinaryCodable {
 }
 
 
-public struct FixedLengthUInt8Array16: FixedLengthUInt8Array, Equatable {
+public struct FixedLengthUInt8Array16: FixedLengthUInt8Array, Equatable, Sendable {
     public static let length: Int = 16
     public var _array: [UInt8]
 

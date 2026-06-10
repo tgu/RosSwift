@@ -9,12 +9,12 @@ import Atomics
 
 public final class ServiceServer {
     public let service: String
-    unowned var node: NodeHandle
+    unowned var manager: ServiceManager
     let isUnadvertised = ManagedAtomic(false)
 
-    internal init(service: String, node: NodeHandle) {
+    internal init(service: String, manager: ServiceManager) {
         self.service = service
-        self.node = node
+        self.manager = manager
     }
 
     deinit {
@@ -23,7 +23,7 @@ public final class ServiceServer {
 
     func unadvertise() {
         if isUnadvertised.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
-            _ = node.ros.serviceManager.unadvertiseService(name: service)
+            _ = manager.unadvertiseService(name: service)
         }
     }
 

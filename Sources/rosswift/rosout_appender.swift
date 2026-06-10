@@ -7,7 +7,7 @@
 
 
 
-final class ROSOutAppender: LogAppender {
+final class ROSOutAppender: LogAppender, Sendable {
     
     init() {
         ROS_DEBUG("ROSOutAppender not implemented")

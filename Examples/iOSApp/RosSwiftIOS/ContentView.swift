@@ -1,7 +1,8 @@
 import SwiftUI
 import RosSwift
 
-extension TopicInfo: Identifiable, Hashable {
+extension TopicInfo: @retroactive Equatable {}
+extension TopicInfo: @retroactive Identifiable, @retroactive Hashable {
     public static func == (lhs: TopicInfo, rhs: TopicInfo) -> Bool {
         lhs.id == rhs.id
     }
@@ -23,7 +24,7 @@ struct ContentView: View {
     @State private var subscriber: Subscriber?
     @State private var selectedTopic: String?
 
-    func callback(msg: String) {
+    func callback(msg: String) async {
         message = msg
     }
 
@@ -37,16 +38,16 @@ struct ContentView: View {
                     )
                     .autocorrectionDisabled(true)
                     .onSubmit {
-                        ros.connect("http://\(master):11311")
-                        Task.detached {
-                            topics = (try? await ros.node?.ros.getTopics().get()) ?? []
+                        Task {
+                            try? await ros.connect("http://\(master):11311")
+                            topics = (try? await ros.node?.ros.getTopics()) ?? []
                         }
                     }
 
                     if ros.isRunning {
                         Button("disconnect") {
-                            subscriber = nil
-                            ros.node = nil
+                            subscriber?.unsubscribe()
+                            ros.disconnect()
                         }
                     }
                 }
@@ -57,14 +58,20 @@ struct ContentView: View {
                     List(topics, selection: $selectedTopic) { (topic: TopicInfo) in
                         Text("\(topic.name): \(topic.dataType)")
                     }.refreshable {
-                        topics = (try? await ros.node?.ros.getTopics().get()) ?? []
+                        topics = (try? await ros.node?.ros.getTopics()) ?? []
                     }
                 }
 
                 Section(header: Label("Chatter", systemImage: "tree").bold()) {
                     Text(message)
                 }.task {
-                    subscriber = ros.node?.subscribe(topic: "/chatter", queueSize: 1, callback: callback)
+                    subscriber = await ros.node?.subscribe(topic: "/chatter", queueSize: 1) { msg in
+                        Task {
+                            await MainActor.run {
+                                message = msg
+                            }
+                        }
+                    }
                 }
             }
 

@@ -6,8 +6,11 @@
 
 import BinaryCoder
 import NIO
+import NIOConcurrencyHelpers
 import Atomics
 import StdMsgs
+import Foundation
+import Synchronization
 
 final class ConnectionHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
@@ -96,7 +99,7 @@ final class ConnectionHandler: ChannelInboundHandler {
             } else if let val = header["service"] {
                 ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: context.remoteAddress!.description))]")
                 let conn = Connection(transport: context.channel, header: header)
-                let link = ServiceClientLink(connection: conn)
+                var link = ServiceClientLink(connection: conn)
                 if link.handleHeader(header: header, ros: ros) {
                     state = .serviceCall(link)
                 }
@@ -111,15 +114,30 @@ final class ConnectionHandler: ChannelInboundHandler {
 
         case .serviceCall(let serviceLink):
             if let rawMessage = buffer.readBytes(length: buffer.readableBytes) {
-                if let response = serviceLink.parent?.processRequest(buf: rawMessage) {
+                guard let parent = serviceLink.parent else {
+                    ROS_WARNING("ServiceCall received after publication was dropped")
+                    context.close(promise: nil)
+                    break
+                }
+                switch parent.processRequest(buf: rawMessage) {
+                case .success(let response):
                     let rawResponse = SerializedMessage(msg: response)
                     var buf = context.channel.allocator.buffer(capacity: rawResponse.buf.count + 1)
-                    buf.writeBytes([UInt8(1)]+rawResponse.buf)  // Start with Bool(true)
+                    buf.writeBytes([UInt8(1)] + rawResponse.buf)  // Start with Bool(true)
                     let niodata = self.wrapInboundOut(buf)
-
                     context.writeAndFlush(niodata, promise: nil)
-                } else {
-                    ROS_WARNING("ServiceCall not able process")
+                case .failure(let errMsg):
+                    // Per TCPROS spec, signal failure with a 0 byte followed
+                    // by a length-prefixed error string so the client doesn't
+                    // hang waiting for a response.
+                    ROS_WARNING("ServiceCall failed: \(errMsg)")
+                    let errBytes = Array(errMsg.utf8)
+                    var buf = context.channel.allocator.buffer(capacity: errBytes.count + 5)
+                    buf.writeBytes([UInt8(0)])
+                    buf.writeInteger(UInt32(errBytes.count), endianness: Endianness.little)
+                    buf.writeBytes(errBytes)
+                    let niodata = self.wrapInboundOut(buf)
+                    context.writeAndFlush(niodata, promise: nil)
                     context.close(promise: nil)
                 }
             }
@@ -133,48 +151,89 @@ final class ConnectionHandler: ChannelInboundHandler {
 
 }
 
-internal final class ConnectionManager {
-    var channel: Channel?
-    var boot: ServerBootstrap?
-    unowned var ros: Ros!
+internal final class ConnectionManager: RosManager, @unchecked Sendable {
+    let rosID: RosID
 
-    internal init() {
-    }
-
-    var port: Int32 {
-        return Int32(channel?.localAddress?.port ?? 0)
-    }
-
-    func clear(reason: DropReason) {
-        fatalError()
-    }
-
-    func shutdown() {
-        // Nothing to do here
-    }
+    // Listener channel + active child connections, kept under a lock so
+    // `clear` and `shutdown` can safely iterate and close. NIO's `Channel`
+    // isn't unconditionally `Sendable`, so we wrap the storage with a
+    // NIOLock and mark the class `@unchecked Sendable` — the lock provides
+    // the actual safety.
+    private let lock = NIOLock()
+    private var _listener: Channel?
+    private var _activeChildren: [ObjectIdentifier: Channel] = [:]
+    private let _port = ManagedAtomic<Int32>(0)
 
     // The connection ID counter, used to assign unique ID to each inbound or
     // outbound connection.  Access via getNewConnectionID()
     private let connectionIdCounter = ManagedAtomic<Int>(0)
 
-    func getNewConnectionID() -> Int {
-        return connectionIdCounter.loadThenWrappingIncrement(ordering: .relaxed)
+    var ros: Ros {
+        guard let r = Ros.getGlobalRos(for: rosID) else {
+            fatalError()
+        }
+        return r
     }
 
-    func start(ros: Ros) {
-        self.ros = ros
-        initialize(group: threadGroup)
-        do {
-            channel = try boot?.bind(host: ros.network.gHost, port: 0).wait()
-            ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host ?? "unknown host"):\(port)]")
-        } catch {
-            ROS_ERROR("Could not bind to [\(port)]: \(error)")
+    init(rosID: RosID) {
+        self.rosID = rosID
+    }
+
+    var port: Int32 { _port.load(ordering: .relaxed) }
+
+    /// Closes all open child (transport) connections. Used by the
+    /// `~debug/close_all_connections` XML-RPC service and on shutdown.
+    /// Does NOT close the listener — new connections can still be accepted.
+    func clear(reason: DropReason) {
+        let children: [Channel] = lock.withLock { Array(_activeChildren.values) }
+        if !children.isEmpty {
+            ROS_DEBUG("ConnectionManager.clear(\(reason)) — closing \(children.count) connection(s)")
+        }
+        for ch in children {
+            ch.close(promise: nil)
         }
     }
 
-    private func initialize(group: EventLoopGroup) {
+    /// Closes all child connections and the listener.
+    func shutdown() {
+        clear(reason: .destructing)
+        let listener: Channel? = lock.withLock {
+            let l = _listener
+            _listener = nil
+            return l
+        }
+        listener?.close(promise: nil)
+    }
 
-        boot = ServerBootstrap(group: group)
+    func getNewConnectionID() -> UUID {
+        UUID()
+        //return connectionIdCounter.loadThenWrappingIncrement(ordering: .relaxed)
+    }
+
+    func start() async {
+        let bootstrap = makeBootstrap(group: threadGroup)
+        do {
+            let channel = try await bootstrap.bind(host: ros.network.gHost, port: 0).get()
+            lock.withLock { _listener = channel }
+            if let p = channel.localAddress?.port {
+                _port.store(Int32(p), ordering: .relaxed)
+            }
+            ROS_DEBUG("listening channel on port [\(channel.localAddress?.host ?? "unknown host"):\(port)]")
+        } catch {
+            ROS_ERROR("Could not bind: \(error)")
+        }
+    }
+
+    private func registerChild(_ channel: Channel) {
+        let key = ObjectIdentifier(channel)
+        lock.withLock { _activeChildren[key] = channel }
+        channel.closeFuture.whenComplete { [weak self] _ in
+            self?.lock.withLock { _ = self?._activeChildren.removeValue(forKey: key) }
+        }
+    }
+
+    private func makeBootstrap(group: EventLoopGroup) -> ServerBootstrap {
+        ServerBootstrap(group: group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.autoRead, value: true)
@@ -182,7 +241,8 @@ internal final class ConnectionManager {
 
             // Set the handlers that are appled to the accepted Channels
             .childChannelInitializer { channel in
-                channel.eventLoop.makeCompletedFuture {
+                self.registerChild(channel)
+                return channel.eventLoop.makeCompletedFuture {
                     try channel.pipeline.syncOperations.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
                                                   ConnectionHandler(ros: self.ros)])
                 }

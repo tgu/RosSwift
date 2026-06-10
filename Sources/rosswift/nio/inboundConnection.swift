@@ -7,23 +7,25 @@
 
 import BinaryCoder
 import NIO
+import NIOCore
 import Atomics
 import NIOExtras
 import StdMsgs
+import Synchronization
 
 enum ConnectionError: Error {
     case connectionDropped
 }
 
-final class InboundConnection {
+final class InboundConnection: Sendable {
 
-    var channel: Channel?
-    let dropped = ManagedAtomic<Bool>(false)
-    unowned var parent: Subscription!
-    unowned var link: TransportPublisherLink!
+    unowned let parent: Subscription
     let host: String
     let port: Int
-    var handler: InboundHandler?
+
+    private let dropped = ManagedAtomic<Bool>(false)
+    private let localPort = ManagedAtomic<Int32>(0)
+    private let runTask = Mutex<Task<Void, Never>?>(nil)
 
     init(parent: Subscription, host: String, port: Int) {
         self.host = host
@@ -33,140 +35,124 @@ final class InboundConnection {
 
     deinit {
         ROS_DEBUG("InboundConnection deinit")
-        handler?.parent = nil
     }
 
-    func initialize(owner: TransportPublisherLink) {
-        self.link = owner
-        let bootstrap = ClientBootstrap(group: threadGroup)
-            // Enable SO_REUSEADDR.
+    /// Connects to the publisher, performs the TCPROS handshake by writing
+    /// `headerKeyVals` and reading the publisher's response header, then loops
+    /// delivering received message frames to `parent.handle(...)`.
+    ///
+    /// Returns once the connection is established and the message-loop Task has
+    /// been spawned. Cancellation of that Task happens via `dropConnection`.
+    func initialize(owner: TransportPublisherLink, headerKeyVals: StringStringMap) async {
+        do {
+            let asyncChannel = try await connect()
+            if let lp = asyncChannel.channel.localAddress?.port {
+                localPort.store(Int32(lp), ordering: .relaxed)
+            }
+            // If dropConnection has already been called, don't start the loop.
+            if dropped.load(ordering: .relaxed) {
+                asyncChannel.channel.close(promise: nil)
+                return
+            }
+            let task = Task { [self] in
+                await run(asyncChannel: asyncChannel, link: owner, headerKeyVals: headerKeyVals)
+            }
+            runTask.withLock { $0 = task }
+            // Re-check drop in case it happened concurrently with the Task spawn.
+            if dropped.load(ordering: .relaxed) {
+                runTask.withLock { $0?.cancel(); $0 = nil }
+            }
+        } catch {
+            ROS_ERROR("InboundConnection bootstrap to [\(host):\(port)] failed: \(error)")
+        }
+    }
+
+    private func connect() async throws -> NIOAsyncChannel<ByteBuffer, ByteBuffer> {
+        try await ClientBootstrap(group: threadGroup)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-
-        do {
-            self.channel = try bootstrap.connect(host: host, port: port).map { channel -> Channel in
-                _ = channel.eventLoop.makeCompletedFuture {
-                    _ = try channel.pipeline.syncOperations.addHandlers([
-                        ByteToMessageHandler(LengthFieldBasedFrameDecoder(lengthFieldLength: .four, lengthFieldEndianness: .little)),
-                        InboundHandler(parent: self)])
+            .connect(host: host, port: port) { channel in
+                channel.eventLoop.makeCompletedFuture {
+                    try channel.pipeline.syncOperations.addHandler(
+                        ByteToMessageHandler(LengthFieldBasedFrameDecoder(lengthFieldLength: .four,
+                                                                          lengthFieldEndianness: .little))
+                    )
+                    return try NIOAsyncChannel<ByteBuffer, ByteBuffer>(
+                        wrappingChannelSynchronously: channel,
+                        configuration: .init()
+                    )
                 }
-                return channel
-            }.wait()
-        } catch {
-            ROS_ERROR("bootstrap failed: \(error)")
-        }
+            }
     }
 
-    func getTransportInfo() -> String {
-        return "TCPROS connection on port \(channel?.localAddress?.port ?? 0) to [\(remoteAddress)]"
-    }
-
-    func writeHeader(keyVals: StringStringMap) -> EventLoopFuture<Void> {
-        let buffer = Header.write(keyVals: keyVals)
+    private func run(
+        asyncChannel: NIOAsyncChannel<ByteBuffer, ByteBuffer>,
+        link: TransportPublisherLink,
+        headerKeyVals: StringStringMap
+    ) async {
         do {
-            let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))
-            return write(buffer: sizeBuffer + buffer)
+            try await asyncChannel.executeThenClose { inbound, outbound in
+                // 1. Send TCPROS subscriber header.
+                let headerBytes = Header.write(keyVals: headerKeyVals)
+                var headerFrame = ByteBufferAllocator().buffer(capacity: 4 + headerBytes.count)
+                headerFrame.writeInteger(UInt32(headerBytes.count), endianness: .little)
+                headerFrame.writeBytes(headerBytes)
+                try await outbound.write(headerFrame)
+                ROS_DEBUG("Header written for topic [\(link.parent.name)]")
+
+                // 2. Read publisher's response header (first frame).
+                var iterator = inbound.makeAsyncIterator()
+                guard var firstFrame = try await iterator.next() else {
+                    ROS_DEBUG("InboundConnection: peer closed before header from \(self.remoteAddressString)")
+                    return
+                }
+                guard let respBytes = firstFrame.readBytes(length: firstFrame.readableBytes),
+                      let header = Header(buffer: respBytes) else {
+                    ROS_ERROR("InboundConnection: could not parse publisher header from \(self.remoteAddressString)")
+                    return
+                }
+                if let errMsg = header["error"] {
+                    ROS_ERROR("Received error in header for connection to [\(self.remoteAddressString)]: [\(errMsg)]")
+                    return
+                }
+                if !link.setHeader(header: header) {
+                    ROS_ERROR("InboundConnection: setHeader rejected publisher header")
+                    return
+                }
+                guard let connectionHeader = link.header?.headers else {
+                    return
+                }
+
+                // 3. Message loop.
+                while var frame = try await iterator.next() {
+                    guard let bytes = frame.readBytes(length: frame.readableBytes) else { continue }
+                    let msg = SerializedMessage(buffer: bytes)
+                    _ = await parent.handle(message: msg,
+                                            connectionHeader: connectionHeader,
+                                            link: link)
+                }
+            }
+        } catch is CancellationError {
+            ROS_DEBUG("InboundConnection to \(remoteAddressString) cancelled")
         } catch {
-            fatalError(error.localizedDescription)
+            ROS_DEBUG("InboundConnection to \(remoteAddressString) error: \(error)")
         }
-    }
-
-    func write(buffer: [UInt8]) -> EventLoopFuture<Void> {
-        guard let channel = channel else {
-            ROS_ERROR("no channel, connection dropped")
-            return threadGroup.next().makeFailedFuture(ConnectionError.connectionDropped)
-        }
-        var buf = channel.allocator.buffer(capacity: buffer.count)
-        buf.writeBytes(buffer)
-        return channel.writeAndFlush(buf)
-    }
-
-    var remoteAddress: String {
-        let host = channel?.remoteAddress?.host ?? "unknown"
-        let port = channel?.remoteAddress?.port ?? 0
-        return "\(host):\(port)"
     }
 
     func dropConnection(reason: DropReason) {
         if dropped.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
-            // capture the address before closing the channel
-            let remote = self.remoteAddress
             ROS_DEBUG("Connection::drop - \(reason)")
-            channel?.close().whenComplete { res in
-                switch res {
-                case .success:
-                    ROS_DEBUG("InboundConnection channel to \(remote) succesfully closed")
-                case .failure(let error):
-                    ROS_ERROR("InboundConnection channel to \(remote) closed with error: \(error)")
-                }
+            runTask.withLock {
+                $0?.cancel()
+                $0 = nil
             }
-            channel = nil
-            link = nil
         }
     }
 
-    func onHeaderReceived(header: Header) {
-        ROS_DEBUG("onHeaderReceived")
-
-        guard let link = link else {
-            fatalError("onHeaderReceived has no link")
-        }
-
-        if !link.setHeader(header: header) {
-            dropConnection(reason: .headerError)
-        }
+    var remoteAddressString: String {
+        "\(host):\(port)"
     }
 
-    final class InboundHandler: ChannelInboundHandler {
-        typealias InboundIn = ByteBuffer
-
-        weak var parent: InboundConnection?
-
-        init(parent: InboundConnection) {
-            self.parent = parent
-            parent.handler = self
-        }
-
-        func channelInactive(context: ChannelHandlerContext) {
-            ROS_DEBUG("InboundHandler inactive")
-            parent?.dropConnection(reason: .transportDisconnect)
-        }
-
-        func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-
-            var buffer = self.unwrapInboundIn(data)
-
-            guard let p = parent, let link = parent?.link else {
-                return
-            }
-
-            if link.header == nil {
-                if let headerData = buffer.readBytes(length: buffer.readableBytes) {
-                    if let header = Header(buffer: headerData) {
-                        if let error = header["error"] {
-                            ROS_ERROR("Received error message in header for connection to [\(p.remoteAddress)]]: [\(error)]")
-                            p.dropConnection(reason: .headerError)
-                        } else {
-                            p.onHeaderReceived(header: header)
-                        }
-                    } else {
-                        p.dropConnection(reason: .headerError)
-                    }
-                } else {
-                    ROS_ERROR("Could not read available \(buffer.readableBytes)")
-                }
-
-            } else if let rawMessage = buffer.readBytes(length: buffer.readableBytes) {
-                let m = SerializedMessage(buffer: rawMessage)
-                if let sub = p.parent {
-                    // FIXME: Handle drop statistics
-                    _ = sub.handle(message: m,
-                                           connectionHeader: link.header!.headers,
-                                           link: link)
-                }
-            } else {
-                ROS_ERROR("Could not read available \(buffer.readableBytes)")
-            }
-        }
+    func getTransportInfo() -> String {
+        "TCPROS connection on port \(localPort.load(ordering: .relaxed)) to [\(remoteAddressString)]"
     }
 }
-

@@ -8,7 +8,7 @@
 import StdMsgs
 
 extension ServiceProt {
-
+    
     /// Advertise a service.
     ///
     /// This call connects to the master to publicize that the node will be offering
@@ -25,13 +25,13 @@ extension ServiceProt {
     ///     - service: name of service
     ///     - srvFunc: Completion to be called when service is called
     ///
-
-
-    public static func advertise(service: String, node: NodeHandle, handler: @escaping (Request) -> Response) -> ServiceServer? {
-        return node.advertise(service: service, srvFunc: handler)
+    
+    
+    public static func advertise(service: String, node: NodeHandle, handler: @escaping @Sendable (Request) -> Response) async -> ServiceServer? {
+        return await node.advertise(service: service, srvFunc: handler)
     }
-
-
+    
+    
     /// Invoke an RPC service.
     ///
     /// This method invokes an RPC service on a remote server,
@@ -42,16 +42,21 @@ extension ServiceProt {
     ///     - node: The calling node
     ///     - req: The request message
     /// - Returns: An optional response
-
-
-    public static func call(name: String, node: NodeHandle, req: Request) -> Response? {
-        return try? Service.call(node: node, serviceName: name, req: req).wait()
+    
+    
+    public static func call(name: String, node: NodeHandle, req: Request) async -> Response? {
+        return try? await Service.call(node: node, serviceName: name, req: req)
     }
 }
 
 extension ServiceRequestMessage {
-    public func call(name: String, node: NodeHandle) -> ServiceType.Response? {
-        return try? Service.call(node: node, serviceName: name, req: self).wait()
+    /// Calls the service `name` using this request, returning the response or
+    /// `nil` if the call fails.
+    /// - Parameters:
+    ///   - name: The service name to call.
+    ///   - node: The node used to look up and reach the service.
+    public func call(name: String, node: NodeHandle) async -> ServiceType.Response? {
+        return try? await Service.call(node: node, serviceName: name, req: self)
     }
 }
 

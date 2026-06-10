@@ -39,10 +39,14 @@ final class HeaderMessageCodec: ByteToMessageDecoder {
     var cumulationBuffer: ByteBuffer?
 
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-        guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
-            fatalError()
+        // Need at least the 4-byte length prefix plus the declared payload.
+        guard let len: UInt32 = buffer.getInteger(at: buffer.readerIndex, endianness: .little) else {
+            return .needMoreData
         }
-        precondition(len <= buffer.readableBytes)
+        guard buffer.readableBytes >= Int(len) + 4 else {
+            return .needMoreData
+        }
+        buffer.moveReaderIndex(forwardBy: 4)
 
         var readMap = [String: String]()
 

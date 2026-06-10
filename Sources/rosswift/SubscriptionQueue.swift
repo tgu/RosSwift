@@ -8,7 +8,8 @@
 import DequeModule
 import Foundation
 import RosTime
-
+import Synchronization
+import Atomics
 
 extension NSRecursiveLock {
     public func trySync<R>(execute work: () throws -> R) rethrows -> R? {
@@ -18,110 +19,145 @@ extension NSRecursiveLock {
     }
 }
 
-internal final class SubscriptionQueue: CallbackInterface {
-    internal struct Item {
+extension NSLocking {
+    @inline(__always)
+    internal func sync<T>(_ closure: () -> T) -> T {
+        self.lock()
+        defer { self.unlock() }
+        return closure()
+    }
+    
+    @inline(__always)
+    internal func sync(_ closure: () -> Void)  {
+        self.lock()
+        defer { self.unlock() }
+        closure()
+    }
+    
+}
+
+
+internal actor SubscriptionQueue: AsyncCallbackInterface {
+    internal struct Item: Sendable {
         let helper: SubscriptionCallbackHelper
         let deserializer: MessageDeserializer
         let hasTrackedObject: Bool
-        let trackedObject: AnyObject?
+        weak var trackedObject: TrackableObject?
         let receiptTime: Time
     }
+
+    /// True while the current task is dispatching a callback for this queue.
+    /// Lets `clear()` distinguish an outside caller (which must wait for
+    /// in-flight callbacks to finish) from a callback re-entering `clear()`
+    /// on itself (which would otherwise deadlock waiting on its own count).
+    @TaskLocal static var isDispatchingCallback: Bool = false
 
     private var queue: Deque<Item>
     private let topic: String
     private let size: UInt32
-    private var wasFull: Bool
-    let queueQueue = DispatchQueue(label: "queueQueue")
+    private var wasFull = false
     let allowConcurrentCallbacks: Bool
-    let callbackMutex = NSRecursiveLock()
-
+    private var inFlightCalls = 0
+    private var clearWaiters: [CheckedContinuation<Void, Never>] = []
+    
     public init(topic: String, queueSize: UInt32, allowConcurrentCallbacks: Bool) {
         self.topic = topic
         self.size = queueSize
-        self.wasFull = false
         self.allowConcurrentCallbacks = allowConcurrentCallbacks
         self.queue = Deque<Item>(minimumCapacity: queueSize == 0 ? 10 : Int(queueSize))
     }
-
+    
     @discardableResult
     func push(helper: SubscriptionCallbackHelper,
-              deserializer: MessageDeserializer,
+              deserializer: consuming MessageDeserializer,
               hasTrackedObject: Bool = false,
-              trackedObject: AnyObject? = nil,
+              trackedObject: TrackableObject? = nil,
               receiptTime: Time = Time()) -> Bool {
-
+        
         let item = Item(helper: helper,
                         deserializer: deserializer,
                         hasTrackedObject: hasTrackedObject,
                         trackedObject: trackedObject,
                         receiptTime: receiptTime)
-
-        queueQueue.sync {
-            if size > 0 && queue.count >= size {
-                _ = queue.popFirst()
-                if !self.wasFull {
-                    self.wasFull = true
-                    ROS_DEBUG("Incoming queue was full for topic \"\(topic)\". Discarded oldest message (current queue size [\(queue.count)])")
-                }
-            } else {
-                self.wasFull = false
+        
+        if size > 0 && queue.count >= size {
+            _ = queue.popFirst()
+            if !self.wasFull {
+                self.wasFull = true
+                ROS_DEBUG("Incoming queue was full for topic \"\(topic)\". Discarded oldest message (current queue size [\(queue.count)])")
             }
-
-            queue.append(item)
+        } else {
+            self.wasFull = false
         }
-
+        
+        queue.append(item)
+        
         return self.wasFull
     }
-
-    func clear() {
-        callbackMutex.sync {
-            queueQueue.sync {
-                queue.removeAll()
+    
+    func clear() async {
+        // Wait for any callbacks currently being dispatched to finish, so
+        // callers can rely on the queue being quiescent on return. Skip the
+        // wait if we're called from inside a callback for this queue,
+        // otherwise we'd deadlock waiting on our own in-flight count.
+        if !Self.isDispatchingCallback {
+            while inFlightCalls > 0 {
+                await withCheckedContinuation { cont in
+                    clearWaiters.append(cont)
+                }
             }
         }
+        queue.removeAll()
     }
 
     @discardableResult
-    func call() -> CallResult {
-        var ret = CallResult.tryAgain
-        if allowConcurrentCallbacks {
-            ret = call0()
-        } else {
-            callbackMutex.trySync {
-                ret = call0()
-            }
-        }
-        return ret
+    func call() async throws -> CallResult {
+        return try await call0()
     }
 
-    private func call0() -> CallResult {
-        let info: Item? = queueQueue.sync {
-            return queue.popFirst()
+    private func callDidFinish() {
+        inFlightCalls -= 1
+        if inFlightCalls == 0 {
+            let waiters = clearWaiters
+            clearWaiters.removeAll()
+            for w in waiters {
+                w.resume()
+            }
         }
+    }
+
+    private func call0() async throws -> CallResult {
+        let info: Item? = queue.popFirst()
 
         guard let item = info else {
             return .invalid
         }
 
         if item.hasTrackedObject {
-            ROS_ERROR("tracker logic not implemented")
+            if item.trackedObject == nil {
+                ROS_DEBUG("tracker_object is nil")
+                return .invalid
+            }
         }
 
-        if let msg = item.deserializer.deserialize() {
-            item.helper.call(msg: msg, item: item)
+        inFlightCalls += 1
+        defer { callDidFinish() }
+
+        if let msg = await item.deserializer.deserialize() {
+            try await Self.$isDispatchingCallback.withValue(true) {
+                try await item.helper.call(msg: msg, item: item)
+            }
         }
 
         return .success
     }
-
+    
     var ready: Bool {
         return true
     }
-
+    
     var full: Bool {
-        return queueQueue.sync {
-            size > 0 && queue.count >= size
-        }
+        size > 0 && queue.count >= size
     }
-
+    
 }

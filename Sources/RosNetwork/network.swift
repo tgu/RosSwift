@@ -24,7 +24,7 @@ extension SocketAddress {
     }
 }
 
-public struct RosNetwork {
+public struct RosNetwork: Sendable {
     public let gHost: String
     public let gTcprosServerPort: UInt16
     

@@ -54,7 +54,7 @@ struct API: CustomStringConvertible {
 
 }
 
-final class RosMasterHandler {
+actor RosMasterHandler {
     let parameterServer: ParameterServer<XmlRpcValue>
     let rm: RegistrationManager
     var topics: [String: String]
@@ -66,6 +66,10 @@ final class RosMasterHandler {
     }
 
     func executeMethod(methodName: String, params: [XmlRpcValue]) -> XmlRpcValue {
+        if params.isEmpty {
+            return .invalid
+        }
+        
         let caller = params[0].string
 
         let arg1 = params.dropFirst().first
@@ -313,76 +317,45 @@ final class RosMasterHandler {
 
     // MARK: Notifications
 
-    private func notify_topic_subscribers(topic: String, pub: [String], sub: [String]) {
+    private nonisolated func notify_topic_subscribers(topic: String, pub: [String], sub: [String]) {
         let valid = sub.compactMap { API(api: $0) }
-        let msg = XmlRpcValue(anyArray: ["/master",topic,pub])
+        let msg = XmlRpcValue(anyArray: ["/master", topic, pub])
 
-        valid.forEach { api in
-            let start = DispatchTime.now()
-            let client = nio.Master(group: threadGroup)
-                            .connect(host: api.host, port: Int(api.port))
-
-            client.whenSuccess { client in
-                let result = client.send(method: "publisherUpdate", request: msg)
-
-                result.whenComplete { result in
-                    let msg = "publisherUpdate[\(topic)] -> \(api) \(pub)"
-                    switch result {
-                    case .success(let response):
-                        let elapsed = DispatchTime.now().uptimeNanoseconds - start.uptimeNanoseconds
-                        let time = elapsed / 1_000_000
-                        logger.debug("\(msg): msec=\(time), result=\(response)")
-                    case .failure(let error):
-                        logger.debug("Error in publisherUpdate to \(api) returned \(error.localizedDescription)")
-
-                    }
-                    client.disconnect().whenFailure { (error) in
-                        logger.debug("\(error.localizedDescription)")
-                    }
+        for api in valid {
+            Task {
+                do {
+                    let response = try await nio.Master(group: threadGroup)
+                        .send(method: "publisherUpdate", request: msg, host: api.host, port: Int(api.port))
+                    logger.debug("publisherUpdate[\(topic)] -> \(api) \(pub): result=\(response)")
+                } catch {
+                    logger.debug("Error in publisherUpdate to \(api) returned \(error.localizedDescription)")
                 }
-
-            }
-
-            client.whenFailure { error in
-                logger.debug("Error in publisherUpdate to \(api) returned \(error.localizedDescription)")
             }
         }
     }
 
-    private func notify_param_subscribers(updates: [Update<XmlRpcValue>]) {
+    private nonisolated func notify_param_subscribers(updates: [Update<XmlRpcValue>]) {
         for update in updates {
             param_update_task(caller: update.subscriber, key: update.key, value: update.value)
         }
     }
 
-    private func param_update_task(caller: Caller, key: String, value: XmlRpcValue?) {
+    private nonisolated func param_update_task(caller: Caller, key: String, value: XmlRpcValue?) {
         guard let api = API(api: caller.api) else {
             logger.debug("malformed caller api [\(caller.api)]")
             return
         }
 
-        let msg = XmlRpcValue(anyArray: ["/master",key,value ?? ""])
+        let msg = XmlRpcValue(anyArray: ["/master", key, value ?? ""])
 
-        let client = nio.Master(group: threadGroup)
-                        .connect(host: api.host, port: Int(api.port))
-
-        client.whenSuccess { client in
-            let result = client.send(method: "paramUpdate", request: msg)
-
-            result.whenComplete { result in
-                switch result {
-                case .success(let response):
-                    logger.debug("paramUpdate to \(api) returned \(response)")
-                case .failure(let error):
-                    logger.debug("Error in paramUpdate to \(api) returned \(error.localizedDescription)")
-                }
-                _ = client.disconnect()
+        Task {
+            do {
+                let response = try await nio.Master(group: threadGroup)
+                    .send(method: "paramUpdate", request: msg, host: api.host, port: Int(api.port))
+                logger.debug("paramUpdate to \(api) returned \(response)")
+            } catch {
+                logger.debug("Error in paramUpdate to \(api) returned \(error.localizedDescription)")
             }
-
-        }
-
-        client.whenFailure { error in
-            logger.debug("Error in publisherUpdate to \(api) returned \(error.localizedDescription)")
         }
     }
 

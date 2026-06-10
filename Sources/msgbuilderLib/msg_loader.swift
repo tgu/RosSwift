@@ -216,7 +216,7 @@ public final class MsgContext {
     }
 
     func loadMsg(from path: String, full_name: String) -> BaseMsg? {
-        if let content = try? String(contentsOfFile: path) {
+        if let content = try? String(contentsOfFile: path, encoding: .utf8) {
             if path.hasSuffix("msg"), let spec = addMsg(with: content, full_name: full_name, messageType: .message, generate: true) {
                 set_file(full_msg_type: full_name, file_path: path)
                 return spec
@@ -230,7 +230,7 @@ public final class MsgContext {
     }
 
     func load_srv_from_file(from path: String, full_name: String, package: String, shortName: String) -> SrvSpec? {
-        if let content = try? String(contentsOfFile: path) {
+        if let content = try? String(contentsOfFile: path, encoding: .utf8) {
             let parts = content.components(separatedBy: "---\n")
             guard parts.count == 2 else {
                 return nil

@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 
 @testable import rosmaster
 @testable import rpcobject
@@ -10,10 +10,10 @@ extension Int: ArrayConstructable, Collection {
             return self
         }
         set {
-            
+
         }
     }
-    
+
     public typealias Index = Int
 
     public init(any: Any) {
@@ -23,15 +23,15 @@ extension Int: ArrayConstructable, Collection {
     public var count: Int {
         return 1
     }
-    
+
     public func index(after i: Int) -> Int {
         return i + 1
     }
-    
+
     public var startIndex: Int {
         return 0
     }
-    
+
     public var endIndex: Int {
         return 0
     }
@@ -42,12 +42,13 @@ extension Int: ArrayConstructable, Collection {
 
 }
 
-class RosmasterTests: XCTestCase {
+@Suite("Rosmaster tests")
+struct RosmasterTests {
 
-    func testLongName() {
+    @Test func longName() {
         let r = RadixTree<Int>()
-        XCTAssertNotNil(r.insert("top/name/space/with/variable/ens", value: 456).self)
-        XCTAssertEqual(r.height, 6)
+        #expect(r.insert("top/name/space/with/variable/ens", value: 456) != nil)
+        #expect(r.height == 6)
         let g1 = r.find("top/name/space/with/variable")
         let g2 = r.find("top/name/space/with")
         let g3 = r.find("top/name/space")
@@ -56,21 +57,21 @@ class RosmasterTests: XCTestCase {
         let g6 = r.find("")
         let g7 = r.find("top/name/spacer")
 
-        XCTAssertTrue(g1)
-        XCTAssertTrue(g2)
-        XCTAssertTrue(g3)
-        XCTAssertTrue(g4)
-        XCTAssertTrue(g5)
-        XCTAssertTrue(g6)
-        XCTAssertFalse(g7)
+        #expect(g1)
+        #expect(g2)
+        #expect(g3)
+        #expect(g4)
+        #expect(g5)
+        #expect(g6)
+        #expect(!g7)
     }
 
-    func testGetLongName() {
+    @Test func getLongName() {
         let r = RadixTree<Int>()
-        XCTAssertNotNil(r.insert("top/name/space/with/variable/ens", value: 456).self)
-        XCTAssertNotNil(r.insert("top/name/space/with/var", value: 999).self)
-        XCTAssertNotNil(r.insert("top/name/here", value: 123).self)
-        XCTAssertEqual(r.height, 6)
+        #expect(r.insert("top/name/space/with/variable/ens", value: 456) != nil)
+        #expect(r.insert("top/name/space/with/var", value: 999) != nil)
+        #expect(r.insert("top/name/here", value: 123) != nil)
+        #expect(r.height == 6)
         let g1 = r.get("top/name/space/with/variable")
         let g2 = r.get("top/name/space/with")
         let g3 = r.get("top/name/space")
@@ -79,26 +80,23 @@ class RosmasterTests: XCTestCase {
         let g6 = r.get("")
         let g7 = r.get("top/name/spacer")
 
+        #expect(g1 != nil)
+        #expect(g2 != nil)
+        #expect(g3 != nil)
+        #expect(g4 != nil)
+        #expect(g5 != nil)
+        #expect(g6 != nil)
+        #expect(g7 == nil)
 
-        XCTAssertNotNil(g1)
-        XCTAssertNotNil(g2)
-        XCTAssertNotNil(g3)
-        XCTAssertNotNil(g4)
-        XCTAssertNotNil(g5)
-        XCTAssertNotNil(g6)
-        XCTAssertNil(g7)
-
-        XCTAssertEqual(g1?.children.count, 1)
-        XCTAssertEqual(g2?.children.count, 2)
-        XCTAssertEqual(g4?.children.count, 2)
+        #expect(g1?.children.count == 1)
+        #expect(g2?.children.count == 2)
+        #expect(g4?.children.count == 2)
     }
 
-
-
-    func testParameters()  {
+    @Test func parameters() {
         let r = RadixTree<Int>()
 
-        XCTAssertNotNil(r.insert("rom/nus", value: 1).self)
+        #expect(r.insert("rom/nus", value: 1) != nil)
 
         if let g = r.get("rom/nus") as? Edge<Int> {
             print("rom/nus has value \(g.value)")
@@ -120,75 +118,71 @@ class RosmasterTests: XCTestCase {
         print(r.getNames())
 
         print("\n\nFIND TESTS")
-        XCTAssertFalse(r.find("courts")) // false
-        XCTAssertFalse(r.find("r")) // true
-        XCTAssertFalse(r.find("ro")) // true
-        XCTAssertTrue(r.find("rom")) // true
-        XCTAssertTrue(r.find("rom")) // true
-        XCTAssertTrue(r.find("top/name/space/with/variable/ens")) // true
-        XCTAssertFalse(r.find("roman")) // true
-        XCTAssertTrue(r.find("rom/ane")) // true
-        XCTAssertFalse(r.find("romans")) // false
-        XCTAssertFalse(r.find("steve")) // true
+        #expect(!r.find("courts")) // false
+        #expect(!r.find("r")) // true
+        #expect(!r.find("ro")) // true
+        #expect(r.find("rom")) // true
+        #expect(r.find("rom")) // true
+        #expect(r.find("top/name/space/with/variable/ens")) // true
+        #expect(!r.find("roman")) // true
+        #expect(r.find("rom/ane")) // true
+        #expect(!r.find("romans")) // false
+        #expect(!r.find("steve")) // true
         print("\n\nREMOVE TESTS")
 
-        XCTAssertNil(r.remove("c"))
-        XCTAssertNotNil(r.remove("rub"))
-        XCTAssertTrue(r.find("rom/ane")) // true
+        #expect(r.remove("c") == nil)
+        #expect(r.remove("rub") != nil)
+        #expect(r.find("rom/ane")) // true
         r.printTree()
-        XCTAssertNil(r.remove("stevenson"))
-        XCTAssertTrue(r.find("rom")) // true
-        XCTAssertNotNil(r.remove("rom"))
-        XCTAssertFalse(r.find("rom/ane")) // true
+        #expect(r.remove("stevenson") == nil)
+        #expect(r.find("rom")) // true
+        #expect(r.remove("rom") != nil)
+        #expect(!r.find("rom/ane")) // true
         r.printTree()
-
     }
 
     private func notify(updates: [Update<Int>]) {
         updates.forEach { print($0) }
     }
 
-    func testResolveNames() {
+    @Test func resolveNames() {
         let node1 = "/node1"
         let node2 = "/wg/node2"
         let node3 = "/wg/node3"
 
         // relative names
 
-        XCTAssertEqual(resolve(name: "bar", nameSpace: node1), "/bar")
-        XCTAssertEqual(resolve(name: "bar", nameSpace: node2), "/wg/bar")
-        XCTAssertEqual(resolve(name: "foo/bar", nameSpace: node3), "/wg/foo/bar")
+        #expect(resolve(name: "bar", nameSpace: node1) == "/bar")
+        #expect(resolve(name: "bar", nameSpace: node2) == "/wg/bar")
+        #expect(resolve(name: "foo/bar", nameSpace: node3) == "/wg/foo/bar")
 
         // global names
 
-        XCTAssertEqual(resolve(name: "/bar", nameSpace: node1), "/bar")
-        XCTAssertEqual(resolve(name: "/bar", nameSpace: node2), "/bar")
-        XCTAssertEqual(resolve(name: "/foo/bar", nameSpace: node3), "/foo/bar")
-
+        #expect(resolve(name: "/bar", nameSpace: node1) == "/bar")
+        #expect(resolve(name: "/bar", nameSpace: node2) == "/bar")
+        #expect(resolve(name: "/foo/bar", nameSpace: node3) == "/foo/bar")
 
         // private names
 
-        XCTAssertEqual(resolve(name: "~bar", nameSpace: node1), "/node1/bar")
-        XCTAssertEqual(resolve(name: "~bar", nameSpace: node2), "/wg/node2/bar")
-        XCTAssertEqual(resolve(name: "~foo/bar", nameSpace: node3), "/wg/node3/foo/bar")
+        #expect(resolve(name: "~bar", nameSpace: node1) == "/node1/bar")
+        #expect(resolve(name: "~bar", nameSpace: node2) == "/wg/node2/bar")
+        #expect(resolve(name: "~foo/bar", nameSpace: node3) == "/wg/node3/foo/bar")
 
         // Empty name
 
-
-        XCTAssertEqual(resolve(name: "", nameSpace: ""), "/")
+        #expect(resolve(name: "", nameSpace: "") == "/")
 
         let name = resolve(name: "~name", nameSpace: "test")
-        XCTAssertEqual(name, "test/name")
+        #expect(name == "test/name")
 
-        XCTAssertEqual(namespace(name: "bar"), "/")
-        XCTAssertEqual(namespace(name: "foo/bar"), "/foo/")
-        XCTAssertEqual(namespace(name: ""), "/")
-        XCTAssertEqual(namespace(name: "/foo/bar/"), "/foo/")
-        XCTAssertEqual(namespace(name: "/foo/bar/node"), "/foo/bar/")
-
+        #expect(namespace(name: "bar") == "/")
+        #expect(namespace(name: "foo/bar") == "/foo/")
+        #expect(namespace(name: "") == "/")
+        #expect(namespace(name: "/foo/bar/") == "/foo/")
+        #expect(namespace(name: "/foo/bar/node") == "/foo/bar/")
     }
 
-    func testParameterServer() {
+    @Test func parameterServer() {
         let rm = RegistrationManager()
         let ps = ParameterServer<Int>(reg_manager: rm)
 
@@ -197,24 +191,22 @@ class RosmasterTests: XCTestCase {
         let _ = ps.subscribe(parameter: "/param", node: caller)
         let _ = ps.subscribe(parameter: "/par", node: caller)
 
-
         ps.set(param: "/param", value: 23, notfiy: notify(updates:))
         ps.set(param: "par/am", value: 34, notfiy: notify(updates:))
         ps.set(param: "par/ma", value: 34, notfiy: notify(updates:))
 
         let names = ps.parameters.getNames().sorted()
-        XCTAssertEqual(names, ["/par/am","/par/ma","/param"])
+        #expect(names == ["/par/am","/par/ma","/param"])
 
         ps.set(param: "par", value: 99, notfiy: notify(updates:))
         let names2 = ps.parameters.getNames().sorted()
-        XCTAssertEqual(names2, ["/par","/param"])
+        #expect(names2 == ["/par","/param"])
 
         let value = ps.getValueFor(param: "/par")?.values
-        XCTAssertEqual(value, 99)
-
+        #expect(value == 99)
     }
 
-    func testUpdates() {
+    @Test func updates() throws {
         let rm = RegistrationManager()
         let ps = ParameterServer<Int>(reg_manager: rm)
         let n1 = Caller(id: "/node1", api: "api")
@@ -224,59 +216,42 @@ class RosmasterTests: XCTestCase {
         rm.register(parameterSubscriber: n2, parameter: "/foo/bar")
         rm.register(parameterSubscriber: n3, parameter: "~foo")
 
-        guard let par = ps.set(param: "foo/bar", value: 0) else {
-            XCTFail()
-            return
-        }
+        let par = try #require(ps.set(param: "foo/bar", value: 0))
 
         let updates = ps.computeUpdates(key: par, param_value: 0)
         let u = updates.map { $0.subscriber.id }
-        XCTAssertEqual(u.sorted(), ["/node1","/node2"])
+        #expect(u.sorted() == ["/node1","/node2"])
 
-        guard let par2 = ps.set(param: "/node3/foo", value: 0) else {
-            XCTFail()
-            return
-        }
+        let par2 = try #require(ps.set(param: "/node3/foo", value: 0))
 
         let updates2 = ps.computeUpdates(key: par2, param_value: 0)
         let u2 = updates2.map { $0.subscriber.id }
-        XCTAssertEqual(u2.sorted(), ["/node3"])
+        #expect(u2.sorted() == ["/node3"])
 
         // This will delete /foo/bar
 
-        guard let par3 = ps.set(param: "/foo", value: 0) else {
-            XCTFail()
-            return
-        }
+        let par3 = try #require(ps.set(param: "/foo", value: 0))
 
         let updates3 = ps.computeUpdates(key: par3, param_value: 0)
         let u3 = updates3.map { $0.subscriber.id }
-        XCTAssertEqual(u3.sorted(), ["/node1","/node2"])
-
+        #expect(u3.sorted() == ["/node1","/node2"])
     }
 
-    func testUpdates2() {
+    @Test func updates2() throws {
         let rm = RegistrationManager()
         let ps = ParameterServer<Int>(reg_manager: rm)
         let n1 = Caller(id: "/node1", api: "api")
         rm.register(parameterSubscriber: n1, parameter: "/foo")
-        guard let p = ps.set(param: "/foo", value: 0) else {
-            XCTFail()
-            return
-        }
+        let p = try #require(ps.set(param: "/foo", value: 0))
 
         let up1 = ps.computeUpdates(key: p, param_value: 0)
-        XCTAssertEqual(up1.first?.key, "/foo")
-        guard let par = ps.set(param: "/foo/bar", value: 0) else {
-            XCTFail()
-            return
-        }
+        #expect(up1.first?.key == "/foo")
+        let par = try #require(ps.set(param: "/foo/bar", value: 0))
         let up2 = ps.computeUpdates(key: par, param_value: 0)
-        XCTAssertEqual(up2.first?.key, "/foo/bar")
+        #expect(up2.first?.key == "/foo/bar")
     }
 
-
-    func testComputeAllKeys() {
+    @Test func computeAllKeys() {
         let rm = RegistrationManager()
         let ps = ParameterServer<XmlRpcValue>(reg_manager: rm)
         let n1 = Caller(id: "/node1", api: "api")
@@ -290,78 +265,75 @@ class RosmasterTests: XCTestCase {
         let value = XmlRpcValue(any: dict)
         var all = [String]()
         ps.computeAllKeys(param: "/foo", value: value, all_keys: &all)
-        XCTAssertEqual(all.sorted(), ["/foo/foo/",
-                                      "/foo/web/",
-                                      "/foo/web/par/",
-                                      "/foo/web/t/",
-                                      "/foo/web/t/g/",
-                                      "/foo/web/t/k/"])
-        
+        #expect(all.sorted() == ["/foo/foo/",
+                                 "/foo/web/",
+                                 "/foo/web/par/",
+                                 "/foo/web/t/",
+                                 "/foo/web/t/g/",
+                                 "/foo/web/t/k/"])
     }
-    
-    func testChangeSibling() {
+
+    @Test func changeSibling() {
         let rm = RegistrationManager()
         let ps = ParameterServer<XmlRpcValue>(reg_manager: rm)
         let val = XmlRpcValue(any: ["g": 4, "k" : 7, "level": ["one": 1, "two": 2]])
         let _ = ps.set(param: "/foo/web/t", value: val)
         let _ = ps.set(param: "/foo/bew/t", value: val)
         let t = ps.getValueFor(param: "/foo/web/t")
-        XCTAssertNotNil(t)
-        XCTAssertEqual(t?.values, val)
+        #expect(t != nil)
+        #expect(t?.values == val)
         let g = ps.getValueFor(param: "/foo/web/t/g")
-        XCTAssertNotNil(g)
-        XCTAssertEqual(g?.values.int, 4)
+        #expect(g != nil)
+        #expect(g?.values.int == 4)
         let _ = ps.set(param: "/foo/web/t/g", value: XmlRpcValue(any: 42))
         let k = ps.getValueFor(param: "/foo/web/t/k")
-        XCTAssertNotNil(k)
-        XCTAssertEqual(k?.values.int, 7)
+        #expect(k != nil)
+        #expect(k?.values.int == 7)
     }
 
-    func testXmlRpcIteration() {
+    @Test func xmlRpcIteration() {
         let v = XmlRpcValue(anyArray: [1,2,3,4,5])
-        XCTAssertEqual(v.count, 5)
+        #expect(v.count == 5)
         for k in v {
             print(k)
         }
         let v1 = XmlRpcValue(str: "string")
-        XCTAssertEqual(v1.count, 1)
+        #expect(v1.count == 1)
         for k in v1 {
             print(k)
         }
         let v2 = XmlRpcValue(any: ["hej": 1, "då": 3])
-        XCTAssertEqual(v2.count, 2)
+        #expect(v2.count == 2)
         for k in v2 {
             print(k)
         }
-
     }
 
-    func testMultiMap() {
+    @Test func multiMap() {
         var map = Multimap<Int,Int>()
-        XCTAssert(map.isEmpty)
+        #expect(map.isEmpty)
         map.insert(value: 2, forKey: 1)
         map.insert(value: 3, forKey: 1)
         map.insert(value: 4, forKey: 1)
         map.insert(value: 4, forKey: 2)
         map.insert(value: 4, forKey: 3)
-        XCTAssert(map.contains(value: 2, forKey: 1))
-        XCTAssert(map.contains(value: 3, forKey: 1))
-        XCTAssert(map.contains(value: 4, forKey: 1))
-        XCTAssert(map.contains(value: 4, forKey: 2))
-        XCTAssert(map.contains(value: 4, forKey: 3))
-        XCTAssert(map.contains(key: 1))
-        XCTAssert(map.contains(key: 2))
-        XCTAssert(map.contains(key: 3))
-        XCTAssertEqual(map.keyCount, 3)
-        XCTAssertFalse(map.isEmpty)
+        #expect(map.contains(value: 2, forKey: 1))
+        #expect(map.contains(value: 3, forKey: 1))
+        #expect(map.contains(value: 4, forKey: 1))
+        #expect(map.contains(value: 4, forKey: 2))
+        #expect(map.contains(value: 4, forKey: 3))
+        #expect(map.contains(key: 1))
+        #expect(map.contains(key: 2))
+        #expect(map.contains(key: 3))
+        #expect(map.keyCount == 3)
+        #expect(!map.isEmpty)
         map.removeValue(4, forKey: 3)
-        XCTAssertFalse(map.isEmpty)
-        XCTAssertEqual(map.keyCount, 2)
+        #expect(!map.isEmpty)
+        #expect(map.keyCount == 2)
         map.removeValuesForKey(1)
-        XCTAssertFalse(map.isEmpty)
-        XCTAssertEqual(map.keyCount, 1)
+        #expect(!map.isEmpty)
+        #expect(map.keyCount == 1)
         map.removeAll()
-        XCTAssert(map.isEmpty)
+        #expect(map.isEmpty)
     }
-
 }

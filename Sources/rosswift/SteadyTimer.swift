@@ -7,7 +7,7 @@
 
 import RosTime
 
-typealias SteadyTimerCallback = (SteadyTimerEvent) -> Void
+typealias SteadyTimerCallback = @Sendable (SteadyTimerEvent) async -> Void
 
 
 /// Manages a steady-timer callback.
@@ -17,23 +17,23 @@ typealias SteadyTimerCallback = (SteadyTimerEvent) -> Void
 /// callback associated with that handle will stop being called.
 
 
-public final class SteadyTimer {
-    nonisolated(unsafe) private static let manager = TimerManager<SteadyTime,WallDuration,SteadyTimerEvent>()
-
+public actor SteadyTimer {
+    private static let manager = TimerManager<SteadyTime,SteadyTimerEvent>()
+    
     private var started: Bool = false
-    private var timerHandle: TimerHandle = .none
-
+    private var timerHandle: TimerHandle? = nil
+    
     private var period: WallDuration
     let callback: SteadyTimerCallback
-    let callbackQueue: CallbackQueueInterface
-    let trackedObject: AnyObject?
+    let callbackQueue: AsyncCallbackQueue
+    weak var trackedObject: TrackableObject?
     let hasTrackedObject: Bool
     let oneShot: Bool
-
+    
     internal init(period: WallDuration,
                   callback: @escaping SteadyTimerCallback,
-                  callbackQueue: CallbackQueueInterface,
-                  trackedObject: AnyObject?,
+                  callbackQueue: AsyncCallbackQueue,
+                  trackedObject: TrackableObject?,
                   oneshot: Bool) {
         self.period = period
         self.callback = callback
@@ -42,63 +42,75 @@ public final class SteadyTimer {
         self.callbackQueue = callbackQueue
         self.oneShot = oneshot
     }
-
-    deinit {
+    
+    isolated deinit {
         ROS_DEBUG("Timer deregistering callbacks")
-        stop()
+        if started {
+            if let handle = timerHandle {
+                Task {
+                    await SteadyTimer.manager.remove(timerHandle: handle)
+                }
+            }
+        }
     }
-
+    
     func hasStarted() -> Bool {
         return started
     }
-
+    
     func isValid() -> Bool {
         return !period.isZero()
     }
-
-    func start() {
+    
+    func start() async {
         if !started {
-            timerHandle = SteadyTimer.manager.add(period: period,
-                                            callback: callback,
-                                            callbackQueue: callbackQueue,
-                                            trackedObject: trackedObject,
-                                            oneshot: oneShot)
+            timerHandle = await SteadyTimer.manager.add(period: period,
+                                                        callback: callback,
+                                                        callbackQueue: callbackQueue,
+                                                        trackedObject: trackedObject,
+                                                        oneshot: oneShot)
             started = true
         }
     }
-
-    func stop() {
+    
+    func stop() async {
         if started {
             started = false
-            SteadyTimer.manager.remove(timerHandle: timerHandle)
-            timerHandle = .none
+            if let handle = timerHandle {
+                await SteadyTimer.manager.remove(timerHandle: handle)
+                timerHandle = nil
+            }
         }
     }
-
-    func hasPending() -> Bool {
-        if !isValid() || timerHandle.isNone {
+    
+    func hasPending() async -> Bool {
+        if !isValid() {
+            return false
+        } else if let handle = timerHandle {
+            return await SteadyTimer.manager.hasPending(handle: handle)
+        } else {
             return false
         }
-
-        return SteadyTimer.manager.hasPending(handle: timerHandle)
     }
-
-    func setPeriod(period: WallDuration, reset: Bool = true) {
+    
+    func setPeriod(period: WallDuration, reset: Bool = true) async {
         self.period = period
-        SteadyTimer.manager.setPeriod(handle: timerHandle, period: period, reset: reset)
+        if let handle = timerHandle {
+            await SteadyTimer.manager.setPeriod(handle: handle, period: period, reset: reset)
+        }
     }
-
+    
 }
 
 
 
 
-public struct SteadyTimerEvent: Event {
+public struct SteadyTimerEvent: Event, Sendable {
     public static func createEvent(lastExpected: SteadyTime, lastExpired: SteadyTime, lastReal: SteadyTime, currentExpected: SteadyTime, currentExpired: SteadyTime, currentReal: SteadyTime) -> SteadyTimerEvent {
         return SteadyTimerEvent(lastExpected: lastExpected, lastExpired: lastExpired, lastReal: lastReal, currentExpected: currentExpected, currentExpired: currentExpired, currentReal: currentReal)
-
+        
     }
-
+    
     public let lastExpected: SteadyTime
     public var lastExpired: SteadyTime
     public let lastReal: SteadyTime

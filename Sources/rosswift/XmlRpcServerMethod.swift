@@ -9,7 +9,7 @@ import rpcobject
 
 protocol XmlRpcServerMethod {
     var name: String { get }
-
+    
     func execute(params: XmlRpcValue) throws -> XmlRpcValue
     func help() -> String
 }

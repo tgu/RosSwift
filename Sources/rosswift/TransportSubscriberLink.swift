@@ -8,16 +8,18 @@
 import Foundation
 import NIO
 import StdMsgs
+import Synchronization
 
-struct TransportSubscriberLink: SubscriberLink {
-    weak var parent: Publication!
-    let connectionId: UInt
+final class TransportSubscriberLink: SubscriberLink {
+    let _parent: Mutex<Publication?>
+    let connectionId: UUID
     let destinationCallerId: String
     let topic: String
     let connection: Connection
     var transportInfo: String { return connection.transportInfo }
-
-    init?(ros: Ros, connection: Connection, header: Header) {
+    var parent: Publication! { _parent.withLock({$0})}
+    
+    init?(ros: Ros, connection: consuming Connection, header: borrowing Header) {
         self.connection = connection
         guard let _topic = header["topic"] else {
             let msg = "Header from subscriber did not have the required element: topic"
@@ -44,9 +46,9 @@ struct TransportSubscriberLink: SubscriberLink {
         }
         
         destinationCallerId = clientCallerId
-        connectionId = UInt(ros.connectionManager.getNewConnectionID())
+        connectionId = UUID()
         topic = pub.name
-        parent = pub
+        _parent = Mutex(pub)
         
         // Send back a success, with info
         var m = StringStringMap()
@@ -54,7 +56,7 @@ struct TransportSubscriberLink: SubscriberLink {
         m["md5sum"] = pub.md5sum
         m["message_definition"] = pub.messageDefinition
         m["callerid"] = ros.name
-        m["latching"] = pub.isLatching() ? "1" : "0"
+        m["latching"] = pub.isLatched ? "1" : "0"
         m["topic"] = topic
         
         pub.addSubscriberLink(self)
@@ -74,7 +76,7 @@ struct TransportSubscriberLink: SubscriberLink {
         parent?.removeSubscriberLink(self)
     }
     
-    func enqueueMessage(m: SerializedMessage) {
+    func enqueueMessage(_ m: SerializedMessage) {
         connection.write(buffer: m.buf).whenFailure({ error in
             ROS_ERROR("writing \(m), \(error)")
         })

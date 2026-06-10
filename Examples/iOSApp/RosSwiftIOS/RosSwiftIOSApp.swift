@@ -5,15 +5,25 @@ import RosSwift
     var node: NodeHandle?
 
     var isRunning: Bool {
-        node?.ok ?? false
+        node?.isOK ?? false
     }
 
-    func connect(_ master: String) {
-        let ros = Ros.init(name: "iPhone", remappings: ["__master":master])
-        node = ros.createNode()
+    var task: Task<Void, Never>?
 
-        Task.detached(priority: .background) { [weak self] in
-            self?.node?.spinThread()
+    func connect(_ master: String) async throws {
+        let ros = try Ros.init(name: "iPhone", remappings: ["__master":master])
+        node = await ros.createNode()
+
+        task = Task.detached(priority: .background) { [weak self] in
+            await self?.node?.spinThread()
+        }
+    }
+
+    func disconnect() {
+        if isRunning {
+            task?.cancel()
+            task = nil
+            node = nil
         }
     }
 
@@ -25,6 +35,12 @@ import RosSwift
 @main
 struct RosSwiftIOSApp: App {
     var ros = NodeWrapper()
+
+    init() {
+        // Route RosSwift logs to Apple unified logging (visible in Console.app).
+        RosLogging.bootstrap(subsystem: "org.ros.RosSwiftIOS")
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView().environment(ros)

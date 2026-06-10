@@ -7,8 +7,14 @@
 
 import Foundation
 import StdMsgs
+import Atomics
 
-internal protocol ServiceProtocol: AnyObject {
+internal enum ServiceProcessResult {
+    case success(Message)
+    case failure(String)
+}
+
+internal protocol ServiceProtocol: AnyObject, Sendable {
     var name: String { get }
     var isDropped: Bool { get }
     var md5sum: String { get }
@@ -18,84 +24,88 @@ internal protocol ServiceProtocol: AnyObject {
     func dropService()
     func addServiceClientLink(link: ServiceClientLink)
     func removeServiceClientLink(_ link: ServiceClientLink)
-    func processRequest(buf: [UInt8]) -> Message?
+    func processRequest(buf: [UInt8]) -> ServiceProcessResult
 
 }
 
-internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>: ServiceProtocol {
-
-    typealias CallFcn = (MReq) -> MRes?
-    var call: CallFcn
-    var name: String
+// `weak var trackedObject` blocks checked `Sendable`: weak class references
+// are mutated implicitly by ARC, so the compiler can't prove thread-safety.
+// The runtime guarantees atomic load/store of weak refs, so `@unchecked` is
+// honest here. Everything else on this class is `let` + Sendable.
+internal final class ServicePublication<MReq: ServiceRequestMessage, MRes: ServiceResponseMessage>: ServiceProtocol, @unchecked Sendable {
+    
+    typealias CallFcn = @Sendable (MReq) -> MRes?
+    let call: CallFcn
+    let name: String
+    let _isDropped = ManagedAtomic(false)
+    weak var trackedObject: TrackableObject?
+    let clientLinks = SynchronizedArray<ServiceClientLink>()
+    
     var md5sum: String { return MReq.srvMd5sum }
     var dataType: String { return MReq.srvDatatype }
     var requestDataType: String { return MReq.datatype }
     var responseDataType: String { return MRes.datatype }
-    var isDropped = false
-    var hasTrackedObject: Bool { return trackedObject != nil }
-    var trackedObject: AnyObject?
-
-    var clientLinks = [ServiceClientLink]()
-    let clientLinksQueue = DispatchQueue(label: "clientLinksQueue")
-
-    init(name: String, trackedObject: AnyObject?, callback: @escaping CallFcn) {
+    var isDropped: Bool { _isDropped.load(ordering: .relaxed)}
+    let hasTrackedObject: Bool
+    
+    init(options: AdvertiseServiceOptions<MReq,MRes>) {
+        self.call = options.callback
+        self.name = options.service
+        self.trackedObject = options.trackedObject
+        self.hasTrackedObject = options.trackedObject != nil
+    }
+    
+    init(name: String, trackedObject: TrackableObject?, callback: @escaping CallFcn) {
         self.call = callback
         self.name = name
         self.trackedObject = trackedObject
+        self.hasTrackedObject = trackedObject != nil
     }
-
+    
     deinit {
         dropService()
     }
-
+    
     func dropService() {
-        ROS_DEBUG("drop service \(name)")
-        // grab a lock here, to ensure that no subscription callback will
-        // be invoked after we return
-        clientLinksQueue.sync {
-            isDropped = true
+        if !_isDropped.compareExchange(expected: false, desired: true, ordering: .relaxed).original {
+            ROS_DEBUG("drop service \(name)")
+            dropAllConnections()
         }
-        dropAllConnections()
     }
-
-    func processRequest(buf: [UInt8]) -> Message? {
+    
+    func processRequest(buf: consuming [UInt8]) -> ServiceProcessResult {
+        if hasTrackedObject && trackedObject == nil {
+            return .failure("service tracked object has been destroyed")
+        }
 
         let m = SerializedMessage(buffer: buf)
+        let request: MReq
         do {
-            let request: MReq = try deserializeMessage(m: m)
-            if let response: MRes = call(request) {                     // TODO: handle false return
-                return response
-            }
+            request = try deserializeMessage(m: m)
         } catch {
-            ROS_ERROR("deserializeMessage of \(m) failed: \(error)")
+            let msg = "failed to deserialize service request for \(name): \(error)"
+            ROS_ERROR(msg)
+            return .failure(msg)
         }
 
-        return nil
+        guard let response: MRes = call(request) else {
+            return .failure("service handler for \(name) returned no response")
+        }
+        return .success(response)
     }
-
+    
     func addServiceClientLink(link: ServiceClientLink) {
-        clientLinksQueue.sync {
-            clientLinks.append(link)
-        }
+        clientLinks.append(link)
     }
-
+    
     func removeServiceClientLink(_ link: ServiceClientLink) {
-        clientLinksQueue.sync {
-            if let it = clientLinks.firstIndex(where: { $0 === link }) {
-                clientLinks.remove(at: it)
-            }
-        }
+        clientLinks.remove(where: { $0.id == link.id })
     }
-
+    
     func dropAllConnections() {
-    // Swap our clientLinks list with a local one so we can only lock for a short period of time, because a
-    // side effect of our calling drop() on connections can be re-locking the clientLinks mutex
-    var localLinks = [ServiceClientLink]()
-
-        clientLinksQueue.sync {
-            swap(&localLinks, &clientLinks)
-        }
-
+        clientLinks.removeAll(completion: { elems in
+            elems.forEach { $0.dropServiceClient() }
+        })
     }
-
+    
 }

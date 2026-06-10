@@ -241,6 +241,8 @@ public enum XmlRpcValue: Equatable, ConvertableToXml, Sendable {
         case .array(let a):
             let xml = a.reduce("", { $0 + $1.toXml() })
             return Tags.arrayXml(xml)
+        case .invalid:
+            return "<invalid/>"
         default:
             fatalError("Could not convert to xml: \(self)")
         }

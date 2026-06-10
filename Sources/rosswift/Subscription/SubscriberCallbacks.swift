@@ -6,19 +6,23 @@
 //
 
 
-public typealias SubscriberStatusCallback = (SingleSubscriberPublisher) -> Void
+public typealias SubscriberStatusCallback = @Sendable (SingleSubscriberPublisher) -> Void
 
-final class SubscriberCallbacks {
+// `weak var trackedObject` blocks checked `Sendable` — weak references to
+// classes are mutated implicitly by ARC, so the compiler can't prove
+// thread-safety. The runtime guarantees atomic load/store of weak refs, so
+// `@unchecked` is honest here.
+final class SubscriberCallbacks: @unchecked Sendable {
     let connect: SubscriberStatusCallback?
     let disconnect: SubscriberStatusCallback?
     let hasTrackedObject: Bool
-    let trackedObject: AnyObject?
-
+    weak var trackedObject: TrackableObject?
+    
     init(connect: SubscriberStatusCallback?,
          disconnect: SubscriberStatusCallback?,
          hasTrackedObject: Bool,
-         trackedObject: AnyObject? = nil) {
-
+         trackedObject: TrackableObject? = nil) {
+        
         self.connect = connect
         self.disconnect = disconnect
         self.hasTrackedObject = hasTrackedObject

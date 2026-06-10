@@ -3,15 +3,19 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		837B121D2E9540FA00D8C257 /* RosNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = 837B121C2E9540FA00D8C257 /* RosNetwork */; };
+		837B121F2E9540FA00D8C257 /* RosSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 837B121E2E9540FA00D8C257 /* RosSwift */; };
+		837B12212E9540FA00D8C257 /* RosTime in Frameworks */ = {isa = PBXBuildFile; productRef = 837B12202E9540FA00D8C257 /* RosTime */; };
+		837B12232E9540FA00D8C257 /* StdMsgs in Frameworks */ = {isa = PBXBuildFile; productRef = 837B12222E9540FA00D8C257 /* StdMsgs */; };
+		837B12252E9540FA00D8C257 /* msgs in Frameworks */ = {isa = PBXBuildFile; productRef = 837B12242E9540FA00D8C257 /* msgs */; };
 		83930BA62B9F388B0059E4B9 /* RosSwiftIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83930BA52B9F388B0059E4B9 /* RosSwiftIOSApp.swift */; };
 		83930BA82B9F388B0059E4B9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83930BA72B9F388B0059E4B9 /* ContentView.swift */; };
 		83930BAA2B9F388D0059E4B9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 83930BA92B9F388D0059E4B9 /* Assets.xcassets */; };
 		83930BAD2B9F388D0059E4B9 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 83930BAC2B9F388D0059E4B9 /* Preview Assets.xcassets */; };
-		83930BBF2BA032340059E4B9 /* RosSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 83930BBE2BA032340059E4B9 /* RosSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,7 +32,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				83930BBF2BA032340059E4B9 /* RosSwift in Frameworks */,
+				837B12232E9540FA00D8C257 /* StdMsgs in Frameworks */,
+				837B12252E9540FA00D8C257 /* msgs in Frameworks */,
+				837B12212E9540FA00D8C257 /* RosTime in Frameworks */,
+				837B121D2E9540FA00D8C257 /* RosNetwork in Frameworks */,
+				837B121F2E9540FA00D8C257 /* RosSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,7 +104,11 @@
 			);
 			name = RosSwiftIOS;
 			packageProductDependencies = (
-				83930BBE2BA032340059E4B9 /* RosSwift */,
+				837B121C2E9540FA00D8C257 /* RosNetwork */,
+				837B121E2E9540FA00D8C257 /* RosSwift */,
+				837B12202E9540FA00D8C257 /* RosTime */,
+				837B12222E9540FA00D8C257 /* StdMsgs */,
+				837B12242E9540FA00D8C257 /* msgs */,
 			);
 			productName = RosSwiftIOS;
 			productReference = 83930BA22B9F388B0059E4B9 /* RosSwiftIOS.app */;
@@ -127,7 +139,7 @@
 			);
 			mainGroup = 83930B992B9F388B0059E4B9;
 			packageReferences = (
-				83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */,
+				837B121B2E9540FA00D8C257 /* XCLocalSwiftPackageReference "../../../RosSwift" */,
 			);
 			productRefGroup = 83930BA32B9F388B0059E4B9 /* Products */;
 			projectDirPath = "";
@@ -301,10 +313,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = demo.demo.RosSwiftIOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -314,6 +328,8 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
+				TVOS_DEPLOYMENT_TARGET = 26.0;
+				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
@@ -334,10 +350,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = demo.demo.RosSwiftIOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -347,6 +365,8 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,3,7";
+				TVOS_DEPLOYMENT_TARGET = 26.0;
+				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -373,22 +393,33 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/tgu/RosSwift";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		837B121B2E9540FA00D8C257 /* XCLocalSwiftPackageReference "../../../RosSwift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../RosSwift;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		83930BBE2BA032340059E4B9 /* RosSwift */ = {
+		837B121C2E9540FA00D8C257 /* RosNetwork */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 83930BB32B9F38D70059E4B9 /* XCRemoteSwiftPackageReference "RosSwift" */;
+			productName = RosNetwork;
+		};
+		837B121E2E9540FA00D8C257 /* RosSwift */ = {
+			isa = XCSwiftPackageProductDependency;
 			productName = RosSwift;
+		};
+		837B12202E9540FA00D8C257 /* RosTime */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RosTime;
+		};
+		837B12222E9540FA00D8C257 /* StdMsgs */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StdMsgs;
+		};
+		837B12242E9540FA00D8C257 /* msgs */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = msgs;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

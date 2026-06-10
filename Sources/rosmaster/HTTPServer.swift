@@ -6,11 +6,15 @@
 //
 
 import Foundation
+import Atomics
 import NIO
+import NIOCore
 import NIOConcurrencyHelpers
+import NIOExtras
 import NIOHTTP1
 import Logging
 import rpcobject
+import Synchronization
 
 fileprivate let logger = Logger(label: "http")
 
@@ -52,89 +56,257 @@ private func httpResponseHead(request: HTTPRequestHead, status: HTTPResponseStat
     return head
 }
 
-private final class HTTPHandler: ChannelInboundHandler {
-    public typealias InboundIn = HTTPServerRequestPart
-    public typealias OutboundOut = HTTPServerResponsePart
-    private var handler: (String, [XmlRpcValue]) -> XmlRpcValue
+/// Closes the channel on receipt of `ChannelShouldQuiesceEvent`, allowing pending
+/// writes to flush as part of NIO's normal close sequence. Installed in each
+/// child pipeline so that `ServerQuiescingHelper.initiateShutdown` causes
+/// active connections to terminate gracefully.
+private final class QuiesceCloseHandler: ChannelInboundHandler, RemovableChannelHandler, Sendable {
+    typealias InboundIn = NIOAny
 
-    private enum State {
-        case idle
-        case waitingForRequestBody
-        case sendingResponse
-
-        mutating func requestReceived() {
-            precondition(self == .idle, "Invalid state for request received: \(self)")
-            self = .waitingForRequestBody
+    func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+        if event is ChannelShouldQuiesceEvent {
+            context.close(promise: nil)
+            return
         }
+        context.fireUserInboundEventTriggered(event)
+    }
+}
 
-        mutating func requestComplete() {
-            precondition(self == .waitingForRequestBody, "Invalid state for request complete: \(self)")
-            self = .sendingResponse
-        }
+public final class XMLRPCServer: Sendable {
+    private static let maxBodyBytes = 8 * 1024 * 1024  // 8 MiB
 
-        mutating func responseComplete() {
-            precondition(self == .sendingResponse, "Invalid state for response complete: \(self)")
-            self = .idle
+    typealias HTTPChannel = NIOAsyncChannel<HTTPServerRequestPart, HTTPServerResponsePart>
+    typealias ServerChannel = NIOAsyncChannel<HTTPChannel, Never>
+
+    private let group: EventLoopGroup
+    private let closure: @Sendable (String, [XmlRpcValue]) async -> XmlRpcValue
+    private let quiesce: ServerQuiescingHelper
+
+    private struct State: Sendable {
+        enum Phase: Sendable {
+            case initializing
+            case starting(String)
+            case started
+            case stopping
+            case stopped
         }
+        var phase: Phase = .initializing
+        var serveTask: Task<Void, Never>?
+    }
+    private let state = Mutex(State())
+    private let _boundPort = ManagedAtomic<Int32>(0)
+
+    /// The port the listener actually bound to. When `start(host:port:)` was
+    /// called with `port: 0` (let the OS pick), this is the assigned port;
+    /// otherwise it matches the requested port. Returns 0 before bind.
+    public var boundPort: Int { Int(_boundPort.load(ordering: .relaxed)) }
+
+    init(group: EventLoopGroup, handler: @escaping @Sendable (String, [XmlRpcValue]) async -> XmlRpcValue) {
+        self.group = group
+        self.closure = handler
+        self.quiesce = ServerQuiescingHelper(group: group)
     }
 
-    private var buffer: ByteBuffer! = nil
-    private var keepAlive = false
-    private var state = State.idle
-
-    private var infoSavedRequestHead: HTTPRequestHead?
-
-    public init(handler: @escaping (String, [XmlRpcValue]) -> XmlRpcValue) {
-        self.handler = handler
-    }
-
-    private func completeResponse(_ context: ChannelHandlerContext, trailers: HTTPHeaders?, promise: EventLoopPromise<Void>?) {
-        self.state.responseComplete()
-
-        let promise = keepAlive ? promise : (promise ?? context.eventLoop.makePromise())
-        if !keepAlive {
-            promise!.futureResult.whenComplete { (_: Result<Void, Error>) in context.close(promise: nil) }
-        }
-
-        context.writeAndFlush(wrapOutboundOut(.end(trailers)), promise: promise)
-    }
-
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        let reqPart = self.unwrapInboundIn(data)
-
-        switch reqPart {
-        case .head(let request):
-            keepAlive = request.isKeepAlive
-            state.requestReceived()
-            infoSavedRequestHead = request
-            buffer.clear()
-
-        case .body(buffer: var buf):
-            buffer.writeBuffer(&buf)
-            break
-
-        case .end:
-            state.requestComplete()
-            guard let str = buffer.readString(length: buffer.readableBytes) else {
-                fatalError()
+    func start(host: String, port: Int) -> EventLoopFuture<XMLRPCServer> {
+        let proceed: Bool = state.withLock {
+            if case .initializing = $0.phase {
+                $0.phase = .starting("\(host):\(port)")
+                logger.debug("XMLRPCServer state -> starting(\(host):\(port))")
+                return true
             }
-            let obj = XmlRpcUtil.parseRequest(xml: str)
-            let resp = executeRequest(method: obj.method, params: obj.params)
-            let xml = resp.toXml()
-            let responseXML = self.generateResponse(resultXML: xml)
-            buffer.clear()
-            buffer.writeString(responseXML)
+            return false
+        }
+        guard proceed else {
+            return group.next().makeFailedFuture(ServerError.notReady)
+        }
 
-            var head = httpResponseHead(request: infoSavedRequestHead!, status: HTTPResponseStatus.ok)
-            head.headers.add(name: "content-length", value: "\(buffer.readableBytes)")
-            head.headers.add(name: "content-type", value: "text/xml")
-            context.write(wrapOutboundOut(.head(head)), promise: nil)
-            context.write(wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
-            self.completeResponse(context, trailers: nil, promise: nil)
+        let promise = group.next().makePromise(of: XMLRPCServer.self)
+        Task {
+            do {
+                let serverChannel = try await self.bind(host: host, port: port)
+                if let p = serverChannel.channel.localAddress?.port {
+                    self._boundPort.store(Int32(p), ordering: .relaxed)
+                }
+                self.state.withLock {
+                    $0.phase = .started
+                    $0.serveTask = Task { [weak self] in
+                        await self?.serve(serverChannel: serverChannel)
+                    }
+                }
+                logger.debug("XMLRPCServer state -> started on port \(self.boundPort)")
+                promise.succeed(self)
+            } catch {
+                self.state.withLock {
+                    $0.phase = .stopped
+                }
+                logger.error("XMLRPCServer bind failed: \(error)")
+                promise.fail(error)
+            }
+        }
+        return promise.futureResult
+    }
+
+    func stop() -> EventLoopFuture<Void> {
+        let serveTask: Task<Void, Never>? = state.withLock {
+            guard case .started = $0.phase else { return nil }
+            $0.phase = .stopping
+            let task = $0.serveTask
+            $0.serveTask = nil
+            return task
+        }
+        guard let serveTask else {
+            return group.next().makeFailedFuture(ServerError.notReady)
+        }
+
+        let promise = group.next().makePromise(of: Void.self)
+        Task {
+            // Graceful shutdown: close listener and signal each open child connection
+            // via ChannelShouldQuiesceEvent. QuiesceCloseHandler converts that to a
+            // channel close, which lets NIO flush any pending writes first.
+            let quiescePromise = self.group.next().makePromise(of: Void.self)
+            self.quiesce.initiateShutdown(promise: quiescePromise)
+            _ = try? await quiescePromise.futureResult.get()
+            // Drain in-flight handler tasks (they finish when their writes fail or complete).
+            await serveTask.value
+            self.state.withLock { $0.phase = .stopped }
+            logger.debug("XMLRPCServer state -> stopped")
+            promise.succeed(())
+        }
+        return promise.futureResult
+    }
+
+    // MARK: - Bind & accept loop
+
+    private func bind(host: String, port: Int) async throws -> ServerChannel {
+        let quiesce = self.quiesce
+        return try await ServerBootstrap(group: group)
+            .serverChannelOption(ChannelOptions.backlog, value: 256)
+            .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .serverChannelInitializer { serverChannel in
+                serverChannel.eventLoop.makeCompletedFuture {
+                    try serverChannel.pipeline.syncOperations.addHandler(
+                        quiesce.makeServerChannelHandler(channel: serverChannel)
+                    )
+                }
+            }
+            .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
+            .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
+            .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
+            .bind(host: host, port: port) { childChannel in
+                childChannel.eventLoop.makeCompletedFuture {
+                    try childChannel.pipeline.syncOperations.configureHTTPServerPipeline(
+                        withPipeliningAssistance: true,
+                        withErrorHandling: true
+                    )
+                    try childChannel.pipeline.syncOperations.addHandler(QuiesceCloseHandler())
+                    return try HTTPChannel(
+                        wrappingChannelSynchronously: childChannel,
+                        configuration: .init()
+                    )
+                }
+            }
+    }
+
+    private func serve(serverChannel: ServerChannel) async {
+        do {
+            try await serverChannel.executeThenClose { inbound in
+                try await withThrowingDiscardingTaskGroup { group in
+                    for try await connection in inbound {
+                        group.addTask {
+                            await self.handle(connection: connection)
+                        }
+                    }
+                }
+            }
+        } catch is CancellationError {
+            // Expected during stop()
+        } catch {
+            logger.debug("XMLRPCServer accept loop error: \(error)")
         }
     }
 
-    private func executeRequest(method: String, params: [XmlRpcValue]) -> XmlRpcValue {
+    // MARK: - Per-connection request/response loop
+
+    private func handle(connection: HTTPChannel) async {
+        do {
+            try await connection.executeThenClose { inbound, outbound in
+                var iterator = inbound.makeAsyncIterator()
+                while let part = try await iterator.next() {
+                    guard case .head(let head) = part else {
+                        // protocol error: expected .head
+                        return
+                    }
+                    let keepAlive = head.isKeepAlive
+                    var buffer = ByteBuffer()
+
+                    bodyLoop: while let bodyPart = try await iterator.next() {
+                        switch bodyPart {
+                        case .head:
+                            return  // protocol error
+                        case .body(var buf):
+                            if buffer.readableBytes + buf.readableBytes > Self.maxBodyBytes {
+                                logger.warning("request body exceeded \(Self.maxBodyBytes) bytes; rejecting")
+                                try await self.writeError(outbound: outbound, requestHead: head, status: .payloadTooLarge)
+                                return
+                            }
+                            buffer.writeBuffer(&buf)
+                        case .end:
+                            break bodyLoop
+                        }
+                    }
+
+                    guard let str = buffer.readString(length: buffer.readableBytes) else {
+                        logger.warning("failed to read request body as string; responding 400")
+                        try await self.writeError(outbound: outbound, requestHead: head, status: .badRequest)
+                        return
+                    }
+                    let obj = XmlRpcUtil.parseRequest(xml: str)
+                    guard !obj.method.isEmpty else {
+                        logger.warning("could not parse XML-RPC method from request; responding 400")
+                        try await self.writeError(outbound: outbound, requestHead: head, status: .badRequest)
+                        return
+                    }
+
+                    let resp = await self.executeRequest(method: obj.method, params: obj.params)
+                    let responseXML = self.generateResponse(resultXML: resp.toXml())
+
+                    var responseBuffer = ByteBuffer()
+                    responseBuffer.writeString(responseXML)
+
+                    var responseHead = httpResponseHead(request: head, status: .ok)
+                    responseHead.headers.add(name: "content-length", value: "\(responseBuffer.readableBytes)")
+                    responseHead.headers.add(name: "content-type", value: "text/xml")
+
+                    try await outbound.write(.head(responseHead))
+                    try await outbound.write(.body(.byteBuffer(responseBuffer)))
+                    try await outbound.write(.end(nil))
+
+                    if !keepAlive { return }
+                }
+            }
+        } catch is CancellationError {
+            // Server stopping or peer closed mid-read
+        } catch {
+            logger.debug("XMLRPCServer connection error: \(error)")
+        }
+    }
+
+    private func writeError(
+        outbound: NIOAsyncChannelOutboundWriter<HTTPServerResponsePart>,
+        requestHead: HTTPRequestHead,
+        status: HTTPResponseStatus
+    ) async throws {
+        var head = httpResponseHead(request: requestHead, status: status)
+        head.headers.replaceOrAdd(name: "content-length", value: "0")
+        head.headers.replaceOrAdd(name: "connection", value: "close")
+        try await outbound.write(.head(head))
+        try await outbound.write(.end(nil))
+    }
+
+    // MARK: - XML-RPC dispatch
+
+    private func executeRequest(method: String, params: [XmlRpcValue]) async -> XmlRpcValue {
         if method == "system.multicall" {
             precondition(params.count == 1)
             let par = params[0]
@@ -142,136 +314,25 @@ private final class HTTPHandler: ChannelInboundHandler {
             var res = [XmlRpcValue]()
             for i in 0..<calls {
                 let x = par[i]
-                guard let method = x.dictionary,
-                    let methodName = method["methodName"]?.string,
-                    let parameters = method["params"]?.array else {
-                    return XmlRpcValue(anyArray: [-1,"",0])
+                guard let methodDict = x.dictionary,
+                      let methodName = methodDict["methodName"]?.string,
+                      let parameters = methodDict["params"]?.array else {
+                    return XmlRpcValue(anyArray: [-1, "", 0])
                 }
-                let r = handler(methodName, parameters)
+                let r = await closure(methodName, parameters)
                 res.append(r)
             }
-            return XmlRpcValue(anyArray: [1,"",res])
+            return XmlRpcValue(anyArray: [1, "", res])
         } else {
-            return handler(method, params)
+            return await closure(method, params)
         }
     }
 
-    func generateResponse(resultXML: String) -> String {
+    private func generateResponse(resultXML: String) -> String {
         let res = "<?xml version=\"1.0\"?>\r\n<methodResponse><params><param>"
         let req = "</param></params></methodResponse>\r\n"
-        let body = res + resultXML + req
-        return body
+        return res + resultXML + req
     }
-
-    func channelReadComplete(context: ChannelHandlerContext) {
-        context.flush()
-    }
-
-    func handlerAdded(context: ChannelHandlerContext) {
-        self.buffer = context.channel.allocator.buffer(capacity: 0)
-    }
-
-    func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
-        switch event {
-        case let evt as ChannelEvent where evt == ChannelEvent.inputClosed:
-            // The remote peer half-closed the channel. At this time, any
-            // outstanding response will now get the channel closed, and
-            // if we are idle or waiting for a request body to finish we
-            // will close the channel immediately.
-            switch self.state {
-            case .idle, .waitingForRequestBody:
-                context.close(promise: nil)
-            case .sendingResponse:
-                self.keepAlive = false
-            }
-        default:
-            context.fireUserInboundEventTriggered(event)
-        }
-    }
-}
-
-public final class XMLRPCServer {
-    private let group: EventLoopGroup
-    private var channel: Channel?
-    private var closure: (String, [XmlRpcValue]) -> XmlRpcValue
-
-    init(group: EventLoopGroup, handler: @escaping (String, [XmlRpcValue]) -> XmlRpcValue) {
-        self.group = group
-        closure = handler
-        state = .initializing
-    }
-
-    deinit {
-        assert(.stopped == self.state)
-    }
-
-    func start(host: String, port: Int) -> EventLoopFuture<XMLRPCServer> {
-        assert(.initializing == self.state)
-        let bootstrap = ServerBootstrap(group: group)
-            // Specify backlog and enable SO_REUSEADDR for the server itself
-            .serverChannelOption(ChannelOptions.backlog, value: 256)
-            .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-
-            // Set the handlers that are applied to the accepted Channels
-            .childChannelInitializer { channel in
-                channel.pipeline.configureHTTPServerPipeline(withErrorHandling: true).flatMap {
-                    channel.pipeline.addHandler(HTTPHandler(handler: self.closure))
-                }
-            }
-
-            // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
-            .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
-            .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
-            .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
-
-        self.state = .starting("\(host):\(port)")
-        return bootstrap.bind(host: host, port: port).flatMap { channel in
-            self.channel = channel
-            self.state = .started
-            return channel.eventLoop.makeSucceededFuture(self)
-        }
-    }
-
-    func stop() -> EventLoopFuture<Void> {
-        if .started != self.state {
-            return self.group.next().makeFailedFuture(ServerError.notReady)
-        }
-        guard let channel = self.channel else {
-            return self.group.next().makeFailedFuture(ServerError.notReady)
-        }
-        self.state = .stopping
-        channel.closeFuture.whenComplete { _ in
-            self.state = .stopped
-        }
-        return channel.close()
-    }
-
-    private var _state = State.initializing
-    private let lock = NIOLock()
-    private var state: State {
-        get {
-            return self.lock.withLock {
-                _state
-            }
-        }
-        set {
-            self.lock.withLock {
-                _state = newValue
-                logger.debug("\(self) \(_state)")
-            }
-        }
-    }
-
-    private enum State: Equatable {
-        case initializing
-        case starting(String)
-        case started
-        case stopping
-        case stopped
-    }
-
-
 }
 
 

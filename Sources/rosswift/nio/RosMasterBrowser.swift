@@ -26,7 +26,11 @@ final class RosMasterBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDel
     }
     
     //MARK: NetServiceBrowserDelegate
-    
+
+    func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {
+        
+    }
+
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
         service.delegate = self
         service.resolve(withTimeout: 10)

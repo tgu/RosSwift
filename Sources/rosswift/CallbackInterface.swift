@@ -5,13 +5,13 @@
 //  Created by Thomas Gustafsson on 2018-03-07.
 //
 
-public enum CallResult {
+public enum CallResult: Sendable {
     case success
     case tryAgain
     case invalid
 }
 
-public protocol CallbackInterface {
+public protocol CallbackInterface: Sendable {
     func call() -> CallResult
     
     /// Provides the opportunity for specifying that a callback is not ready to be called before call() actually takes place.

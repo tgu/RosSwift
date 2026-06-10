@@ -9,30 +9,30 @@ import BinaryCoder
 
 struct Header {
     var headers = StringStringMap()
-
+    
     subscript(key: String) -> String? {
         return headers[key]
     }
-
+    
     init(headers: StringStringMap) {
         self.headers = headers
     }
-
+    
     init?(buffer: [UInt8]) {
         var indx = 0
         while indx < buffer.count {
             let len = UInt32(buffer[indx]) |
-                UInt32(buffer[indx + 1]) << 8 |
-                UInt32(buffer[indx + 2]) << 16 |
-                UInt32(buffer[indx + 3]) << 24
+            UInt32(buffer[indx + 1]) << 8 |
+            UInt32(buffer[indx + 2]) << 16 |
+            UInt32(buffer[indx + 3]) << 24
             indx += 4
             if len > 1_000_000 {
                 ROS_DEBUG("Received an invalid TCPROS header.  Each element must be prepended by a 4-byte length.")
                 return nil
             }
-
+            
             let buf = buffer[indx..<indx + Int(len)]
-
+            
             guard let line = String(bytes: buf, encoding: .utf8) else {
                 ROS_DEBUG("Received an invalid TCPROS header.  invalid string")
                 return nil
@@ -47,7 +47,7 @@ struct Header {
             headers[key] = value
         }
     }
-
+    
     static func write(keyVals: StringStringMap) -> [UInt8] {
         var data = [UInt8]()
         for (key, val) in keyVals {

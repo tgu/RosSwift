@@ -25,7 +25,7 @@ struct Update<Value: ArrayConstructable> {
 }
 
 
-final class ParameterServer<Value: ArrayConstructable> {
+struct ParameterServer<Value: ArrayConstructable> {
     typealias ParameterValue = Root<Value>
     let registrationManager: RegistrationManager
     let parameters = RadixTree<Value>()
