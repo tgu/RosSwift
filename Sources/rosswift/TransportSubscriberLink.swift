@@ -59,7 +59,7 @@ final class TransportSubscriberLink: SubscriberLink {
         m["latching"] = pub.isLatched ? "1" : "0"
         m["topic"] = topic
         
-        pub.addSubscriberLink(self)
+        pub.addSubscriberLinkSync(self)
         
         connection.writeHeader(keyVals: m).whenComplete { result in
             switch result {

@@ -359,7 +359,7 @@ internal final class TopicManager: RosManager {
     /// that subscription. otherwise, it returns false, indicating that a new
     /// subscription needs to be created.
     
-    func addSubCallback<M: Message>(ops: SubscribeOptions<M>) -> Bool {
+    func addSubCallback<M: Message>(ops: SubscribeOptions<M>) async -> Bool {
         guard let sub = state.withLock({ st -> Subscription? in
             st.shuttingDown ? nil : st.subscriptions.first(where: {
                 !$0.dropped.load(ordering: .relaxed) && $0.name == ops.topic
@@ -376,13 +376,13 @@ internal final class TopicManager: RosManager {
             return false
         }
         
-        return sub.add(callback: ops.helper,
-                       md5: M.md5sum,
-                       queue: ops.callbackQueue,
-                       queueSize: ops.queueSize,
-                       trackedObject: ops.trackedObject,
-                       allowConcurrentCallbacks: ops.allowConcurrentCallbacks)
-        
+        return await sub.add(callback: ops.helper,
+                             md5: M.md5sum,
+                             queue: ops.callbackQueue,
+                             queueSize: ops.queueSize,
+                             trackedObject: ops.trackedObject,
+                             allowConcurrentCallbacks: ops.allowConcurrentCallbacks)
+
     }
     
     func subscribeWith<M: Message>(options: SubscribeOptions<M>) async -> Bool {
@@ -390,7 +390,7 @@ internal final class TopicManager: RosManager {
             return false
         }
 
-        if addSubCallback(ops: options) {
+        if await addSubCallback(ops: options) {
             return true
         }
         
@@ -411,12 +411,12 @@ internal final class TopicManager: RosManager {
                                    md5sum: md5sum,
                                    datatype: datatype,
                                    transportHints: options.transportHints)
-            _ = sub.add(callback: options.helper,
-                        md5: M.md5sum,
-                        queue: options.callbackQueue,
-                        queueSize: options.queueSize,
-                        trackedObject: options.trackedObject,
-                        allowConcurrentCallbacks: options.allowConcurrentCallbacks)
+            _ = await sub.add(callback: options.helper,
+                              md5: M.md5sum,
+                              queue: options.callbackQueue,
+                              queueSize: options.queueSize,
+                              trackedObject: options.trackedObject,
+                              allowConcurrentCallbacks: options.allowConcurrentCallbacks)
             
             if !(await registerSubscriber(s: sub, datatype: M.datatype)) {
                 ROS_DEBUG("couldn't register subscriber on topic [\(options.topic)")
@@ -502,7 +502,7 @@ internal final class TopicManager: RosManager {
                 return false
             }
             
-            s.add(rosName: rosName, localConnection: localPub, serverURI: ros.xmlrpcManager.serverURI)
+            await s.add(rosName: rosName, localConnection: localPub, serverURI: ros.xmlrpcManager.serverURI)
         }
         
         _ = s.pubUpdate(rosName: rosName, newPubs: pubUris, serverURI: ros.xmlrpcManager.serverURI, master: ros.master)
@@ -592,7 +592,7 @@ internal final class TopicManager: RosManager {
         // The assumption is that advertise() is called from somewhere other
         // than the ROS thread. Done outside the lock — `add` is a call-out.
         if let it = result.selfSub {
-            it.add(rosName: rosName, localConnection: pub, serverURI: ros.xmlrpcManager.serverURI)
+            await it.add(rosName: rosName, localConnection: pub, serverURI: ros.xmlrpcManager.serverURI)
         }
 
 

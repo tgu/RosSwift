@@ -117,29 +117,58 @@ final class Publication: Sendable {
         dropAllConnections()
     }
 
-    func addSubscriberLink(_ link: SubscriberLink) {
-        // Gate the dropped-check and the append within a single critical
-        // section: if a drop is concurrently in progress, either we observe
-        // `dropped` and reject the link, or we append before the drop's drain
-        // and the link is guaranteed to be torn down by that drain.
+    /// Atomically gates the dropped-check and the append in a single critical
+    /// section, and reports the latched message (if any) that should be
+    /// enqueued to this link. If a drop is concurrently in progress, either we
+    /// observe `dropped` and reject the link, or we append before the drop's
+    /// drain and the link is guaranteed to be torn down by that drain.
+    ///
+    /// The lock is released before `lastMessage` (a separate `Mutex`) is read,
+    /// so the lock is never held across the subsequent `enqueueMessage`/
+    /// `peerConnect` side-effects performed by the caller.
+    private func appendLink(_ link: SubscriberLink) -> (added: Bool, latched: SerializedMessage?) {
         let added = linkState.withLock { state -> Bool in
             guard !state.dropped else { return false }
             state.links.append(link)
             return true
         }
 
-        guard added else { return }
+        guard added else { return (false, nil) }
 
         let last = lastMessage.withLock { $0 }
         if isLatched, let last, !last.buf.isEmpty {
+            return (true, last)
+        }
+        return (true, nil)
+    }
+
+    /// Awaited entry point used by the in-process subscribe path. Enqueuing the
+    /// latched message is awaited, so by the time this returns the message is
+    /// in the callback queue and deterministically deliverable by the next
+    /// `spinOnce()`. `peerConnect` must happen *after* the append, in case the
+    /// connect callback uses `publish()`.
+    func addSubscriberLink(_ link: SubscriberLink) async {
+        let (added, latched) = appendLink(link)
+        guard added else { return }
+        if let latched {
+            await link.enqueueMessage(latched)
+        }
+        peerConnect(link: link)
+    }
+
+    /// Synchronous entry point used by the network path
+    /// (`TransportSubscriberLink.init?`), which runs on a NIO event loop and
+    /// must not block. The latched enqueue is fire-and-forget here; remote
+    /// latched delivery is inherently asynchronous.
+    func addSubscriberLinkSync(_ link: SubscriberLink) {
+        let (added, latched) = appendLink(link)
+        guard added else { return }
+        if let latched {
             Task {
-                await link.enqueueMessage(last)
+                await link.enqueueMessage(latched)
                 peerConnect(link: link)
             }
         } else {
-            // This call invokes the subscribe callback if there is one.
-            // This must happen *after* the push_back above, in case the
-            // callback uses publish().
             peerConnect(link: link)
         }
     }

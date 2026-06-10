@@ -493,35 +493,28 @@ class ConnectionTests {
             let count1 = ManagedAtomic(0)
             let count2 = ManagedAtomic(0)
 
-            // Latched delivery to a (re)subscribed callback is asynchronous: the
-            // cached message is pushed into the callback queue on a detached
-            // task, so it is not guaranteed to be drainable by a single
-            // spinOnce. Poll-with-spin until it arrives (bounded), matching the
-            // ROS async-latched semantics and the other tests in this suite.
-            @Sendable func spinUntil(_ predicate: @Sendable () -> Bool) async -> Bool {
-                for _ in 0..<200 {
-                    await ros.spinOnce()
-                    if predicate() { return true }
-                    await WallDuration(milliseconds: 10).sleep()
-                }
-                return predicate()
-            }
-
+            // In-process latched delivery is deterministic on subscribe: the
+            // latched message is enqueued before `subscribe()` returns, so a
+            // single spinOnce() must deliver it.
             _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
                 _ = count1.loadThenWrappingIncrement(ordering: .relaxed)
             }
 
-            #expect(await spinUntil { count1.load(ordering: .relaxed) == 1 })
+            await ros.spinOnce()
+
+            #expect(count1.load(ordering: .relaxed) == 1)
             #expect(count2.load(ordering: .relaxed) == 0)
 
             _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
                 _ = count2.loadThenWrappingIncrement(ordering: .relaxed)
             }
 
-            #expect(await spinUntil { count2.load(ordering: .relaxed) == 1 })
+            await ros.spinOnce()
+
             // The latched value must reach the second subscriber exactly once
             // without re-delivering to the first.
             #expect(count1.load(ordering: .relaxed) == 1)
+            #expect(count2.load(ordering: .relaxed) == 1)
         }
     }
 }

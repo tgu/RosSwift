@@ -96,7 +96,7 @@ internal final class Subscription: Sendable {
              queue: AsyncCallbackQueue,
              queueSize: UInt32,
              trackedObject: TrackableObject?,
-             allowConcurrentCallbacks: Bool) -> Bool {
+             allowConcurrentCallbacks: Bool) async -> Bool {
         
         md5sum.withLock {
             if $0 == "*" && md5 != "*" {
@@ -119,48 +119,42 @@ internal final class Subscription: Sendable {
 
         // Replay any cached latched messages to the newly-added callback so
         // late subscribers see the most recent value from each latched
-        // publisher.
+        // publisher. Awaited (not detached) so the message is enqueued before
+        // this returns — making post-subscribe() delivery deterministic.
         let latchedSnapshot = latchedMessages.withLock { $0 }
         if !latchedSnapshot.isEmpty {
             let latchedLinks = publisherLinks.filter { $0.latched }
-            let helper = info.helper
-            let subQueue = info.subscriptionQueue
-            let callbackQueue = info.callbackQueue
-            let hasTracked = info.hasTrackedObject
-            let tracked = info.trackedObject
-            Task {
-                for pl in latchedLinks {
-                    guard let latchedMessage = latchedSnapshot[pl.connectionId] else { continue }
-                    let deserializer = MessageDeserializer(
-                        helper: helper,
-                        m: latchedMessage.message,
-                        header: latchedMessage.connectionHeader)
-                    _ = await subQueue.push(helper: helper,
-                                            deserializer: deserializer,
-                                            hasTrackedObject: hasTracked,
-                                            trackedObject: tracked,
-                                            receiptTime: latchedMessage.receiptTime)
-                    await callbackQueue.addCallback(callback: subQueue)
-                }
+            for pl in latchedLinks {
+                guard let latchedMessage = latchedSnapshot[pl.connectionId] else { continue }
+                let deserializer = MessageDeserializer(
+                    helper: info.helper,
+                    m: latchedMessage.message,
+                    header: latchedMessage.connectionHeader)
+                _ = await info.subscriptionQueue.push(helper: info.helper,
+                                                      deserializer: deserializer,
+                                                      hasTrackedObject: info.hasTrackedObject,
+                                                      trackedObject: info.trackedObject,
+                                                      receiptTime: latchedMessage.receiptTime)
+                await info.callbackQueue.addCallback(callback: info.subscriptionQueue)
             }
         }
 
         return true
     }
     
-    func add(rosName: String, localConnection: Publication, serverURI: String) {
+    func add(rosName: String, localConnection: Publication, serverURI: String) async {
         if dropped.load(ordering: .relaxed) {
             return
         }
-        
+
         ROS_DEBUG("Creating intraprocess link for topic [\(name)]")
-        
+
         let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: serverURI, transportHints: transportHints)
         let subLink = IntraProcessSubscriberLink(desitnationName: rosName, parent: localConnection, subscriber: pubLink)
         _ = pubLink.setPublisher(callerId: name, publisher: subLink)
-        
+
         publisherLinks.append(pubLink)
-        localConnection.addSubscriberLink(subLink)
+        await localConnection.addSubscriberLink(subLink)
     }
     
     func pubUpdate(rosName: String, newPubs: [String], serverURI: String, master: Master) -> Bool {
