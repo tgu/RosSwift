@@ -4,7 +4,7 @@ import Testing
 @testable import rpcobject
 
 
-extension Int: ArrayConstructable, Collection {
+extension Int: ArrayConstructable, @retroactive Collection {
     public subscript(position: Int) -> Int {
         get {
             return self

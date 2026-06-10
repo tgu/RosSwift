@@ -45,29 +45,29 @@ class ConnectionTests {
                 #expect(!ros.isStarted)
                 let n1 = await ros.createNode()
                 #expect(ros.isStarted)
-                #expect(await n1.refCount == 1)
+                #expect(n1.refCount == 1)
                 #expect(n1.gNodeStartedByNodeHandle)
                 do {
                     let n2 = await ros.createNode()
                     #expect(ros.isStarted)
-                    #expect(await n2.refCount == 2)
+                    #expect(n2.refCount == 2)
                     #expect(!n2.gNodeStartedByNodeHandle)
                     do {
                         let n3 = await ros.createNode()
                         #expect(ros.isStarted)
-                        #expect(await n3.refCount == 3)
+                        #expect(n3.refCount == 3)
                         #expect(!n3.gNodeStartedByNodeHandle)
                         do {
                             let n4 = await ros.createNode()
                             #expect(ros.isStarted)
                             #expect(!n4.gNodeStartedByNodeHandle)
-                            #expect(await n4.refCount == 4)
+                            #expect(n4.refCount == 4)
                         }
-                        #expect(await n1.refCount == 3)
+                        #expect(n1.refCount == 3)
                     }
-                    #expect(await n1.refCount == 2)
+                    #expect(n1.refCount == 2)
                 }
-                #expect(await n1.refCount == 1)
+                #expect(n1.refCount == 1)
                 #expect(ros.isStarted)
             }
             #expect(ros.nodeReferenceCount.load(ordering: .relaxed) == 0)
@@ -75,7 +75,7 @@ class ConnectionTests {
             do {
                 let n5 = await ros.createNode()
                 #expect(ros.isStarted)
-                #expect(await n5.refCount == 1)
+                #expect(n5.refCount == 1)
                 #expect(n5.gNodeStartedByNodeHandle)
             }
             #expect(ros.nodeReferenceCount.load(ordering: .relaxed) == 0)
@@ -234,27 +234,27 @@ class ConnectionTests {
             let remappings = ["a": "b", "c": "d"]
             let n1 = try #require(await ros.createNode(ns: "/", remappings: remappings))
 
-            #expect(await n1.namespace == "/")
-            #expect(await n1.remappings == ["/a": "/b", "/c": "/d"])
+            #expect(n1.namespace == "/")
+            #expect(n1.remappings == ["/a": "/b", "/c": "/d"])
 
-            #expect(await n1.resolveName(name: "a") == "/b")
-            #expect(await n1.resolveName(name: "/a") == "/b")
-            #expect(await n1.resolveName(name: "c") == "/d")
-            #expect(await n1.resolveName(name: "/c") == "/d")
+            #expect(n1.resolveName(name: "a") == "/b")
+            #expect(n1.resolveName(name: "/a") == "/b")
+            #expect(n1.resolveName(name: "c") == "/d")
+            #expect(n1.resolveName(name: "/c") == "/d")
 
             let n2 = await ros.createNode(parent: n1, ns: "my_ns")
 
-            #expect(await n2.resolveName(name: "a") == "/my_ns/a")
-            #expect(await n2.resolveName(name: "/a") == "/b")
-            #expect(await n2.resolveName(name: "c") == "/my_ns/c")
-            #expect(await n2.resolveName(name: "/c") == "/d")
+            #expect(n2.resolveName(name: "a") == "/my_ns/a")
+            #expect(n2.resolveName(name: "/a") == "/b")
+            #expect(n2.resolveName(name: "c") == "/my_ns/c")
+            #expect(n2.resolveName(name: "/c") == "/d")
 
             let n3 = await ros.createNode(parent: n2)
 
-            #expect(await n3.resolveName(name: "a") == "/my_ns/a")
-            #expect(await n3.resolveName(name: "/a") == "/b")
-            #expect(await n3.resolveName(name: "c") == "/my_ns/c")
-            #expect(await n3.resolveName(name: "/c") == "/d")
+            #expect(n3.resolveName(name: "a") == "/my_ns/a")
+            #expect(n3.resolveName(name: "/a") == "/b")
+            #expect(n3.resolveName(name: "c") == "/my_ns/c")
+            #expect(n3.resolveName(name: "/c") == "/d")
         }
     }
 
@@ -493,24 +493,35 @@ class ConnectionTests {
             let count1 = ManagedAtomic(0)
             let count2 = ManagedAtomic(0)
 
+            // Latched delivery to a (re)subscribed callback is asynchronous: the
+            // cached message is pushed into the callback queue on a detached
+            // task, so it is not guaranteed to be drainable by a single
+            // spinOnce. Poll-with-spin until it arrives (bounded), matching the
+            // ROS async-latched semantics and the other tests in this suite.
+            @Sendable func spinUntil(_ predicate: @Sendable () -> Bool) async -> Bool {
+                for _ in 0..<200 {
+                    await ros.spinOnce()
+                    if predicate() { return true }
+                    await WallDuration(milliseconds: 10).sleep()
+                }
+                return predicate()
+            }
+
             _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
                 _ = count1.loadThenWrappingIncrement(ordering: .relaxed)
             }
 
-            await ros.spinOnce()
-
-            #expect(count1.load(ordering: .relaxed) == 1)
+            #expect(await spinUntil { count1.load(ordering: .relaxed) == 1 })
             #expect(count2.load(ordering: .relaxed) == 0)
 
             _ = await n.subscribe(topic: "/testInternal") { (msg: Int64) -> Void in
                 _ = count2.loadThenWrappingIncrement(ordering: .relaxed)
             }
 
-            await Task.yield()
-            await ros.spinOnce()
-
+            #expect(await spinUntil { count2.load(ordering: .relaxed) == 1 })
+            // The latched value must reach the second subscriber exactly once
+            // without re-delivering to the first.
             #expect(count1.load(ordering: .relaxed) == 1)
-            #expect(count2.load(ordering: .relaxed) == 1)
         }
     }
 }

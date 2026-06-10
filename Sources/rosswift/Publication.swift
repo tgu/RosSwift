@@ -53,10 +53,23 @@ final class Publication: Sendable {
     let messageDefinition: String
     let sequenceNr = ManagedAtomic<UInt32>(0)
     let pubCallbacks = SynchronizedArray<SubscriberCallbacks>()
-    let subscriberLinks = SynchronizedArray<SubscriberLink>()
+    /// The `dropped` flag and the subscriber-link list live under a *single*
+    /// lock so that "append a link unless dropped" and "mark dropped, then
+    /// drain the links" are each one atomic critical section. When these were
+    /// separate primitives, a link could be appended *after* a concurrent drop
+    /// had already snapshotted the array, leaving it stranded — never torn down
+    /// and never delivered messages.
+    private let linkState = Mutex(LinkState())
     let latch = ManagedAtomic(false)
+    /// Lock-free mirror of `linkState.dropped`, for advisory reads such as
+    /// `validateHeader`. The authoritative gate is always `linkState`.
     let isDropped = ManagedAtomic(false)
     let lastMessage: Mutex<SerializedMessage?> = .init(nil)
+
+    private struct LinkState {
+        var dropped = false
+        var links: [SubscriberLink] = []
+    }
     
     init(name: String,
          datatype: String,
@@ -85,9 +98,10 @@ final class Publication: Sendable {
         
         // Add connect callbacks for all current subscriptions if this publisher wants them
         if let connect = callback.connect {
-            subscriberLinks.forEach {
+            let links = linkState.withLock { $0.links }
+            for link in links {
                 _ = PeerConnDisconnCallback(callback: connect,
-                                            subLink: $0,
+                                            subLink: link,
                                             useTrackedObject: callback.hasTrackedObject,
                                             trackedObject: callback.trackedObject)
                 ROS_ERROR("addCallbacks logic not implemented")
@@ -100,18 +114,22 @@ final class Publication: Sendable {
     }
     
     func dropPublication() {
-        if isDropped.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
-            dropAllConnections()
-        }
+        dropAllConnections()
     }
-    
+
     func addSubscriberLink(_ link: SubscriberLink) {
-        if isDropped.load(ordering: .relaxed) {
-            return
+        // Gate the dropped-check and the append within a single critical
+        // section: if a drop is concurrently in progress, either we observe
+        // `dropped` and reject the link, or we append before the drop's drain
+        // and the link is guaranteed to be torn down by that drain.
+        let added = linkState.withLock { state -> Bool in
+            guard !state.dropped else { return false }
+            state.links.append(link)
+            return true
         }
-        
-        
-        subscriberLinks.append(link)
+
+        guard added else { return }
+
         let last = lastMessage.withLock { $0 }
         if isLatched, let last, !last.buf.isEmpty {
             Task {
@@ -125,15 +143,19 @@ final class Publication: Sendable {
             peerConnect(link: link)
         }
     }
-    
+
     func removeSubscriberLink(_ link: SubscriberLink) {
-        if isDropped.load(ordering: .relaxed) {
-            return
+        let removed = linkState.withLock { state -> Bool in
+            guard !state.dropped else { return false }
+            guard let it = state.links.firstIndex(where: { $0.connectionId == link.connectionId }) else {
+                return false
+            }
+            state.links.remove(at: it)
+            return true
         }
-        
-        if let it = self.subscriberLinks.firstIndex(where: { $0.connectionId == link.connectionId }) {
+
+        if removed {
             self.peerDisconnect(subLink: link)
-            self.subscriberLinks.remove(at: it)
         }
     }
     
@@ -144,7 +166,8 @@ final class Publication: Sendable {
     
     func getInfo() -> [XmlRpcValue] {
         var ret = [XmlRpcValue]()
-        subscriberLinks.forEach({ sub in
+        let links = linkState.withLock { $0.links }
+        for sub in links {
             let info: [Any] = [
                 sub.connectionId,
                 sub.destinationCallerId,
@@ -154,16 +177,30 @@ final class Publication: Sendable {
                 true,
                 sub.transportInfo]
             ret.append(XmlRpcValue(anyArray: info))
-        })
-        
+        }
+
         return ret
     }
-    
+
     func dropAllConnections() {
-        let localPublishers = subscriberLinks.all()
-        subscriberLinks.removeAll()
-        for pub in localPublishers {
-            pub.dropParentPublication()
+        // Atomically mark the publication dropped and snapshot-and-clear the
+        // links, so no concurrent `addSubscriberLink` can slip a link past the
+        // drain. Idempotent: a second drop observes `dropped` and no-ops.
+        let removed = linkState.withLock { state -> [SubscriberLink] in
+            guard !state.dropped else { return [] }
+            state.dropped = true
+            let links = state.links
+            state.links.removeAll()
+            return links
+        }
+
+        // Mirror the flag for lock-free advisory readers.
+        isDropped.store(true, ordering: .relaxed)
+
+        // Tear down outside the lock: `dropParentPublication()` calls back into
+        // `removeSubscriberLink`, which now observes `dropped` and no-ops.
+        for link in removed {
+            link.dropParentPublication()
         }
     }
     
@@ -202,17 +239,17 @@ final class Publication: Sendable {
     }
     
     func getNumSubscribers() -> Int {
-        subscriberLinks.count
+        linkState.withLock { $0.links.count }
     }
-    
+
     func hasSubscribers() -> Bool {
-        !subscriberLinks.isEmpty
+        linkState.withLock { !$0.links.isEmpty }
     }
-    
+
     func publish(msg: SerializedMessage) async {
         precondition(msg.message != nil)
-        
-        for link in subscriberLinks.all() {
+
+        for link in linkState.withLock({ $0.links }) {
             await link.enqueueMessage(msg)
         }
         

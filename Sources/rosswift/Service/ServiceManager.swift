@@ -11,13 +11,19 @@ import StdMsgs
 import rpcobject
 import RosNetwork
 import Foundation
+import Synchronization
 
 
 internal final class ServiceManager: RosManager {
     let isShuttingDown = ManagedAtomic(false)
     let servicePublications = SynchronizedArray<ServiceProtocol>()
     let serviceServerLinks = SynchronizedArray<ServiceServerLink>()
-    
+
+    /// Handle to the fire-and-forget `unregisterService` round-trips started by
+    /// the synchronous `shutdown()` path, so a later `shutdownAsync()` can await
+    /// them to completion (securing that roscore is told before returning).
+    private let pendingUnregistration = Mutex<Task<Void, Never>?>(nil)
+
     let rosID: RosID
     
     init(rosID: RosID) {
@@ -35,16 +41,25 @@ internal final class ServiceManager: RosManager {
     
     func shutdown() {
         guard let services = collectUnregistrations() else { return }
-        // Sync entry point: fire-and-forget the master round-trips.
-        Task { [self] in
+        // Sync entry point: fire-and-forget the master round-trips, but keep a
+        // handle so a subsequent `shutdownAsync()` can await their completion.
+        let task = Task { [self] in
             for name in services { await unregisterService(service: name) }
         }
+        pendingUnregistration.withLock { $0 = task }
     }
 
     /// Async variant of `shutdown()` that awaits the in-flight master
     /// `unregisterService` calls before returning.
     func shutdownAsync() async {
-        guard let services = collectUnregistrations() else { return }
+        guard let services = collectUnregistrations() else {
+            // A synchronous `shutdown()` already fired the unregister round-trips
+            // fire-and-forget; await them so roscore is told before we return.
+            if let task = pendingUnregistration.withLock({ $0 }) {
+                await task.value
+            }
+            return
+        }
         await withTaskGroup(of: Void.self) { group in
             for name in services {
                 group.addTask { await self.unregisterService(service: name) }

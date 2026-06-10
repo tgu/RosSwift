@@ -511,6 +511,15 @@ public final class Ros: Sendable {
                 await serviceManager.shutdownAsync()
                 await connectionManager.shutdownAsync()
                 await xmlrpcManager.shutdownAsync()
+            } else {
+                // A synchronous shutdown (e.g. the last NodeHandle's deinit)
+                // already tore down the transports and fired the unregister
+                // round-trips fire-and-forget. Drive the managers' async
+                // shutdown anyway so those in-flight round-trips are awaited to
+                // completion before we return — this is what secures roscore
+                // being told before the caller (or test fixture) proceeds.
+                await topicManager.shutdownAsync()
+                await serviceManager.shutdownAsync()
             }
             _isStarted.store(false, ordering: .relaxed)
             isRunning.store(false, ordering: .relaxed)
